@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -34,6 +35,17 @@ function npmCommand(args: readonly string[]): string {
     throw new Error("Run artifact packaging through the committed npm script.");
   }
   return command(process.execPath, [npmCli, ...args]);
+}
+
+function removeEnvironmentFiles(directory: string): void {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      removeEnvironmentFiles(entryPath);
+    } else if (entry.name === ".env" || entry.name.startsWith(".env.")) {
+      rmSync(entryPath, { force: true });
+    }
+  }
 }
 
 const commitSha = command("git", ["rev-parse", "HEAD"]);
@@ -83,6 +95,7 @@ try {
   if (existsSync("public")) {
     cpSync("public", path.join(bundleRoot, "public"), { recursive: true });
   }
+  removeEnvironmentFiles(bundleRoot);
 
   const metadata = {
     commitSha,
