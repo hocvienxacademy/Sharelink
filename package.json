@@ -23,6 +23,10 @@
     "test:db:prepare": "tsx scripts/test-database.ts prepare",
     "test:integration": "tsx scripts/run-database-tests.ts",
     "test:e2e": "tsx scripts/run-e2e-tests.ts",
+    "test:staging-smoke": "playwright test --config=playwright.staging.config.ts",
+    "staging:schema:verify": "tsx scripts/database/verify-staging-schema.ts",
+    "audit:policy": "tsx scripts/audit-policy.ts",
+    "artifact:package": "tsx scripts/package-artifact.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

@@ -11,6 +11,10 @@ This checklist prepares staging only. It is not production approval.
 - Start with `npm run start -- --hostname 0.0.0.0 --port <port>`.
 - Provide `DATABASE_URL` through the platform secret store. Never bake it into
   an image, source, browser bundle, logs, or CI artifact.
+- Set `APP_ENV=staging` and the variables documented in
+  `environment-variables.md`; startup validation must pass before traffic.
+- Package the reviewed standalone output with `RELEASE_SHA=<exact SHA>
+  npm run artifact:package` from a clean worktree.
 
 ## Database
 
@@ -21,6 +25,9 @@ This checklist prepares staging only. It is not production approval.
   approved baseline/migration plan before staging.
 - Inspect CHECK constraints, expression/partial indexes, comments, owners,
   grants, enums, FKs, and unique indexes after provisioning.
+- Run `npm run staging:schema:verify` with a read-only
+  `STAGING_DATABASE_URL`; the verifier refuses local, test, and non-staging
+  database names.
 - Define a rollback that restores the previous application image and handles
   database compatibility; do not promise rollback for irreversible SQL.
 
@@ -29,8 +36,8 @@ This checklist prepares staging only. It is not production approval.
 - Enforce HTTPS and redirect HTTP.
 - Preserve `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, and
   `X-Robots-Tag: noindex, nofollow` for public registration pages/API.
-- Set an explicit reverse-proxy request-body limit consistent with the API
-  parser; reject oversized bodies before application processing.
+- Set the reverse proxy and `REQUEST_BODY_MAX_BYTES` to 65,536 bytes. The
+  application rejects declared or streamed oversized JSON with safe HTTP 413.
 - Configure the shared rate limiter described in
   `docs/security/rate-limiting.md`. This is a staging-release blocker.
 - Do not add third-party analytics/assets to tokenized pages without a privacy
@@ -57,6 +64,8 @@ This checklist prepares staging only. It is not production approval.
   infrastructure.
 - Verify all six viewports and a manual keyboard/contrast pass.
 - Exercise backup restore and application rollback before approval.
+- Run `npm run test:staging-smoke` with dedicated one-use fake fixture tokens;
+  it never resets or cleans arbitrary staging records.
 - Record image/version, schema version or baseline, operator, time, checks,
   and rollback result without PII.
 - Do not promote to production until rate limiting, migration policy,

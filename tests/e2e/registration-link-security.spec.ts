@@ -28,6 +28,11 @@ test("valid public link has private metadata, no third-party requests, and openi
     /noindex/,
   );
   expect(response?.headers()["referrer-policy"]).toBe("no-referrer");
+  expect(response?.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response?.headers()["content-security-policy"]).toContain(
+    "default-src 'self'",
+  );
+  expect(response?.headers()["permissions-policy"]).toContain("camera=()");
   expect(await page.title()).not.toContain(TEST_TOKENS.active);
   expect(
     await page.locator('link[rel="canonical"]').evaluateAll((nodes) =>
@@ -107,6 +112,16 @@ test("API responses are no-store and strict server-owned fields are rejected saf
   const body = await response.text();
   expect(body).not.toContain(TEST_TOKENS.active);
   expect(body).not.toMatch(/Prisma|PostgreSQL|constraint|DATABASE_URL/i);
+
+  const oversized = await page.request.post(
+    `/api/registration-links/${TEST_TOKENS.active}/applications`,
+    { data: { fullName: "x".repeat(70_000) } },
+  );
+  expect(oversized.status()).toBe(413);
+  const oversizedBody = await oversized.text();
+  expect(oversizedBody).not.toMatch(
+    /x{100}|Prisma|PostgreSQL|constraint|DATABASE_URL/i,
+  );
 });
 
 test("automated accessibility scan has no serious or critical violations", async ({

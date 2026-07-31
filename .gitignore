@@ -5,11 +5,15 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.staging.example
 !.env.test.example
 src/generated/
 coverage/
 playwright-report/
 test-results/
+staging-report/
+staging-test-results/
+artifacts/
 .playwright/
 *.dump
 *.backup

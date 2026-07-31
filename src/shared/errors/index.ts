@@ -8,4 +8,7 @@ export { DatabaseError } from "./database-error";
 export { ERROR_CODES, type ErrorCode } from "./error-code";
 export { InternalServerError } from "./internal-server-error";
 export { NotFoundError } from "./not-found-error";
+export { PayloadTooLargeError } from "./payload-too-large-error";
+export { RateLimitUnavailableError } from "./rate-limit-unavailable-error";
+export { TooManyRequestsError } from "./too-many-requests-error";
 export { ValidationError } from "./validation-error";

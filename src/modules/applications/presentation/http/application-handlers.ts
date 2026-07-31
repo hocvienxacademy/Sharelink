@@ -5,6 +5,10 @@ import {
   readJsonBody,
 } from "../../../../shared/http/next/index";
 import { parseRegistrationToken } from "../../../registration-links/index";
+import {
+  getRateLimitGuard,
+  type RateLimitGuard,
+} from "../../../../shared/rate-limit/index";
 import type {
   DraftApplicationDto,
   EditableApplicationDto,
@@ -59,6 +63,7 @@ interface ApplicationRouteContext {
 
 export function createCreateDraftApplicationHandler(
   service: CreateDraftApplicationService,
+  rateLimitGuard: RateLimitGuard = getRateLimitGuard(),
 ) {
   return async (
     request: Request,
@@ -66,6 +71,11 @@ export function createCreateDraftApplicationHandler(
   ): Promise<Response> =>
     handleNextRequest(async () => {
       const { token: tokenInput } = await context.params;
+      await rateLimitGuard.enforce({
+        endpoint: "create",
+        request,
+        token: tokenInput,
+      });
       const token = parseRegistrationToken(tokenInput);
       const input = parseCreateDraftApplicationInput(
         await readJsonBody(request),
@@ -78,14 +88,20 @@ export function createCreateDraftApplicationHandler(
 
 export function createGetEditableApplicationHandler(
   service: GetEditableApplicationService,
+  rateLimitGuard: RateLimitGuard = getRateLimitGuard(),
 ) {
   return async (
-    _request: Request,
+    request: Request,
     context: ApplicationRouteContext,
   ): Promise<Response> =>
     handleNextRequest(async () => {
       const { token: tokenInput, applicationId: applicationIdInput } =
         await context.params;
+      await rateLimitGuard.enforce({
+        endpoint: "context",
+        request,
+        token: tokenInput,
+      });
       const token = parseRegistrationToken(tokenInput);
       const applicationId = parseApplicationIdentifier(applicationIdInput);
       const result = await service.execute(token, applicationId);
@@ -96,6 +112,7 @@ export function createGetEditableApplicationHandler(
 
 export function createUpdateDraftApplicationHandler(
   service: UpdateDraftApplicationService,
+  rateLimitGuard: RateLimitGuard = getRateLimitGuard(),
 ) {
   return async (
     request: Request,
@@ -104,6 +121,11 @@ export function createUpdateDraftApplicationHandler(
     handleNextRequest(async () => {
       const { token: tokenInput, applicationId: applicationIdInput } =
         await context.params;
+      await rateLimitGuard.enforce({
+        endpoint: "update",
+        request,
+        token: tokenInput,
+      });
       const token = parseRegistrationToken(tokenInput);
       const applicationId = parseApplicationIdentifier(applicationIdInput);
       const input = parseUpdateDraftApplicationInput(
@@ -117,6 +139,7 @@ export function createUpdateDraftApplicationHandler(
 
 export function createSubmitApplicationHandler(
   service: SubmitApplicationService,
+  rateLimitGuard: RateLimitGuard = getRateLimitGuard(),
 ) {
   return async (
     request: Request,
@@ -125,6 +148,11 @@ export function createSubmitApplicationHandler(
     handleNextRequest(async () => {
       const { token: tokenInput, applicationId: applicationIdInput } =
         await context.params;
+      await rateLimitGuard.enforce({
+        endpoint: "submit",
+        request,
+        token: tokenInput,
+      });
       const token = parseRegistrationToken(tokenInput);
       const applicationId = parseApplicationIdentifier(applicationIdInput);
       const input = parseSubmitApplicationInput(await readJsonBody(request));

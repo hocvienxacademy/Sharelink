@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { cpSync, existsSync, mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
@@ -61,21 +62,31 @@ if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
 
+mkdirSync(path.resolve(".next/standalone/.next"), { recursive: true });
+cpSync(
+  path.resolve(".next/static"),
+  path.resolve(".next/standalone/.next/static"),
+  { recursive: true },
+);
+if (existsSync(path.resolve("public"))) {
+  cpSync(path.resolve("public"), path.resolve(".next/standalone/public"), {
+    recursive: true,
+  });
+}
+
 await ensurePortAvailable(3100);
 
 const server = spawn(
   process.execPath,
-  [
-    path.resolve("node_modules/next/dist/bin/next"),
-    "start",
-    "--hostname",
-    "127.0.0.1",
-    "--port",
-    "3100",
-  ],
+  [path.resolve(".next/standalone/server.js")],
   {
     cwd: process.cwd(),
-    env: { ...sharedEnvironment, NODE_ENV: "production" },
+    env: {
+      ...sharedEnvironment,
+      HOSTNAME: "127.0.0.1",
+      NODE_ENV: "production",
+      PORT: "3100",
+    },
     stdio: "inherit",
   },
 );

@@ -1,24 +1,31 @@
 # Public registration API rate limiting
 
-The application does not claim production-ready rate limiting. An in-memory
-counter would be inconsistent across replicas and is intentionally not
-implemented.
+The application uses the framework-independent `RateLimiter` contract and an
+Upstash-compatible Redis REST adapter under
+`src/shared/infrastructure/rate-limit/`. It does not use process memory.
 
-Staging must provide a shared limiter through Redis, Upstash, the reverse
-proxy, or the deployment platform. Keys must use a one-way digest of the
-public token plus a coarse client/network signal; raw tokens and IP addresses
-must not appear in logs.
+Keys have the form `registration:<endpoint>:<HMAC>`; the HMAC input contains
+the public token and a trusted client identity. Neither the token nor IP is
+stored in the key. Client IP is `unknown` unless `TRUSTED_PROXY_IP_HEADER`
+names a header that the deployment proxy overwrites. Do not configure ordinary
+client-controlled `X-Forwarded-For`.
 
-Recommended policy tiers, to be tuned from staging evidence:
+Default policies are centralized and may be overridden with
+`RATE_LIMIT_<ENDPOINT>_LIMIT` and
+`RATE_LIMIT_<ENDPOINT>_WINDOW_SECONDS`:
 
-| Endpoint | Relative limit |
-| --- | --- |
-| `GET .../context` | Most permissive |
-| `PATCH .../applications/:id` | Moderate |
-| `POST .../applications` | Strict |
-| `POST .../submit` | Strictest |
+| Bucket | Default | Failure mode |
+| --- | ---: | --- |
+| `context` GET, including reopen GET | 60/minute | fail-open |
+| `create` POST | 5/10 minutes | fail-closed with safe `503` |
+| `update` PATCH | 30/10 minutes | fail-closed with safe `503` |
+| `submit` POST | 5/10 minutes | fail-closed with safe `503` |
 
-The limiter must fail safely, return a generic `429`, avoid response bodies
-containing tokens or PII, support multiple application instances, and expose
-only aggregate metrics. Staging verification of the selected infrastructure
-is a release blocker.
+Redis calls time out after 750 ms. A denied request returns the existing safe
+JSON envelope, HTTP `429`, and `Retry-After`; it never returns a key, digest,
+threshold, infrastructure name, token, or IP.
+
+Unit tests use injected adapters and never contact staging/production Redis.
+`npm run test:staging-smoke` must verify the real shared bucket with a
+dedicated token, including TTL, restart behavior, and cross-instance behavior
+when staging has multiple replicas. Uncontrolled stress testing is prohibited.

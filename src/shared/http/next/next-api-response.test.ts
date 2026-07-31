@@ -4,6 +4,7 @@ import {
   ConflictError,
   DatabaseError,
   NotFoundError,
+  TooManyRequestsError,
   ValidationError,
 } from "../../errors/index";
 import { createSuccessResponse } from "../index";
@@ -37,6 +38,18 @@ describe("Next.js API response adapter", () => {
     assert.equal(response.status, 409);
   });
 
+  it("returns a safe 429 envelope with Retry-After", async () => {
+    const response = await handleNextRequest(async () => {
+      throw new TooManyRequestsError(7);
+    });
+    const body = await response.text();
+
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get("retry-after"), "7");
+    assert.match(body, /TOO_MANY_REQUESTS/);
+    assert.equal(body.includes("Redis"), false);
+  });
+
   it("does not expose database causes", async () => {
     const response = await handleNextRequest(async () => {
       throw new DatabaseError({
@@ -67,5 +80,9 @@ describe("Next.js API response adapter", () => {
     );
 
     assert.equal(await response.text(), '{"success":true,"data":{"ready":true}}');
+    assert.match(
+      response.headers.get("x-request-id") ?? "",
+      /^[0-9a-f-]{36}$/,
+    );
   });
 });

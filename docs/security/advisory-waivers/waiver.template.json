@@ -1,0 +1,17 @@
+{
+  "advisoryId": "GHSA-xxxx-xxxx-xxxx",
+  "package": "package-name",
+  "severity": "high",
+  "dependencyPaths": ["node_modules/example"],
+  "affectedRange": "<1.2.3",
+  "reasonUpgradeUnavailable": "Document the compatibility blocker.",
+  "exploitability": "Document runtime/build-time exposure and reachable code paths.",
+  "compensatingControls": ["Document concrete controls."],
+  "owner": "UNASSIGNED",
+  "approvedBy": "UNAPPROVED",
+  "approvedAt": "YYYY-MM-DD",
+  "expiresAt": "YYYY-MM-DD",
+  "revocationConditions": ["Compatible patched release becomes available."],
+  "upstreamReference": "https://example.invalid/upstream-issue",
+  "recheckVersion": "package@version"
+}

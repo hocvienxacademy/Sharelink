@@ -50,8 +50,12 @@ jobs:
           NODE_ENV: production
       - run: npm run test:integration
       - run: npm run test:e2e
-      # Known high advisories are documented; critical advisories still fail CI.
-      - run: npm audit
+      # Keep the full report visible; the policy step is the promotion gate.
+      - name: Plain dependency audit (informational)
+        run: npm audit
+        continue-on-error: true
+      - name: Dependency promotion policy
+        run: npm run audit:policy
 
       - name: Upload Playwright artifacts on failure
         if: failure()

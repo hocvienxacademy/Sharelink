@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { TooManyRequestsError } from "../../errors/index";
 import {
   createErrorResponse,
   type ApiResponse,
@@ -8,6 +10,7 @@ import {
 export const PRIVATE_RESPONSE_HEADERS = {
   "Cache-Control": "no-store",
   "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
 } as const;
 
 function toNextResponse<TBody>(
@@ -24,9 +27,14 @@ export async function handleNextRequest<T>(
   operation: () => Promise<ApiResponse<ApiSuccessBody<T>>>,
   headers?: HeadersInit,
 ): Promise<NextResponse> {
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("X-Request-ID", randomUUID());
   try {
-    return toNextResponse(await operation(), headers);
+    return toNextResponse(await operation(), responseHeaders);
   } catch (error: unknown) {
-    return toNextResponse(createErrorResponse(error), headers);
+    if (error instanceof TooManyRequestsError) {
+      responseHeaders.set("Retry-After", String(error.retryAfterSeconds));
+    }
+    return toNextResponse(createErrorResponse(error), responseHeaders);
   }
 }
