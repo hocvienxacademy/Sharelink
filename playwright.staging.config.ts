@@ -7,6 +7,21 @@ if (!baseURL || new URL(baseURL).protocol !== "https:") {
 if (!process.env.STAGING_SMOKE_TOKEN) {
   throw new Error("STAGING_SMOKE_TOKEN is required.");
 }
+if (!process.env.STAGING_RATE_LIMIT_TOKEN) {
+  throw new Error("STAGING_RATE_LIMIT_TOKEN is required.");
+}
+if (process.env.STAGING_SMOKE_ALLOW_MUTATION !== "yes") {
+  throw new Error("STAGING_SMOKE_ALLOW_MUTATION=yes is required.");
+}
+if (!process.env.STAGING_BACKUP_ID) {
+  throw new Error("STAGING_BACKUP_ID is required before mutating smoke tests.");
+}
+if (!/^[a-zA-Z0-9_-]{6,40}$/.test(process.env.STAGING_SMOKE_RUN_ID ?? "")) {
+  throw new Error("STAGING_SMOKE_RUN_ID must be a safe unique fixture marker.");
+}
+if (process.env.STAGING_EXPECT_HSTS !== "true") {
+  throw new Error("STAGING_EXPECT_HSTS=true is required after HTTPS validation.");
+}
 
 export default defineConfig({
   testDir: "./tests/staging",

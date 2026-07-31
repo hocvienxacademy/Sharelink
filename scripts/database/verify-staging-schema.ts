@@ -1,4 +1,9 @@
 import { Client } from "pg";
+import { validateStagingDatabaseTarget } from "../../src/shared/config/runtime-environment";
+import { readSchemaFingerprint } from "./schema-fingerprint";
+
+const EXPECTED_SCHEMA_SHA256 =
+  "d60fc79485e151ca2533ecc51e0356913350ed97a850f813f08fa6fc313a074d";
 
 const EXPECTED_TABLES = [
   "admission_periods",
@@ -68,19 +73,12 @@ function missing(expected: readonly string[], actual: readonly string[]): string
   return expected.filter((value) => !values.has(value));
 }
 
-const connectionString = process.env.STAGING_DATABASE_URL;
-if (!connectionString) throw new Error("STAGING_DATABASE_URL is required.");
-const url = new URL(connectionString);
-const database = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
-if (
-  !["postgres:", "postgresql:"].includes(url.protocol) ||
-  !database.toLowerCase().includes("staging") ||
-  database.toLowerCase().includes("test") ||
-  url.hostname === "localhost" ||
-  url.hostname === "127.0.0.1"
-) {
-  throw new Error("Refusing a database that is not an explicit remote staging target.");
+if (process.env.APP_ENV !== "staging") {
+  throw new Error("Schema verification requires APP_ENV=staging.");
 }
+const url = validateStagingDatabaseTarget(process.env);
+const connectionString = url.toString();
+const database = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
 
 const client = new Client({
   connectionString,
@@ -152,6 +150,12 @@ try {
   }
   if (Number(uniqueConstraints.rows[0]?.count ?? 0) < EXPECTED_TABLES.length) {
     failures.push("primary/unique constraint count is unexpectedly low");
+  }
+  const schemaFingerprint = await readSchemaFingerprint(client);
+  if (schemaFingerprint !== EXPECTED_SCHEMA_SHA256) {
+    failures.push(
+      `schema fingerprint differs from reviewed baseline (received ${schemaFingerprint})`,
+    );
   }
   if (failures.length > 0) {
     throw new Error(`Staging schema verification failed: ${failures.join("; ")}`);

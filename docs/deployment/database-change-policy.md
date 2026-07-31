@@ -22,7 +22,9 @@ blocked until a DBA-generated schema-only export is reviewed and checksummed.
 8. Apply approved SQL with a logged deployment identity and transaction where
    PostgreSQL permits. Never edit generated Prisma Client.
 9. Run `npm run prisma:validate`, `npm run prisma:generate`, and
-   `npm run staging:schema:verify` afterward.
+   `npm run staging:schema:verify` afterward. The verifier compares a
+   reviewed SHA-256 fingerprint covering columns, types, nullability, defaults,
+   constraints and definitions, indexes, and enum order.
 10. Record commit SHA, migration/baseline checksum, deployed timestamp,
     database environment, operator, and verification result in the release
     record.

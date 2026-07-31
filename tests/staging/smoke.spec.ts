@@ -4,9 +4,10 @@ const token = process.env.STAGING_SMOKE_TOKEN!;
 const invalidToken =
   process.env.STAGING_SMOKE_INVALID_TOKEN ??
   "00000000-0000-4000-8000-000000000000";
+const runId = process.env.STAGING_SMOKE_RUN_ID!;
 
 const completeDraft = {
-  fullName: "STAGING SMOKE FIXTURE",
+  fullName: `STAGING SMOKE FIXTURE ${runId}`,
   gender: "MALE",
   dateOfBirth: "2000-01-15",
   placeOfBirth: "Tỉnh thử nghiệm",
@@ -49,6 +50,7 @@ test("staging registration acceptance flow", async ({ page, request, baseURL }) 
   expect(context.headers()["x-content-type-options"]).toBe("nosniff");
   expect(context.headers()["content-security-policy"]).toBeTruthy();
   expect(context.headers()["permissions-policy"]).toBeTruthy();
+  expect(context.headers()["strict-transport-security"]).toContain("max-age=");
 
   const invalid = await request.get(
     `/api/registration-links/${invalidToken}/context`,
@@ -104,7 +106,6 @@ test("dedicated staging token reaches the distributed rate limit", async ({
   request,
 }) => {
   const rateToken = process.env.STAGING_RATE_LIMIT_TOKEN;
-  test.skip(!rateToken, "STAGING_RATE_LIMIT_TOKEN is required for this gate.");
   const attempts = Number(process.env.STAGING_RATE_LIMIT_MAX_ATTEMPTS ?? 80);
   let limitedResponse: Awaited<ReturnType<typeof request.get>> | undefined;
 

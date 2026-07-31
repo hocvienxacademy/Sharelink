@@ -83,7 +83,7 @@ export function createCreateDraftApplicationHandler(
       const result = await service.execute(token, input);
 
       return createSuccessResponse(result, { status: 201 });
-    }, PRIVATE_RESPONSE_HEADERS);
+    }, PRIVATE_RESPONSE_HEADERS, "create");
 }
 
 export function createGetEditableApplicationHandler(
@@ -107,7 +107,7 @@ export function createGetEditableApplicationHandler(
       const result = await service.execute(token, applicationId);
 
       return createSuccessResponse(result);
-    }, PRIVATE_RESPONSE_HEADERS);
+    }, PRIVATE_RESPONSE_HEADERS, "context");
 }
 
 export function createUpdateDraftApplicationHandler(
@@ -134,7 +134,7 @@ export function createUpdateDraftApplicationHandler(
       const result = await service.execute(token, applicationId, input);
 
       return createSuccessResponse(result);
-    }, PRIVATE_RESPONSE_HEADERS);
+    }, PRIVATE_RESPONSE_HEADERS, "update");
 }
 
 export function createSubmitApplicationHandler(
@@ -159,5 +159,5 @@ export function createSubmitApplicationHandler(
       const result = await service.execute(token, applicationId, input);
 
       return createSuccessResponse(result);
-    }, PRIVATE_RESPONSE_HEADERS);
+    }, PRIVATE_RESPONSE_HEADERS, "submit");
 }

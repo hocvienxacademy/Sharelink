@@ -1,5 +1,10 @@
 import { JSDOM } from "jsdom";
 
+Object.assign(process.env, {
+  NODE_ENV: "test",
+  APP_ENV: "test",
+});
+
 const dom = new JSDOM("<!doctype html><html><body></body></html>", {
   url: "http://localhost/",
 });

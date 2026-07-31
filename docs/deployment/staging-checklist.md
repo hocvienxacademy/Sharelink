@@ -25,9 +25,9 @@ This checklist prepares staging only. It is not production approval.
   approved baseline/migration plan before staging.
 - Inspect CHECK constraints, expression/partial indexes, comments, owners,
   grants, enums, FKs, and unique indexes after provisioning.
-- Run `npm run staging:schema:verify` with a read-only
-  `STAGING_DATABASE_URL`; the verifier refuses local, test, and non-staging
-  database names.
+- Run `npm run staging:schema:verify` with the same `DATABASE_URL` used by
+  Prisma. The verifier forces a read-only session and refuses local, test,
+  production-looking, non-SSL, or non-allowlisted targets.
 - Define a rollback that restores the previous application image and handles
   database compatibility; do not promise rollback for irreversible SQL.
 
@@ -36,6 +36,8 @@ This checklist prepares staging only. It is not production approval.
 - Enforce HTTPS and redirect HTTP.
 - Preserve `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, and
   `X-Robots-Tag: noindex, nofollow` for public registration pages/API.
+- Verify the per-request nonce CSP contains no `unsafe-inline` script
+  allowance and that Next.js framework scripts receive the nonce.
 - Set the reverse proxy and `REQUEST_BODY_MAX_BYTES` to 65,536 bytes. The
   application rejects declared or streamed oversized JSON with safe HTTP 413.
 - Configure the shared rate limiter described in
@@ -65,7 +67,11 @@ This checklist prepares staging only. It is not production approval.
 - Verify all six viewports and a manual keyboard/contrast pass.
 - Exercise backup restore and application rollback before approval.
 - Run `npm run test:staging-smoke` with dedicated one-use fake fixture tokens;
-  it never resets or cleans arbitrary staging records.
+  it never resets or cleans arbitrary staging records. The command requires a
+  verified backup ID, an explicit mutation acknowledgement, a unique run ID,
+  a separate rate-limit token, and HSTS expectation. Provision a fresh link
+  per run and retire only that marked fixture through the controlled staging
+  fixture process.
 - Record image/version, schema version or baseline, operator, time, checks,
   and rollback result without PII.
 - Do not promote to production until rate limiting, migration policy,

@@ -36,8 +36,22 @@ if (!expectedSha || expectedSha !== commitSha) {
 if (command("git", ["status", "--porcelain"]) !== "") {
   throw new Error("Refusing to package an artifact from a dirty worktree.");
 }
+const buildStartedAt = new Date();
+const build = spawnSync(
+  process.execPath,
+  ["--import", "tsx", path.resolve("scripts/build.ts")],
+  {
+    cwd: process.cwd(),
+    env: process.env,
+    stdio: "inherit",
+  },
+);
+if (build.status !== 0) {
+  throw new Error("Production build failed; no artifact was packaged.");
+}
+const buildDurationMs = Date.now() - buildStartedAt.getTime();
 if (!existsSync(".next/standalone") || !existsSync(".next/static")) {
-  throw new Error("Run the reviewed production build before packaging.");
+  throw new Error("Production build did not create the standalone output.");
 }
 
 const temporaryRoot = mkdtempSync(path.join(tmpdir(), "share-link-artifact-"));
@@ -63,7 +77,25 @@ try {
     npmVersion: command(process.platform === "win32" ? "npm.cmd" : "npm", [
       "--version",
     ]),
+    frameworkVersions: JSON.parse(
+      command(process.platform === "win32" ? "npm.cmd" : "npm", [
+        "ls",
+        "--json",
+        "--depth=0",
+        "next",
+        "prisma",
+        "@prisma/client",
+      ]),
+    ),
     buildCommand: "npm run build",
+    buildStartedAt: buildStartedAt.toISOString(),
+    buildDurationMs,
+    buildEnvironment: {
+      appEnv: "build",
+      nodeEnv: "production",
+      platform: process.platform,
+      architecture: process.arch,
+    },
     packagedAt: new Date().toISOString(),
   };
   writeFileSync(

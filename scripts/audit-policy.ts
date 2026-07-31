@@ -7,9 +7,16 @@ interface AuditAdvisory {
   readonly url: string;
   readonly range: string;
   readonly nodes: readonly string[];
+  readonly severity: string;
 }
 
 interface AuditPayload {
+  readonly error?: unknown;
+  readonly metadata?: {
+    readonly vulnerabilities?: {
+      readonly total?: number;
+    };
+  };
   readonly vulnerabilities?: Readonly<
     Record<
       string,
@@ -19,6 +26,7 @@ interface AuditPayload {
           | {
               readonly url?: unknown;
               readonly range?: unknown;
+              readonly severity?: unknown;
             }
         )[];
         readonly nodes?: readonly string[];
@@ -32,10 +40,17 @@ interface AdvisoryWaiver {
   readonly package: string;
   readonly dependencyPaths: readonly string[];
   readonly affectedRange: string;
+  readonly severity: string;
+  readonly reasonUpgradeUnavailable: string;
+  readonly exploitability: string;
+  readonly compensatingControls: readonly string[];
   readonly owner: string;
   readonly approvedBy: string;
   readonly approvedAt: string;
   readonly expiresAt: string;
+  readonly revocationConditions: readonly string[];
+  readonly upstreamReference: string;
+  readonly recheckVersion: string;
 }
 
 function advisoryId(url: string): string {
@@ -59,29 +74,68 @@ function validateWaiver(waiver: AdvisoryWaiver, today: string): void {
     !waiver.approvedBy ||
     !waiver.approvedAt ||
     !waiver.expiresAt ||
-    waiver.dependencyPaths.length === 0
+    !waiver.severity ||
+    !waiver.reasonUpgradeUnavailable ||
+    !waiver.exploitability ||
+    !waiver.upstreamReference ||
+    !waiver.recheckVersion ||
+    waiver.dependencyPaths.length === 0 ||
+    waiver.compensatingControls.length === 0 ||
+    waiver.revocationConditions.length === 0 ||
+    /^(UNASSIGNED|UNAPPROVED|TBD)$/i.test(waiver.owner) ||
+    /^(UNASSIGNED|UNAPPROVED|TBD)$/i.test(waiver.approvedBy)
   ) {
     throw new Error(`Waiver ${waiver.advisoryId || "<unknown>"} is incomplete.`);
+  }
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+  if (
+    !isoDate.test(waiver.approvedAt) ||
+    !isoDate.test(waiver.expiresAt) ||
+    Number.isNaN(Date.parse(`${waiver.approvedAt}T00:00:00Z`)) ||
+    Number.isNaN(Date.parse(`${waiver.expiresAt}T00:00:00Z`)) ||
+    waiver.expiresAt <= waiver.approvedAt
+  ) {
+    throw new Error(`Waiver ${waiver.advisoryId} has invalid approval dates.`);
+  }
+  const lifetimeDays =
+    (Date.parse(`${waiver.expiresAt}T00:00:00Z`) -
+      Date.parse(`${waiver.approvedAt}T00:00:00Z`)) /
+    86_400_000;
+  if (lifetimeDays > 90) {
+    throw new Error(`Waiver ${waiver.advisoryId} exceeds the 90-day maximum.`);
   }
   if (waiver.expiresAt < today) {
     throw new Error(`Waiver ${waiver.advisoryId} expired on ${waiver.expiresAt}.`);
   }
 }
 
-const audit = spawnSync(
-  process.platform === "win32" ? "npm.cmd" : "npm",
-  ["audit", "--json"],
-  {
-  cwd: process.cwd(),
-  encoding: "utf8",
-  shell: false,
-  },
-);
+const audit =
+  process.platform === "win32"
+    ? spawnSync(process.env.ComSpec ?? "cmd.exe", [
+        "/d",
+        "/s",
+        "/c",
+        "npm audit --json",
+      ], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+      })
+    : spawnSync("npm", ["audit", "--json"], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+      });
 if (!audit.stdout) {
   throw new Error("npm audit did not return JSON output.");
 }
 
 const payload = JSON.parse(audit.stdout) as AuditPayload;
+if (
+  payload.error !== undefined ||
+  payload.vulnerabilities === undefined ||
+  payload.metadata?.vulnerabilities?.total === undefined
+) {
+  throw new Error("npm audit did not complete successfully.");
+}
 const advisories: AuditAdvisory[] = [];
 for (const [name, vulnerability] of Object.entries(
   payload.vulnerabilities ?? {},
@@ -97,6 +151,10 @@ for (const [name, vulnerability] of Object.entries(
         url: via.url,
         range: via.range,
         nodes: vulnerability.nodes ?? [],
+        severity:
+          "severity" in via && typeof via.severity === "string"
+            ? via.severity
+            : "unknown",
       });
     }
   }
@@ -119,6 +177,9 @@ for (const advisory of advisories) {
   }
   if (waiver.affectedRange !== advisory.range) {
     failures.push(`${id} affected range changed and requires review.`);
+  }
+  if (waiver.severity !== advisory.severity) {
+    failures.push(`${id} severity changed and requires review.`);
   }
   if (
     advisory.nodes.some((node) => !waiver.dependencyPaths.includes(node)) ||

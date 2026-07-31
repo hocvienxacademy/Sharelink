@@ -11,6 +11,8 @@ const validStagingEnvironment: Readonly<Record<string, string | undefined>> = {
   RATE_LIMIT_REDIS_REST_TOKEN: "secret",
   RATE_LIMIT_KEY_SECRET: "a-random-secret-with-at-least-32-characters",
   APP_BASE_URL: "https://staging.example.internal",
+  STAGING_DATABASE_ALLOWED_HOSTS: "db.internal",
+  STAGING_REDIS_ALLOWED_HOSTS: "redis-staging.example.invalid",
   RELEASE_SHA: "048e9757315388ae5b7bb292a27a14b99b117bf9",
   REQUEST_BODY_MAX_BYTES: "65536",
   LOG_LEVEL: "info",
@@ -60,8 +62,55 @@ test("staging rejects insecure service URLs and unsafe body limits", () => {
   );
 });
 
-test("local development does not require staging infrastructure", () => {
+test("staging rejects database or Redis hosts outside explicit allowlists", () => {
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validStagingEnvironment,
+        DATABASE_URL:
+          "postgresql://staging_app:secret@production-db.internal/student_registration_staging",
+      }),
+    /database.*allowlist/i,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validStagingEnvironment,
+        RATE_LIMIT_REDIS_REST_URL: "https://redis-other.example.invalid",
+      }),
+    /Redis host/,
+  );
+});
+
+test("build and guarded local E2E modes do not require staging infrastructure", () => {
   assert.doesNotThrow(() =>
-    validateRuntimeEnvironment({ APP_ENV: "development" }),
+    validateRuntimeEnvironment({
+      APP_ENV: "build",
+      SHARE_LINK_BUILD_PHASE: "1",
+    }),
+  );
+  assert.doesNotThrow(() =>
+    validateRuntimeEnvironment({
+      APP_ENV: "test",
+      LOCAL_E2E_RUNTIME: "1",
+      DATABASE_URL: "postgresql://localhost/student_registration_test",
+    }),
+  );
+});
+
+test("missing, unknown, or unguarded test APP_ENV fails closed", () => {
+  assert.throws(() => validateRuntimeEnvironment({}), /APP_ENV/);
+  assert.throws(
+    () => validateRuntimeEnvironment({ APP_ENV: "development" }),
+    /APP_ENV/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        APP_ENV: "test",
+        LOCAL_E2E_RUNTIME: "1",
+        DATABASE_URL: "postgresql://localhost/student_registration",
+      }),
+    /APP_ENV/,
   );
 });

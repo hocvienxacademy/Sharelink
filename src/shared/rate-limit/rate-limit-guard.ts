@@ -3,6 +3,10 @@ import {
   TooManyRequestsError,
 } from "../errors/index";
 import { UpstashRestRateLimiter } from "../infrastructure/rate-limit/upstash-rest-rate-limiter";
+import {
+  getOperationalTelemetry,
+  type OperationalTelemetry,
+} from "../observability/index";
 import { createRateLimitKey, trustedClientIdentity } from "./rate-limit-key";
 import { getRateLimitPolicy } from "./rate-limit-policy";
 import type { RateLimiter, RateLimitEndpoint } from "./rate-limiter";
@@ -20,6 +24,9 @@ export class DefaultRateLimitGuard implements RateLimitGuard {
     private readonly limiter: RateLimiter,
     private readonly secret: string,
     private readonly environment: Readonly<Record<string, string | undefined>> = process.env,
+    private readonly telemetry: OperationalTelemetry = getOperationalTelemetry(
+      environment,
+    ),
   ) {}
 
   async enforce(input: {
@@ -42,10 +49,12 @@ export class DefaultRateLimitGuard implements RateLimitGuard {
         windowMs: policy.windowMs,
       });
       if (!decision.allowed) {
+        this.telemetry.record("rate_limit_block");
         throw new TooManyRequestsError(decision.retryAfterSeconds);
       }
     } catch (error: unknown) {
       if (error instanceof TooManyRequestsError) throw error;
+      this.telemetry.record("redis_failure");
       if (!policy.failOpen) {
         throw new RateLimitUnavailableError({ cause: error });
       }
@@ -63,15 +72,31 @@ export function getRateLimitGuard(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): RateLimitGuard {
   if (configuredGuard !== undefined) return configuredGuard;
-  if (environment.APP_ENV !== "staging" && environment.APP_ENV !== "production") {
+  if (
+    environment.NODE_ENV === "test" ||
+    (environment.APP_ENV === "build" &&
+      environment.SHARE_LINK_BUILD_PHASE === "1") ||
+    (environment.APP_ENV === "test" &&
+      environment.LOCAL_E2E_RUNTIME === "1" &&
+      environment.DATABASE_URL?.toLowerCase().includes("test"))
+  ) {
     configuredGuard = new NoopRateLimitGuard();
     return configuredGuard;
+  }
+  if (environment.APP_ENV !== "staging" && environment.APP_ENV !== "production") {
+    throw new Error("Rate limiting requires an explicit deployment environment.");
   }
 
   const url = environment.RATE_LIMIT_REDIS_REST_URL;
   const token = environment.RATE_LIMIT_REDIS_REST_TOKEN;
   const secret = environment.RATE_LIMIT_KEY_SECRET;
-  if (!url || !token || !secret || secret.length < 32) {
+  if (
+    !url ||
+    new URL(url).protocol !== "https:" ||
+    !token ||
+    !secret ||
+    secret.length < 32
+  ) {
     throw new Error(
       "Rate limiting is not configured for this deployment environment.",
     );

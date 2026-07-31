@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "tsx scripts/build.ts",
     "start": "next start",
     "prisma:pull": "prisma db pull",
     "prisma:generate": "prisma generate",
@@ -25,6 +25,7 @@
     "test:e2e": "tsx scripts/run-e2e-tests.ts",
     "test:staging-smoke": "playwright test --config=playwright.staging.config.ts",
     "staging:schema:verify": "tsx scripts/database/verify-staging-schema.ts",
+    "schema:fingerprint": "tsx scripts/database/print-schema-fingerprint.ts",
     "audit:policy": "tsx scripts/audit-policy.ts",
     "artifact:package": "tsx scripts/package-artifact.ts",
     "type-check": "tsc --noEmit"

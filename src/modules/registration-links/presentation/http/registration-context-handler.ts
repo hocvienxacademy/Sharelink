@@ -39,5 +39,5 @@ export function createGetRegistrationContextHandler(
       const result = await service.execute(token);
 
       return createSuccessResponse(result);
-    }, PRIVATE_RESPONSE_HEADERS);
+    }, PRIVATE_RESPONSE_HEADERS, "context");
 }

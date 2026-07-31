@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { TooManyRequestsError } from "../../errors/index";
+import {
+  ConflictError,
+  DatabaseError,
+  TooManyRequestsError,
+} from "../../errors/index";
+import { getOperationalTelemetry } from "../../observability/index";
 import {
   createErrorResponse,
   type ApiResponse,
@@ -26,15 +31,53 @@ function toNextResponse<TBody>(
 export async function handleNextRequest<T>(
   operation: () => Promise<ApiResponse<ApiSuccessBody<T>>>,
   headers?: HeadersInit,
+  routeClass = "unknown",
 ): Promise<NextResponse> {
+  const startedAt = performance.now();
+  const telemetry = getOperationalTelemetry();
   const responseHeaders = new Headers(headers);
-  responseHeaders.set("X-Request-ID", randomUUID());
+  const requestId = randomUUID();
+  responseHeaders.set("X-Request-ID", requestId);
   try {
-    return toNextResponse(await operation(), responseHeaders);
+    const result = await operation();
+    telemetry.record("request_count", {
+      requestId,
+      routeClass,
+      status: result.status,
+    });
+    telemetry.record("latency_ms", {
+      durationMs: Math.round(performance.now() - startedAt),
+      requestId,
+      routeClass,
+      status: result.status,
+    });
+    if (routeClass === "create") telemetry.record("create_success");
+    if (routeClass === "update") telemetry.record("update_success");
+    if (routeClass === "submit") telemetry.record("submit_success");
+    return toNextResponse(result, responseHeaders);
   } catch (error: unknown) {
     if (error instanceof TooManyRequestsError) {
       responseHeaders.set("Retry-After", String(error.retryAfterSeconds));
     }
-    return toNextResponse(createErrorResponse(error), responseHeaders);
+    const result = createErrorResponse(error);
+    telemetry.record("request_count", {
+      requestId,
+      routeClass,
+      status: result.status,
+    });
+    telemetry.record("error_count", {
+      requestId,
+      routeClass,
+      status: result.status,
+    });
+    telemetry.record("latency_ms", {
+      durationMs: Math.round(performance.now() - startedAt),
+      requestId,
+      routeClass,
+      status: result.status,
+    });
+    if (error instanceof DatabaseError) telemetry.record("database_failure");
+    if (error instanceof ConflictError) telemetry.record("version_conflict");
+    return toNextResponse(result, responseHeaders);
   }
 }

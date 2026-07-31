@@ -108,12 +108,13 @@ test("Redis timeout is bounded and follows endpoint failure policy", async () =>
     url: "https://redis.test",
     token: "credential",
     timeoutMs: 5,
-    fetchImplementation: async (_input, init) =>
-      new Promise<Response>((_resolve, reject) => {
-        init?.signal?.addEventListener("abort", () =>
-          reject(init.signal?.reason),
-        );
-      }),
+    fetchImplementation: async (_input, init) => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      if (init?.signal?.aborted) {
+        throw init.signal.reason;
+      }
+      throw new Error("Expected the Redis request to time out.");
+    },
   });
   const guard = new DefaultRateLimitGuard(limiter, SECRET, {});
   await assert.rejects(

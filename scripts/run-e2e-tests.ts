@@ -53,7 +53,12 @@ const build = spawnSync(
   [path.resolve("node_modules/next/dist/bin/next"), "build"],
   {
   cwd: process.cwd(),
-  env: { ...sharedEnvironment, NODE_ENV: "production" },
+  env: {
+    ...sharedEnvironment,
+    APP_ENV: "build",
+    NODE_ENV: "production",
+    SHARE_LINK_BUILD_PHASE: "1",
+  },
   stdio: "inherit",
   },
 );
@@ -83,7 +88,9 @@ const server = spawn(
     cwd: process.cwd(),
     env: {
       ...sharedEnvironment,
+      APP_ENV: "test",
       HOSTNAME: "127.0.0.1",
+      LOCAL_E2E_RUNTIME: "1",
       NODE_ENV: "production",
       PORT: "3100",
     },
@@ -111,7 +118,9 @@ try {
       cwd: process.cwd(),
       env: {
         ...sharedEnvironment,
+        APP_ENV: "test",
         E2E_EXTERNAL_SERVER: "1",
+        LOCAL_E2E_RUNTIME: "1",
         NODE_ENV: "test",
       },
       stdio: "inherit",

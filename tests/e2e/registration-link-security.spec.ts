@@ -32,6 +32,9 @@ test("valid public link has private metadata, no third-party requests, and openi
   expect(response?.headers()["content-security-policy"]).toContain(
     "default-src 'self'",
   );
+  expect(response?.headers()["content-security-policy"]).not.toContain(
+    "'unsafe-inline'",
+  );
   expect(response?.headers()["permissions-policy"]).toContain("camera=()");
   expect(await page.title()).not.toContain(TEST_TOKENS.active);
   expect(
@@ -49,6 +52,11 @@ test("valid public link has private metadata, no third-party requests, and openi
         .map((script) => script.getAttribute("src"))
         .filter((value): value is string => value !== null),
   );
+  const scriptNonces = await page.locator("script").evaluateAll((scripts) =>
+    scripts.map((script) => script.nonce),
+  );
+  expect(scriptNonces.length).toBeGreaterThan(0);
+  expect(scriptNonces.every((nonce) => nonce.length > 0)).toBe(true);
   expect(scriptUrls.some((url) => url.endsWith(".map"))).toBe(false);
   for (const scriptUrl of scriptUrls) {
     const script = await page.request.get(scriptUrl);
