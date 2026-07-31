@@ -47,7 +47,10 @@ test("valid public link has private metadata, no third-party requests, and openi
   expect(scriptUrls.some((url) => url.endsWith(".map"))).toBe(false);
   for (const scriptUrl of scriptUrls) {
     const script = await page.request.get(scriptUrl);
-    expect(await script.text()).not.toContain("DATABASE_URL");
+    const scriptBody = await script.text();
+    expect(scriptBody).not.toContain("DATABASE_URL");
+    expect(scriptBody).not.toMatch(/sourceMappingURL\s*=/);
+    expect((await page.request.get(`${scriptUrl}.map`)).status()).toBe(404);
   }
 
   const applicationCount = await withTestClient(async (client) => {

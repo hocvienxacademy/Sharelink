@@ -51,7 +51,7 @@ jobs:
       - run: npm run test:integration
       - run: npm run test:e2e
       # Known high advisories are documented; critical advisories still fail CI.
-      - run: npm audit --audit-level=critical
+      - run: npm audit
 
       - name: Upload Playwright artifacts on failure
         if: failure()

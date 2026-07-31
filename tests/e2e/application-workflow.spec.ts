@@ -15,9 +15,17 @@ test("create, redirect, refresh, update, and clear relatives persist through Pos
 }) => {
   await page.goto(`/dang-ky/${TEST_TOKENS.active}`);
   await fillRequiredPersonalInformation(page);
+  const createResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" && response.status() === 201,
+  );
   await page.getByRole("button", { name: "Lưu bản nháp" }).click();
+  const createResponse = await createResponsePromise;
   await expect(page).toHaveURL(/\/ho-so\/[0-9a-f-]{36}$/);
   const applicationId = page.url().split("/").at(-1)!;
+  const createBody = await createResponse.json();
+  expect(createBody.data.id).toBe(applicationId);
+  expect(createBody.data.version).toBe(1);
 
   await page.reload();
   await expect(page.getByLabel(/^Họ và tên/)).toHaveValue(
@@ -40,9 +48,9 @@ test("create, redirect, refresh, update, and clear relatives persist through Pos
   );
   await page.getByRole("button", { name: "Lưu bản nháp" }).click();
   const savedRelativeResponse = await relativeUpdate;
-  expect(savedRelativeResponse.request().postDataJSON().relatives[0].position).toBe(
-    1,
-  );
+  const savedRelativePayload = savedRelativeResponse.request().postDataJSON();
+  expect(savedRelativePayload.expectedVersion).toBe(1);
+  expect(savedRelativePayload.relatives[0].position).toBe(1);
   await expect(page.locator('div[role="status"]')).toContainText("Đã lưu");
 
   await page.reload();
@@ -90,6 +98,11 @@ test("validation focuses the first issue, review preserves data, and submit beco
     "aria-invalid",
     "true",
   );
+  const describedBy = await page
+    .getByLabel(/^Ngày sinh/)
+    .getAttribute("aria-describedby");
+  expect(describedBy).toBeTruthy();
+  await expect(page.locator(`#${describedBy}`)).toBeVisible();
 
   await fillRequiredPersonalInformation(page);
   await fillRequiredEducation(page);
@@ -101,7 +114,18 @@ test("validation focuses the first issue, review preserves data, and submit beco
     "Test High School",
   );
   await page.getByRole("button", { name: /Bước 4:/ }).click();
-  await page.getByRole("button", { name: "Nộp hồ sơ" }).click();
+  let submitRequests = 0;
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      request.url().endsWith("/submit")
+    ) {
+      submitRequests += 1;
+    }
+  });
+  await page.getByRole("button", { name: "Nộp hồ sơ" }).click({
+    clickCount: 2,
+  });
   await expect(page.locator('[data-slot="alert"]')).toContainText(
     "Hồ sơ đã được nộp thành công",
   );
@@ -110,17 +134,25 @@ test("validation focuses the first issue, review preserves data, and submit beco
   await expect(page).toHaveURL(submittedUrl);
   await expect(page.locator('[data-slot="alert"]')).toBeVisible();
   await expect(page.locator("form")).toHaveCount(0);
+  expect(submitRequests).toBe(1);
 
   const state = await withTestClient(async (client) => {
     const result = await client.query<{
       application_status: string;
       link_status: string;
       payments: string;
+      version: number;
+      submitted_histories: string;
     }>(
       `SELECT
          applications.status::text AS application_status,
+         applications.version,
          registration_links.status::text AS link_status,
-         (SELECT count(*)::text FROM payment_confirmations) AS payments
+         (SELECT count(*)::text FROM payment_confirmations) AS payments,
+         (SELECT count(*)::text
+          FROM application_status_histories
+          WHERE application_id = applications.id
+            AND new_status = 'SUBMITTED') AS submitted_histories
        FROM applications
        JOIN registration_links ON registration_links.id = applications.registration_link_id`,
     );
@@ -130,6 +162,8 @@ test("validation focuses the first issue, review preserves data, and submit beco
     application_status: "SUBMITTED",
     link_status: "ACTIVE",
     payments: "0",
+    version: 3,
+    submitted_histories: "1",
   });
 });
 

@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { createServer } from "node:net";
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import {
@@ -19,6 +20,16 @@ const sharedEnvironment = {
     ? { DEVELOPMENT_DATABASE_URL: developmentDatabaseUrl }
     : {}),
 };
+
+async function ensurePortAvailable(port: number): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const probe = createServer();
+    probe.once("error", reject);
+    probe.listen(port, "127.0.0.1", () => {
+      probe.close((error) => (error ? reject(error) : resolve()));
+    });
+  });
+}
 
 async function waitForServer(url: string): Promise<void> {
   const deadline = Date.now() + 120_000;
@@ -50,6 +61,8 @@ if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }
 
+await ensurePortAvailable(3100);
+
 const server = spawn(
   process.execPath,
   [
@@ -70,7 +83,16 @@ const server = spawn(
 let status = 1;
 
 try {
-  await waitForServer("http://127.0.0.1:3100");
+  const serverExit = new Promise<never>((_, reject) => {
+    server.once("error", reject);
+    server.once("exit", (code) => {
+      reject(new Error(`Next server exited before E2E readiness (code ${code}).`));
+    });
+  });
+  await Promise.race([
+    waitForServer("http://127.0.0.1:3100"),
+    serverExit,
+  ]);
   const playwright = spawnSync(
     process.execPath,
     [path.resolve("node_modules/@playwright/test/cli.js"), "test"],

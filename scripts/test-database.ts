@@ -1,3 +1,4 @@
+import { config as loadEnv } from "dotenv";
 import {
   createTestDatabase,
   prepareTestDatabase,
@@ -5,6 +6,8 @@ import {
   resetTestDatabase,
   seedTestDatabase,
 } from "../tests/helpers/test-database";
+
+loadEnv({ path: ".env", override: false, quiet: true });
 
 const command = process.argv[2];
 requireSafeTestDatabase();

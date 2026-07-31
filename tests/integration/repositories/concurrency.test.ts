@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, test } from "node:test";
+import { ConflictError } from "../../../src/shared/errors";
 import {
   createDraftApplication,
   getEditableApplication,
@@ -84,6 +85,11 @@ test("two real concurrent updates with one expectedVersion produce one complete 
     outcomes.filter((outcome) => outcome.status === "rejected").length,
     1,
   );
+  const rejectedUpdate = outcomes.find(
+    (outcome) => outcome.status === "rejected",
+  );
+  assert(rejectedUpdate?.status === "rejected");
+  assert(rejectedUpdate.reason instanceof ConflictError);
 
   const persisted = await getEditableApplication.execute(
     TEST_TOKENS.active,
@@ -118,6 +124,11 @@ test("two real concurrent submissions create one transition and one history row"
     outcomes.filter((outcome) => outcome.status === "rejected").length,
     1,
   );
+  const rejectedSubmission = outcomes.find(
+    (outcome) => outcome.status === "rejected",
+  );
+  assert(rejectedSubmission?.status === "rejected");
+  assert(rejectedSubmission.reason instanceof ConflictError);
 
   const state = await withTestClient(async (client) => {
     const application = await client.query<{

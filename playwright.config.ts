@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+if (process.env.E2E_EXTERNAL_SERVER !== "1") {
+  throw new Error(
+    "Run E2E tests through `npm run test:e2e`; direct Playwright execution is disabled so the guarded test database cannot be bypassed.",
+  );
+}
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -14,21 +20,6 @@ export default defineConfig({
     trace: "on-first-retry",
     video: "off",
   },
-  ...(process.env.E2E_EXTERNAL_SERVER === "1"
-    ? {}
-    : {
-        webServer: {
-          command:
-            "node node_modules/next/dist/bin/next start --hostname 127.0.0.1 --port 3100",
-          url: "http://127.0.0.1:3100",
-          reuseExistingServer: false,
-          timeout: 120_000,
-          env: {
-            ...process.env,
-            NODE_ENV: "production",
-          },
-        },
-      }),
   projects: [
     {
       name: "chromium",

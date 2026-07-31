@@ -24,6 +24,6 @@ release that upgrades both nested dependencies, re-run the full gate after
 upgrading, and keep staging blocked if the deployment threat model introduces
 untrusted image/CSS processing.
 
-CI fails on critical advisories and surfaces the documented high findings.
-Release approval must review the plain `npm audit` result; `npm audit
-fix --force` is prohibited.
+CI runs plain `npm audit`, so every current advisory blocks the quality gate.
+Any temporary waiver must name the advisory, owner, expiry, and compensating
+controls. `npm audit fix --force` is prohibited.

@@ -264,7 +264,19 @@ test("updates enforce version and link scope and implement relatives omit/replac
 
   const otherDraft = await createDraftApplication.execute(
     TEST_TOKENS.fallback,
-    { fullName: "Other Scope" },
+    {
+      fullName: "Other Scope",
+      relatives: [
+        {
+          position: 1,
+          fullName: "Other Scope Relative",
+          relationship: "Parent",
+          occupation: "Tester",
+          phone: "0900000005",
+          address: "Other Scope Address",
+        },
+      ],
+    },
   );
   await assert.rejects(
     () =>
@@ -273,10 +285,14 @@ test("updates enforce version and link scope and implement relatives omit/replac
       }),
     NotFoundError,
   );
+  const persistedOtherDraft = await getEditableApplication.execute(
+    TEST_TOKENS.fallback,
+    otherDraft.id,
+  );
+  assert.equal(persistedOtherDraft.version, 1);
   assert.equal(
-    (await getEditableApplication.execute(TEST_TOKENS.fallback, otherDraft.id))
-      .version,
-    1,
+    persistedOtherDraft.relatives[0]?.fullName,
+    "Other Scope Relative",
   );
 });
 
