@@ -1,8 +1,32 @@
 import { defineConfig, devices } from "@playwright/test";
 
+function parseUrl(value: string | undefined): URL | undefined {
+  if (value === undefined) return undefined;
+  try {
+    return new URL(value);
+  } catch {
+    return undefined;
+  }
+}
+
 const baseURL = process.env.STAGING_BASE_URL;
-if (!baseURL || new URL(baseURL).protocol !== "https:") {
-  throw new Error("STAGING_BASE_URL must be an HTTPS staging origin.");
+const stagingUrl = parseUrl(baseURL);
+const stagingHostname = stagingUrl?.hostname.toLowerCase() ?? "";
+if (
+  !stagingUrl ||
+  stagingUrl.protocol !== "https:" ||
+  !stagingHostname.includes("staging") ||
+  stagingHostname.includes("prod") ||
+  stagingHostname.includes("production") ||
+  stagingUrl.username !== "" ||
+  stagingUrl.password !== "" ||
+  stagingUrl.pathname !== "/" ||
+  stagingUrl.search !== "" ||
+  stagingUrl.hash !== ""
+) {
+  throw new Error(
+    "STAGING_BASE_URL must be an HTTPS staging origin without credentials, path, query, or fragment.",
+  );
 }
 if (!process.env.STAGING_SMOKE_TOKEN) {
   throw new Error("STAGING_SMOKE_TOKEN is required.");
@@ -28,12 +52,12 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  reporter: [["list"], ["html", { open: "never", outputFolder: "staging-report" }]],
+  reporter: "list",
   outputDir: "staging-test-results",
   use: {
     baseURL,
-    screenshot: "only-on-failure",
-    trace: "retain-on-failure",
+    screenshot: "off",
+    trace: "off",
     video: "off",
   },
   projects: [

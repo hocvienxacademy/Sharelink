@@ -61,6 +61,14 @@ test("staging registration acceptance flow", async ({ page, request, baseURL }) 
   const contextBody = await context.json();
   expect(contextBody.data.application).toBeNull();
 
+  const oversizedMarker = `STAGING_OVERSIZED_${runId}`;
+  const oversized = await request.post(
+    `/api/registration-links/${encodeURIComponent(token)}/applications`,
+    { data: { fullName: oversizedMarker.repeat(4_096) } },
+  );
+  expect(oversized.status()).toBe(413);
+  expect(await oversized.text()).not.toContain(oversizedMarker);
+
   const created = await request.post(
     `/api/registration-links/${encodeURIComponent(token)}/applications`,
     { data: completeDraft },
@@ -74,6 +82,11 @@ test("staging registration acceptance flow", async ({ page, request, baseURL }) 
     `/api/registration-links/${encodeURIComponent(token)}/applications/${applicationId}`,
   );
   expect(reopened.status()).toBe(200);
+  const reopenedBody = await reopened.json();
+  expect(reopenedBody.data.placeOfBirth).toBe(completeDraft.placeOfBirth);
+  expect(reopenedBody.data.nationality).toBe(completeDraft.nationality);
+  expect(reopenedBody.data.contactAddress).toBe(completeDraft.contactAddress);
+  expect(reopenedBody.data.highSchoolName).toBe(completeDraft.highSchoolName);
 
   const updated = await request.patch(
     `/api/registration-links/${encodeURIComponent(token)}/applications/${applicationId}`,
@@ -94,9 +107,18 @@ test("staging registration acceptance flow", async ({ page, request, baseURL }) 
   );
   expect(submitted.status()).toBe(200);
 
-  await page.goto(
+  const readOnlyPage = await page.goto(
     `/dang-ky/${encodeURIComponent(token)}/ho-so/${applicationId}`,
   );
+  expect(readOnlyPage?.status()).toBe(200);
+  await expect(
+    page.getByText("Hồ sơ không còn ở trạng thái bản nháp"),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "Hồ sơ đã được nộp hoặc đang được xử lý. Giao diện chỉnh sửa đã được khóa.",
+    ),
+  ).toBeVisible();
   await expect(page.locator("form")).toHaveCount(0);
   expect(browserErrors).toEqual([]);
   expect(unexpectedOrigins).toEqual(new Set());

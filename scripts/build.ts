@@ -9,6 +9,7 @@ const result = spawnSync(
     env: {
       ...process.env,
       APP_ENV: "build",
+      NODE_ENV: "production",
       SHARE_LINK_BUILD_PHASE: "1",
     },
     stdio: "inherit",

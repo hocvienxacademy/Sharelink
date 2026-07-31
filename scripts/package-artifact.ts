@@ -37,12 +37,18 @@ if (command("git", ["status", "--porcelain"]) !== "") {
   throw new Error("Refusing to package an artifact from a dirty worktree.");
 }
 const buildStartedAt = new Date();
+const buildEnvironment = {
+  ...process.env,
+  APP_ENV: "build",
+  NODE_ENV: "production",
+  SHARE_LINK_BUILD_PHASE: "1",
+};
 const build = spawnSync(
   process.execPath,
   ["--import", "tsx", path.resolve("scripts/build.ts")],
   {
     cwd: process.cwd(),
-    env: process.env,
+    env: buildEnvironment,
     stdio: "inherit",
   },
 );
@@ -91,8 +97,8 @@ try {
     buildStartedAt: buildStartedAt.toISOString(),
     buildDurationMs,
     buildEnvironment: {
-      appEnv: "build",
-      nodeEnv: "production",
+      appEnv: buildEnvironment.APP_ENV,
+      nodeEnv: buildEnvironment.NODE_ENV,
       platform: process.platform,
       architecture: process.arch,
     },

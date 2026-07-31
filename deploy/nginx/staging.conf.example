@@ -6,6 +6,7 @@ server {
     ssl_certificate     /run/secrets/staging-cert.pem;
     ssl_certificate_key /run/secrets/staging-key.pem;
 
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     client_max_body_size 64k;
 
     location / {

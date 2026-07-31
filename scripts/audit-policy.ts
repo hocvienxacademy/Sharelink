@@ -88,19 +88,23 @@ function validateWaiver(waiver: AdvisoryWaiver, today: string): void {
     throw new Error(`Waiver ${waiver.advisoryId || "<unknown>"} is incomplete.`);
   }
   const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+  const approvedAtMs = Date.parse(`${waiver.approvedAt}T00:00:00Z`);
+  const expiresAtMs = Date.parse(`${waiver.expiresAt}T00:00:00Z`);
+  const datesAreCanonical =
+    !Number.isNaN(approvedAtMs) &&
+    !Number.isNaN(expiresAtMs) &&
+    new Date(approvedAtMs).toISOString().slice(0, 10) === waiver.approvedAt &&
+    new Date(expiresAtMs).toISOString().slice(0, 10) === waiver.expiresAt;
   if (
     !isoDate.test(waiver.approvedAt) ||
     !isoDate.test(waiver.expiresAt) ||
-    Number.isNaN(Date.parse(`${waiver.approvedAt}T00:00:00Z`)) ||
-    Number.isNaN(Date.parse(`${waiver.expiresAt}T00:00:00Z`)) ||
-    waiver.expiresAt <= waiver.approvedAt
+    !datesAreCanonical ||
+    expiresAtMs <= approvedAtMs ||
+    waiver.approvedAt > today
   ) {
     throw new Error(`Waiver ${waiver.advisoryId} has invalid approval dates.`);
   }
-  const lifetimeDays =
-    (Date.parse(`${waiver.expiresAt}T00:00:00Z`) -
-      Date.parse(`${waiver.approvedAt}T00:00:00Z`)) /
-    86_400_000;
+  const lifetimeDays = (expiresAtMs - approvedAtMs) / 86_400_000;
   if (lifetimeDays > 90) {
     throw new Error(`Waiver ${waiver.advisoryId} exceeds the 90-day maximum.`);
   }

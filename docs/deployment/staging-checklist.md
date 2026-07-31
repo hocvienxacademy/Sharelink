@@ -71,7 +71,10 @@ This checklist prepares staging only. It is not production approval.
   verified backup ID, an explicit mutation acknowledgement, a unique run ID,
   a separate rate-limit token, and HSTS expectation. Provision a fresh link
   per run and retire only that marked fixture through the controlled staging
-  fixture process.
+  fixture process. The automated suite does not retain Playwright traces,
+  screenshots, video, or HTML reports because request URLs contain bearer
+  tokens; capture reviewed manual screenshots separately without browser
+  chrome, tokenized URLs, or real student data.
 - Record image/version, schema version or baseline, operator, time, checks,
   and rollback result without PII.
 - Do not promote to production until rate limiting, migration policy,
