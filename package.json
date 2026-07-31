@@ -2,6 +2,9 @@
   "name": "share-link-student",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,6 +17,12 @@
     "db:pull": "npm run prisma:pull",
     "db:generate": "npm run prisma:generate",
     "test": "tsx --test --import ./src/test/setup-dom.ts \"src/**/*.test.ts\" \"src/**/*.test.tsx\"",
+    "test:db:create": "tsx scripts/test-database.ts create",
+    "test:db:reset": "tsx scripts/test-database.ts reset",
+    "test:db:seed": "tsx scripts/test-database.ts seed",
+    "test:db:prepare": "tsx scripts/test-database.ts prepare",
+    "test:integration": "tsx scripts/run-database-tests.ts",
+    "test:e2e": "tsx scripts/run-e2e-tests.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -36,6 +45,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
