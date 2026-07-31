@@ -1,4 +1,19 @@
 const LOG_LEVELS = new Set(["error", "warn", "info"]);
+const LOCAL_DEVELOPMENT_DATABASE_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "::1",
+  "[::1]",
+]);
+const NON_DEVELOPMENT_DATABASE_MARKER =
+  /(^|[_-])(test|staging|prod|production)([_-]|$)/i;
+const DATABASE_TARGET_OVERRIDE_PARAMETERS = [
+  "host",
+  "hostaddr",
+  "service",
+  "dbname",
+  "database",
+] as const;
 
 function required(
   environment: Readonly<Record<string, string | undefined>>,
@@ -14,6 +29,55 @@ function parseUrl(value: string, name: string): URL {
     return new URL(value);
   } catch {
     throw new Error(`${name} must be a valid URL.`);
+  }
+}
+
+export function validateDevelopmentEnvironment(
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+): void {
+  if (
+    environment.APP_ENV !== "development" ||
+    environment.NODE_ENV !== "development"
+  ) {
+    throw new Error(
+      "Local development requires APP_ENV=development and NODE_ENV=development.",
+    );
+  }
+
+  const databaseUrl = parseUrl(
+    required(environment, "DATABASE_URL"),
+    "DATABASE_URL",
+  );
+  const databaseName = decodeURIComponent(
+    databaseUrl.pathname.replace(/^\/+/, ""),
+  );
+  const allowedDatabaseNames = new Set(
+    required(environment, "DEVELOPMENT_DATABASE_ALLOWED_NAMES")
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
+  );
+  if (!["postgres:", "postgresql:"].includes(databaseUrl.protocol)) {
+    throw new Error("Local DATABASE_URL must use PostgreSQL.");
+  }
+  if (!LOCAL_DEVELOPMENT_DATABASE_HOSTS.has(databaseUrl.hostname.toLowerCase())) {
+    throw new Error("Local DATABASE_URL must use a loopback host.");
+  }
+  if (
+    DATABASE_TARGET_OVERRIDE_PARAMETERS.some((name) =>
+      databaseUrl.searchParams.has(name),
+    )
+  ) {
+    throw new Error("Local DATABASE_URL must not contain a target override.");
+  }
+  if (
+    databaseName.length === 0 ||
+    NON_DEVELOPMENT_DATABASE_MARKER.test(databaseName)
+  ) {
+    throw new Error("Local DATABASE_URL must name an explicit development database.");
+  }
+  if (!allowedDatabaseNames.has(databaseName.toLowerCase())) {
+    throw new Error("Local database is not in the development database allowlist.");
   }
 }
 
@@ -65,6 +129,10 @@ export function validateStagingDatabaseTarget(
 export function validateRuntimeEnvironment(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): void {
+  if (environment.APP_ENV === "development") {
+    validateDevelopmentEnvironment(environment);
+    return;
+  }
   if (
     environment.APP_ENV === "build" &&
     environment.SHARE_LINK_BUILD_PHASE === "1"
@@ -79,7 +147,9 @@ export function validateRuntimeEnvironment(
     return;
   }
   if (environment.APP_ENV !== "staging" && environment.APP_ENV !== "production") {
-    throw new Error("APP_ENV must explicitly identify staging or production.");
+    throw new Error(
+      "APP_ENV must explicitly identify development, staging, or production.",
+    );
   }
   if (environment.APP_ENV === "production") {
     throw new Error(

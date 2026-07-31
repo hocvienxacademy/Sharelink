@@ -4,6 +4,30 @@ Real values belong in the deployment secret manager, never Git or build
 artifacts. Startup validation runs from `src/instrumentation.ts` for
 `APP_ENV=staging|production` and never prints values.
 
+## Local development
+
+Local development uses `APP_ENV=development` with `next dev`, which supplies
+`NODE_ENV=development`. Keep the PostgreSQL connection in the ignored `.env`
+file and put `APP_ENV=development` in an ignored `.env.local` file when the
+existing `.env` contains only `DATABASE_URL`. Also set
+`DEVELOPMENT_DATABASE_ALLOWED_NAMES` to the exact comma-separated local
+database names that the developer has explicitly approved for development.
+
+The local database guard accepts PostgreSQL only on `localhost`, `127.0.0.1`,
+or `::1`, requires an exact allowlist match, and rejects database names marked
+as test, staging, or production.
+The distributed rate limiter is intentionally disabled only in this guarded
+local mode; staging and production still require the Redis REST configuration.
+Start the application with `npm run dev`.
+
+Interactive development assumes the local database already has the reviewed
+schema and fake development data. This repository still has no deployable
+schema baseline, so do not initialize it with `prisma db push`. For a
+reproducible full workflow test, create the ignored `.env.test.local` from
+`.env.test.example` with disposable PostgreSQL credentials, then run
+`npm run test:integration` and `npm run test:e2e`; those scripts guard, create,
+reset, and seed only the explicitly named test database.
+
 | Variable | Required in staging | Scope | Secret | Rotatable | Rollback change |
 | --- | --- | --- | --- | --- | --- |
 | `NODE_ENV=production` | Yes | Server | No | No | No |

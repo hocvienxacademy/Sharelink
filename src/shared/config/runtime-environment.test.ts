@@ -18,6 +18,92 @@ const validStagingEnvironment: Readonly<Record<string, string | undefined>> = {
   LOG_LEVEL: "info",
 };
 
+const validDevelopmentEnvironment: Readonly<
+  Record<string, string | undefined>
+> = {
+  APP_ENV: "development",
+  NODE_ENV: "development",
+  DATABASE_URL:
+    "postgresql://local_app:local_password@localhost/student_registration",
+  DEVELOPMENT_DATABASE_ALLOWED_NAMES: "student_registration",
+};
+
+test("local development accepts only a loopback development database", () => {
+  assert.doesNotThrow(() =>
+    validateRuntimeEnvironment(validDevelopmentEnvironment),
+  );
+  assert.doesNotThrow(() =>
+    validateRuntimeEnvironment({
+      ...validDevelopmentEnvironment,
+      DATABASE_URL:
+        "postgresql://local_app:local_password@[::1]/student_registration",
+    }),
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validDevelopmentEnvironment,
+        DATABASE_URL:
+          "postgresql://local_app:local_password@db.internal/student_registration",
+      }),
+    /loopback/i,
+  );
+  for (const override of [
+    "host=db.internal",
+    "hostaddr=203.0.113.10",
+    "service=production",
+    "dbname=student_registration_production",
+  ]) {
+    assert.throws(
+      () =>
+        validateRuntimeEnvironment({
+          ...validDevelopmentEnvironment,
+          DATABASE_URL: `${validDevelopmentEnvironment.DATABASE_URL}?${override}`,
+        }),
+      /target override/i,
+    );
+  }
+  for (const database of [
+    "student_registration_test",
+    "student_registration_staging",
+    "student_registration_production",
+  ]) {
+    assert.throws(
+      () =>
+        validateRuntimeEnvironment({
+          ...validDevelopmentEnvironment,
+          DATABASE_URL: `postgresql://local_app:local_password@localhost/${database}`,
+        }),
+      /development database/i,
+    );
+  }
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validDevelopmentEnvironment,
+        NODE_ENV: "production",
+      }),
+    /NODE_ENV=development/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validDevelopmentEnvironment,
+        DEVELOPMENT_DATABASE_ALLOWED_NAMES: undefined,
+      }),
+    /DEVELOPMENT_DATABASE_ALLOWED_NAMES/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validDevelopmentEnvironment,
+        DATABASE_URL:
+          "postgresql://local_app:local_password@localhost/another_local_database",
+      }),
+    /development database allowlist/i,
+  );
+});
+
 test("staging configuration passes with isolated HTTPS services", () => {
   assert.doesNotThrow(() =>
     validateRuntimeEnvironment(validStagingEnvironment),
@@ -101,8 +187,12 @@ test("build and guarded local E2E modes do not require staging infrastructure", 
 test("missing, unknown, or unguarded test APP_ENV fails closed", () => {
   assert.throws(() => validateRuntimeEnvironment({}), /APP_ENV/);
   assert.throws(
-    () => validateRuntimeEnvironment({ APP_ENV: "development" }),
-    /APP_ENV/,
+    () =>
+      validateRuntimeEnvironment({
+        APP_ENV: "development",
+        NODE_ENV: "development",
+      }),
+    /DATABASE_URL/,
   );
   assert.throws(
     () =>

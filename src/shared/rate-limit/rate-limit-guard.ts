@@ -7,6 +7,7 @@ import {
   getOperationalTelemetry,
   type OperationalTelemetry,
 } from "../observability/index";
+import { validateDevelopmentEnvironment } from "../config/runtime-environment";
 import { createRateLimitKey, trustedClientIdentity } from "./rate-limit-key";
 import { getRateLimitPolicy } from "./rate-limit-policy";
 import type { RateLimiter, RateLimitEndpoint } from "./rate-limiter";
@@ -72,6 +73,11 @@ export function getRateLimitGuard(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): RateLimitGuard {
   if (configuredGuard !== undefined) return configuredGuard;
+  if (environment.APP_ENV === "development") {
+    validateDevelopmentEnvironment(environment);
+    configuredGuard = new NoopRateLimitGuard();
+    return configuredGuard;
+  }
   if (
     environment.NODE_ENV === "test" ||
     (environment.APP_ENV === "build" &&

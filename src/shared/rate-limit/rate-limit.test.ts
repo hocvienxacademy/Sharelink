@@ -8,6 +8,8 @@ import { UpstashRestRateLimiter } from "../infrastructure/rate-limit/upstash-res
 import {
   DefaultRateLimitGuard,
   createRateLimitKey,
+  getRateLimitGuard,
+  resetRateLimitGuardForTests,
   trustedClientIdentity,
   type RateLimiter,
   type RateLimitInput,
@@ -27,6 +29,45 @@ function limiterWithDecision(
     },
   };
 }
+
+test("safe local development uses a no-op rate limiter", async () => {
+  resetRateLimitGuardForTests();
+  try {
+    const guard = getRateLimitGuard({
+      APP_ENV: "development",
+      NODE_ENV: "development",
+      DATABASE_URL:
+        "postgresql://local_app:local_password@127.0.0.1/student_registration",
+      DEVELOPMENT_DATABASE_ALLOWED_NAMES: "student_registration",
+    });
+    await guard.enforce({
+      endpoint: "create",
+      request: new Request("http://localhost:3000"),
+      token: TOKEN,
+    });
+  } finally {
+    resetRateLimitGuardForTests();
+  }
+});
+
+test("development rate limiting rejects an unsafe database target", () => {
+  resetRateLimitGuardForTests();
+  try {
+    assert.throws(
+      () =>
+        getRateLimitGuard({
+          APP_ENV: "development",
+          NODE_ENV: "development",
+          DATABASE_URL:
+            "postgresql://local_app:local_password@db.internal/student_registration",
+          DEVELOPMENT_DATABASE_ALLOWED_NAMES: "student_registration",
+        }),
+      /loopback/i,
+    );
+  } finally {
+    resetRateLimitGuardForTests();
+  }
+});
 
 test("requests below and at the configured limit are allowed", async () => {
   for (const count of [1, 5]) {
