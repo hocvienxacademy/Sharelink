@@ -1,0 +1,4 @@
+interface:
+  display_name: "Student Data Security"
+  short_description: "Protect student data and access paths"
+  default_prompt: "Use $student-data-security to secure this student-data workflow."

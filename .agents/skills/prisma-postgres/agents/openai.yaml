@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prisma PostgreSQL"
+  short_description: "Change Prisma and PostgreSQL safely"
+  default_prompt: "Use $prisma-postgres to implement this Prisma or PostgreSQL change safely."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Student Registration Context"
+  short_description: "Ground work in verified registration context"
+  default_prompt: "Use $student-registration-context to ground this task in the verified ShareLinkStudent domain."

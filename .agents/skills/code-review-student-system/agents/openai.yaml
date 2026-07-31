@@ -1,0 +1,4 @@
+interface:
+  display_name: "Student System Code Review"
+  short_description: "Review domain, data, and security risks"
+  default_prompt: "Use $code-review-student-system to review these ShareLinkStudent changes."

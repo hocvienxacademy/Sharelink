@@ -1,0 +1,4 @@
+interface:
+  display_name: "Windows PowerShell Workflow"
+  short_description: "Use repository-safe PowerShell commands"
+  default_prompt: "Use $windows-powershell-workflow to perform this task with PowerShell-safe commands."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Form Validation"
+  short_description: "Align form, API, and database validation"
+  default_prompt: "Use $form-validation to design consistent validation across all layers."

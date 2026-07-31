@@ -1,0 +1,4 @@
+interface:
+  display_name: "Student Application Domain"
+  short_description: "Implement verified application domain rules"
+  default_prompt: "Use $student-application-domain to handle this student application workflow."

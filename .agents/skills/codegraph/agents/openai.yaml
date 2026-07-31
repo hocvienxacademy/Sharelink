@@ -1,0 +1,4 @@
+interface:
+  display_name: "CodeGraph"
+  short_description: "Explore indexed code structure and impact"
+  default_prompt: "Use $codegraph to understand this code path and its blast radius before editing."

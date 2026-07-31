@@ -1,0 +1,347 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model admission_periods {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code               String               @unique(map: "uq_admission_periods_code") @db.VarChar(50)
+  name               String               @db.VarChar(255)
+  start_date         DateTime?            @db.Date
+  end_date           DateTime?            @db.Date
+  is_active          Boolean              @default(true)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  applications       applications[]
+  registration_links registration_links[]
+}
+
+model app_sessions {
+  sid    String   @id @db.VarChar(255)
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamptz(6)
+
+  @@index([expire], map: "idx_app_sessions_expire")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model application_relatives {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  application_id String       @db.Uuid
+  position       Int          @db.SmallInt
+  full_name      String?      @db.VarChar(150)
+  relationship   String?      @db.VarChar(100)
+  occupation     String?      @db.VarChar(255)
+  phone          String?      @db.VarChar(15)
+  address        String?
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  applications   applications @relation(fields: [application_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_application_relatives_application")
+
+  @@unique([application_id, position], map: "uq_application_relatives_position")
+}
+
+model application_status_histories {
+  id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  application_id  String              @db.Uuid
+  previous_status application_status?
+  new_status      application_status
+  changed_by      String?             @db.Uuid
+  reason          String?
+  metadata        Json                @default("{}")
+  created_at      DateTime            @default(now()) @db.Timestamptz(6)
+  applications    applications        @relation(fields: [application_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_application_status_histories_application")
+  users           users?              @relation(fields: [changed_by], references: [id], onUpdate: NoAction, map: "fk_application_status_histories_changed_by")
+
+  @@index([application_id, created_at(sort: Desc)], map: "idx_application_status_histories_application_created")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model applications {
+  id                                    String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  registration_link_id                  String                         @unique(map: "uq_applications_registration_link") @db.Uuid
+  sale_id                               String                         @db.Uuid
+  application_code                      String?                        @unique(map: "uq_applications_application_code") @db.VarChar(50)
+  status                                application_status             @default(DRAFT)
+  major_id                              String?                        @db.Uuid
+  admission_period_id                   String?                        @db.Uuid
+  entry_qualification                   admission_qualification_type?
+  full_name                             String?                        @db.VarChar(150)
+  gender                                gender_type?
+  date_of_birth                         DateTime?                      @db.Date
+  place_of_birth                        String?                        @db.VarChar(255)
+  ethnicity                             String?                        @db.VarChar(100)
+  religion                              String?                        @db.VarChar(100)
+  nationality                           String?                        @default("Việt Nam") @db.VarChar(100)
+  citizen_id                            String?                        @db.VarChar(20)
+  citizen_id_issued_date                DateTime?                      @db.Date
+  citizen_id_issued_place               String?                        @db.VarChar(255)
+  permanent_address                     String?
+  workplace                             String?
+  phone                                 String?                        @db.VarChar(15)
+  email                                 String?                        @db.VarChar(255)
+  contact_address                       String?
+  admission_diploma                     admission_qualification_type?
+  graduate_major                        String?                        @db.VarChar(255)
+  graduation_year                       Int?                           @db.SmallInt
+  high_school_name                      String?                        @db.VarChar(255)
+  high_school_ward                      String?                        @db.VarChar(255)
+  high_school_province                  String?                        @db.VarChar(255)
+  declaration_place                     String?                        @db.VarChar(255)
+  declaration_date                      DateTime?                      @db.Date
+  declaration_confirmed                 Boolean                        @default(false)
+  data_processing_consent               Boolean                        @default(false)
+  submitted_at                          DateTime?                      @db.Timestamptz(6)
+  reviewed_by                           String?                        @db.Uuid
+  reviewed_at                           DateTime?                      @db.Timestamptz(6)
+  version                               Int                            @default(1)
+  created_at                            DateTime                       @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime                       @default(now()) @db.Timestamptz(6)
+  application_relatives                 application_relatives[]
+  application_status_histories          application_status_histories[]
+  admission_periods                     admission_periods?             @relation(fields: [admission_period_id], references: [id], onUpdate: NoAction, map: "fk_applications_admission_period")
+  majors                                majors?                        @relation(fields: [major_id], references: [id], onUpdate: NoAction, map: "fk_applications_major")
+  registration_links                    registration_links             @relation(fields: [registration_link_id], references: [id], onUpdate: NoAction, map: "fk_applications_registration_link")
+  users_applications_reviewed_byTousers users?                         @relation("applications_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction, map: "fk_applications_reviewed_by")
+  users_applications_sale_idTousers     users                          @relation("applications_sale_idTousers", fields: [sale_id], references: [id], onUpdate: NoAction, map: "fk_applications_sale")
+  payment_confirmations                 payment_confirmations?
+
+  @@index([citizen_id], map: "idx_applications_citizen_id", where: raw("(citizen_id IS NOT NULL)"))
+  @@index([major_id], map: "idx_applications_major")
+  @@index([phone], map: "idx_applications_phone", where: raw("(phone IS NOT NULL)"))
+  @@index([sale_id, status], map: "idx_applications_sale_status")
+  @@index([submitted_at(sort: Desc)], map: "idx_applications_submitted_at")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model audit_logs {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_id    String?  @db.Uuid
+  action      String   @db.VarChar(100)
+  entity_type String   @db.VarChar(100)
+  entity_id   String?  @db.Uuid
+  old_values  Json?
+  new_values  Json?
+  metadata    Json     @default("{}")
+  ip_address  String?  @db.Inet
+  user_agent  String?
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  users       users?   @relation(fields: [actor_id], references: [id], onUpdate: NoAction, map: "fk_audit_logs_actor")
+
+  @@index([action, created_at(sort: Desc)], map: "idx_audit_logs_action_created")
+  @@index([actor_id, created_at(sort: Desc)], map: "idx_audit_logs_actor_created")
+  @@index([entity_type, entity_id, created_at(sort: Desc)], map: "idx_audit_logs_entity_created")
+}
+
+model bank_accounts {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bank_code             String                  @db.VarChar(30)
+  bank_name             String                  @db.VarChar(150)
+  branch_name           String?                 @db.VarChar(255)
+  account_number        String                  @db.VarChar(50)
+  account_name          String                  @db.VarChar(255)
+  is_default            Boolean                 @unique(map: "uq_bank_accounts_default", where: raw("(is_default = true)")) @default(false)
+  is_active             Boolean                 @default(true)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  payment_confirmations payment_confirmations[]
+
+  @@unique([bank_code, account_number], map: "uq_bank_accounts")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model majors {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code               String               @unique(map: "uq_majors_code") @db.VarChar(50)
+  name               String               @db.VarChar(255)
+  is_active          Boolean              @default(true)
+  display_order      Int                  @default(0)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  applications       applications[]
+  registration_links registration_links[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model payment_confirmations {
+  id                                              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  application_id                                  String         @unique(map: "uq_payment_confirmations_application") @db.Uuid
+  bank_account_id                                 String?        @db.Uuid
+  bank_name                                       String         @db.VarChar(150)
+  bank_branch                                     String?        @db.VarChar(255)
+  account_number                                  String         @db.VarChar(50)
+  account_name                                    String         @db.VarChar(255)
+  amount                                          Decimal?       @db.Decimal(14, 2)
+  transfer_content                                String         @db.VarChar(255)
+  status                                          payment_status @default(PENDING)
+  confirmed_by                                    String?        @db.Uuid
+  confirmed_at                                    DateTime?      @db.Timestamptz(6)
+  confirmation_note                               String?
+  cancelled_by                                    String?        @db.Uuid
+  cancelled_at                                    DateTime?      @db.Timestamptz(6)
+  cancellation_reason                             String?
+  created_at                                      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime       @default(now()) @db.Timestamptz(6)
+  applications                                    applications   @relation(fields: [application_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_payment_confirmations_application")
+  bank_accounts                                   bank_accounts? @relation(fields: [bank_account_id], references: [id], onUpdate: NoAction, map: "fk_payment_confirmations_bank_account")
+  users_payment_confirmations_cancelled_byTousers users?         @relation("payment_confirmations_cancelled_byTousers", fields: [cancelled_by], references: [id], onUpdate: NoAction, map: "fk_payment_confirmations_cancelled_by")
+  users_payment_confirmations_confirmed_byTousers users?         @relation("payment_confirmations_confirmed_byTousers", fields: [confirmed_by], references: [id], onUpdate: NoAction, map: "fk_payment_confirmations_confirmed_by")
+
+  @@index([confirmed_at(sort: Desc)], map: "idx_payment_confirmations_confirmed_at")
+  @@index([status], map: "idx_payment_confirmations_status")
+}
+
+model registration_link_status_histories {
+  id                   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  registration_link_id String                    @db.Uuid
+  previous_status      registration_link_status?
+  new_status           registration_link_status
+  changed_by           String?                   @db.Uuid
+  reason               String?
+  metadata             Json                      @default("{}")
+  created_at           DateTime                  @default(now()) @db.Timestamptz(6)
+  users                users?                    @relation(fields: [changed_by], references: [id], onUpdate: NoAction, map: "fk_link_status_histories_changed_by")
+  registration_links   registration_links        @relation(fields: [registration_link_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_link_status_histories_link")
+
+  @@index([registration_link_id, created_at(sort: Desc)], map: "idx_link_status_histories_link_created")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model registration_links {
+  id                                         String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  public_token                               String                               @unique(map: "uq_registration_links_public_token") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sale_id                                    String                               @db.Uuid
+  created_by                                 String?                              @db.Uuid
+  major_id                                   String?                              @db.Uuid
+  admission_period_id                        String?                              @db.Uuid
+  student_name_hint                          String?                              @db.VarChar(150)
+  entry_qualification                        admission_qualification_type?
+  tuition_amount                             Decimal?                             @db.Decimal(14, 2)
+  payment_round                              String?                              @default("D1") @db.VarChar(50)
+  internal_note                              String?
+  status                                     registration_link_status             @default(DRAFT)
+  expires_at                                 DateTime?                            @db.Timestamptz(6)
+  activated_at                               DateTime?                            @db.Timestamptz(6)
+  locked_at                                  DateTime?                            @db.Timestamptz(6)
+  locked_by                                  String?                              @db.Uuid
+  submitted_at                               DateTime?                            @db.Timestamptz(6)
+  access_count                               Int                                  @default(0)
+  last_accessed_at                           DateTime?                            @db.Timestamptz(6)
+  created_at                                 DateTime                             @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime                             @default(now()) @db.Timestamptz(6)
+  applications                               applications?
+  registration_link_status_histories         registration_link_status_histories[]
+  admission_periods                          admission_periods?                   @relation(fields: [admission_period_id], references: [id], onUpdate: NoAction, map: "fk_registration_links_admission_period")
+  users_registration_links_created_byTousers users?                               @relation("registration_links_created_byTousers", fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_registration_links_created_by")
+  users_registration_links_locked_byTousers  users?                               @relation("registration_links_locked_byTousers", fields: [locked_by], references: [id], onUpdate: NoAction, map: "fk_registration_links_locked_by")
+  majors                                     majors?                              @relation(fields: [major_id], references: [id], onUpdate: NoAction, map: "fk_registration_links_major")
+  users_registration_links_sale_idTousers    users                                @relation("registration_links_sale_idTousers", fields: [sale_id], references: [id], onUpdate: NoAction, map: "fk_registration_links_sale")
+
+  @@index([admission_period_id], map: "idx_registration_links_admission_period")
+  @@index([major_id], map: "idx_registration_links_major")
+  @@index([sale_id, status], map: "idx_registration_links_sale_status")
+  @@index([status, expires_at], map: "idx_registration_links_status_expiry")
+}
+
+model system_settings {
+  setting_key   String   @id @db.VarChar(100)
+  setting_value Json
+  description   String?
+  updated_by    String?  @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+  users         users?   @relation(fields: [updated_by], references: [id], onUpdate: NoAction, map: "fk_system_settings_updated_by")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model users {
+  id                                                              String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name                                                       String                               @db.VarChar(150)
+  email                                                           String                               @db.VarChar(255)
+  phone                                                           String?                              @unique(map: "uq_users_phone", where: raw("(phone IS NOT NULL)")) @db.VarChar(15)
+  password_hash                                                   String
+  role                                                            user_role
+  manager_id                                                      String?                              @db.Uuid
+  is_active                                                       Boolean                              @default(true)
+  failed_login_attempts                                           Int                                  @default(0)
+  locked_until                                                    DateTime?                            @db.Timestamptz(6)
+  last_login_at                                                   DateTime?                            @db.Timestamptz(6)
+  password_changed_at                                             DateTime?                            @db.Timestamptz(6)
+  created_at                                                      DateTime                             @default(now()) @db.Timestamptz(6)
+  updated_at                                                      DateTime                             @default(now()) @db.Timestamptz(6)
+  application_status_histories                                    application_status_histories[]
+  applications_applications_reviewed_byTousers                    applications[]                       @relation("applications_reviewed_byTousers")
+  applications_applications_sale_idTousers                        applications[]                       @relation("applications_sale_idTousers")
+  audit_logs                                                      audit_logs[]
+  payment_confirmations_payment_confirmations_cancelled_byTousers payment_confirmations[]              @relation("payment_confirmations_cancelled_byTousers")
+  payment_confirmations_payment_confirmations_confirmed_byTousers payment_confirmations[]              @relation("payment_confirmations_confirmed_byTousers")
+  registration_link_status_histories                              registration_link_status_histories[]
+  registration_links_registration_links_created_byTousers         registration_links[]                 @relation("registration_links_created_byTousers")
+  registration_links_registration_links_locked_byTousers          registration_links[]                 @relation("registration_links_locked_byTousers")
+  registration_links_registration_links_sale_idTousers            registration_links[]                 @relation("registration_links_sale_idTousers")
+  system_settings                                                 system_settings[]
+  users                                                           users?                               @relation("usersTousers", fields: [manager_id], references: [id], onUpdate: NoAction, map: "fk_users_manager")
+  other_users                                                     users[]                              @relation("usersTousers")
+
+  @@index([manager_id], map: "idx_users_manager")
+  @@index([role], map: "idx_users_role")
+}
+
+enum admission_qualification_type {
+  THPT
+  TC
+  CD
+  DH
+}
+
+enum application_status {
+  DRAFT
+  SUBMITTED
+  WAITING_PAYMENT
+  PAYMENT_CONFIRMED
+  NEEDS_REVISION
+  VALID
+  PRINTED
+  COMPLETED
+  CANCELLED
+}
+
+enum gender_type {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum payment_status {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum registration_link_status {
+  DRAFT
+  ACTIVE
+  LOCKED
+  SUBMITTED
+  EXPIRED
+  CANCELLED
+  ARCHIVED
+}
+
+enum user_role {
+  SALE
+  MANAGER
+  ADMIN
+}

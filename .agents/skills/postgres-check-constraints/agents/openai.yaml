@@ -1,0 +1,4 @@
+interface:
+  display_name: "PostgreSQL Check Constraints"
+  short_description: "Preserve PostgreSQL check constraints"
+  default_prompt: "Use $postgres-check-constraints to preserve and verify database check constraints."

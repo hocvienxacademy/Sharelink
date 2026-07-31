@@ -1,0 +1,4 @@
+interface:
+  display_name: "Testing Quality Gate"
+  short_description: "Run honest, risk-based project checks"
+  default_prompt: "Use $testing-quality-gate to verify this change before completion."
