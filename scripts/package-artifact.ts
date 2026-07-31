@@ -28,6 +28,14 @@ function sha256(file: string): string {
   return createHash("sha256").update(readFileSync(file)).digest("hex");
 }
 
+function npmCommand(args: readonly string[]): string {
+  const npmCli = process.env.npm_execpath;
+  if (!npmCli) {
+    throw new Error("Run artifact packaging through the committed npm script.");
+  }
+  return command(process.execPath, [npmCli, ...args]);
+}
+
 const commitSha = command("git", ["rev-parse", "HEAD"]);
 const expectedSha = process.env.RELEASE_SHA;
 if (!expectedSha || expectedSha !== commitSha) {
@@ -80,11 +88,9 @@ try {
     commitSha,
     lockfileSha256: sha256("package-lock.json"),
     nodeVersion: process.version,
-    npmVersion: command(process.platform === "win32" ? "npm.cmd" : "npm", [
-      "--version",
-    ]),
+    npmVersion: npmCommand(["--version"]),
     frameworkVersions: JSON.parse(
-      command(process.platform === "win32" ? "npm.cmd" : "npm", [
+      npmCommand([
         "ls",
         "--json",
         "--depth=0",
