@@ -412,7 +412,7 @@ export function ApplicationForm({
           </div>
         )}
 
-        <Card>
+        <Card className="rounded-[2rem]">
           <CardContent>
             {currentStep === 0 ? <PersonalInformationSection /> : null}
             {currentStep === 1 ? (

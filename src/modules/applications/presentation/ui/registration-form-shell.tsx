@@ -77,7 +77,7 @@ function displayDate(value: string | null): string {
 
 function LoadingState() {
   return (
-    <Card aria-busy="true">
+    <Card aria-busy="true" className="rounded-[2rem]">
       <CardHeader>
         <CardTitle>Đang tải thông tin đăng ký</CardTitle>
         <CardDescription>
@@ -122,23 +122,23 @@ function RegistrationContextHeader({
   readonly context: RegistrationContext;
 }) {
   return (
-    <Card>
+    <Card className="rounded-[2rem] bg-primary text-primary-foreground">
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">{context.admissionPeriod.code}</Badge>
-          <Badge variant="outline">Liên kết đang hoạt động</Badge>
+          <Badge variant="secondary">Liên kết đang hoạt động</Badge>
         </div>
         <CardTitle className="text-xl">
           {context.admissionPeriod.name}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-primary-foreground/65">
           Thời gian tiếp nhận: {displayDate(context.admissionPeriod.startDate)}
           {" – "}
           {displayDate(context.admissionPeriod.endDate)}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 rounded-2xl bg-primary-foreground/10 p-4">
           <GraduationCapIcon aria-hidden="true" />
           <span>
             {context.majors.length === 0
@@ -146,7 +146,7 @@ function RegistrationContextHeader({
               : `${context.majors.length} ngành có thể lựa chọn.`}
           </span>
         </div>
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 rounded-2xl bg-primary-foreground/10 p-4">
           <ShieldCheckIcon aria-hidden="true" />
           <span>Thông tin chỉ được gửi qua API bảo mật của hệ thống.</span>
         </div>
@@ -334,7 +334,7 @@ export function RegistrationFormShellView({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <RegistrationContextHeader context={state.context} />
       <ApplicationForm
         token={token}

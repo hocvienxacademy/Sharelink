@@ -1,4 +1,9 @@
-export type RateLimitEndpoint = "context" | "create" | "update" | "submit";
+export type RateLimitEndpoint =
+  | "auth-login"
+  | "context"
+  | "create"
+  | "update"
+  | "submit";
 
 export interface RateLimitInput {
   readonly key: string;

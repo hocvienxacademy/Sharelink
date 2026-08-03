@@ -7,6 +7,7 @@ export interface RateLimitPolicy {
 }
 
 const DEFAULT_POLICIES: Readonly<Record<RateLimitEndpoint, RateLimitPolicy>> = {
+  "auth-login": { limit: 5, windowMs: 600_000, failOpen: false },
   context: { limit: 60, windowMs: 60_000, failOpen: true },
   create: { limit: 5, windowMs: 600_000, failOpen: false },
   update: { limit: 30, windowMs: 600_000, failOpen: false },

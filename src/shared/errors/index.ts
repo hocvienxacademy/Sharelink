@@ -11,4 +11,5 @@ export { NotFoundError } from "./not-found-error";
 export { PayloadTooLargeError } from "./payload-too-large-error";
 export { RateLimitUnavailableError } from "./rate-limit-unavailable-error";
 export { TooManyRequestsError } from "./too-many-requests-error";
+export { UnauthorizedError } from "./unauthorized-error";
 export { ValidationError } from "./validation-error";

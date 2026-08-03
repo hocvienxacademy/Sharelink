@@ -4,6 +4,7 @@ import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { Client } from "pg";
 import { TEST_IDS, TEST_TOKENS } from "../fixtures/test-data";
+import { hashPassword } from "../../src/modules/auth/infrastructure/security/password";
 
 loadEnv({ path: ".env.test.local", override: false, quiet: true });
 
@@ -182,6 +183,7 @@ export async function resetTestDatabase(): Promise<void> {
 
 export async function seedTestDatabase(): Promise<void> {
   const client = await verifiedClient();
+  const adminPasswordHash = await hashPassword("admin-test-password");
 
   try {
     await client.query("BEGIN");
@@ -189,6 +191,11 @@ export async function seedTestDatabase(): Promise<void> {
       `INSERT INTO users (id, full_name, email, password_hash, role)
        VALUES ($1, 'Test Sale', 'sale@test.invalid', 'not-a-real-password-hash', 'SALE')`,
       [TEST_IDS.sale],
+    );
+    await client.query(
+      `INSERT INTO users (id, full_name, email, password_hash, role)
+       VALUES ($1, 'Test Admin', 'admin@test.invalid', $2, 'ADMIN')`,
+      [TEST_IDS.admin, adminPasswordHash],
     );
     await client.query(
       `INSERT INTO admission_periods

@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
+import "@fontsource-variable/dm-sans";
 import "./globals.css";
 
 export const metadata = {
-  title: "ShareLinkStudent",
+  title: {
+    default: "ShareLinkStudent",
+    template: "%s | ShareLinkStudent",
+  },
   description: "Hệ thống đăng ký thông tin sinh viên",
 };
 

@@ -20,6 +20,15 @@ The distributed rate limiter is intentionally disabled only in this guarded
 local mode; staging and production still require the Redis REST configuration.
 Start the application with `npm run dev`.
 
+For a local-only administrator, set `LOCAL_ADMIN_USERNAME`,
+`LOCAL_ADMIN_EMAIL`, and `LOCAL_ADMIN_PASSWORD` in ignored `.env.local`, then
+run `npm run db:seed:local-admin`. The command refuses non-development or
+non-loopback database targets, hashes the password with scrypt, and updates or
+creates only the configured local admin record. Never reuse this local password
+in staging or production. Failed logins lock the account after five attempts
+for 15 minutes by default; `ADMIN_LOGIN_MAX_ATTEMPTS` and
+`ADMIN_LOGIN_LOCK_SECONDS` can override that policy.
+
 Interactive development assumes the local database already has the reviewed
 schema and fake development data. This repository still has no deployable
 schema baseline, so do not initialize it with `prisma db push`. For a
