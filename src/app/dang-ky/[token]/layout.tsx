@@ -35,7 +35,12 @@ export default function RegistrationLayout({
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-7 px-4 py-8 sm:px-6 sm:py-12">
         <header className="flex flex-col gap-4">
-          <Button variant="ghost" className="self-start" render={<Link href="/" />}>
+          <Button
+            nativeButton={false}
+            variant="ghost"
+            className="self-start"
+            render={<Link href="/" />}
+          >
             <ArrowLeftIcon data-icon="inline-start" />
             Trang chủ
           </Button>

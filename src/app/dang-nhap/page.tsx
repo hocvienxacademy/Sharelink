@@ -23,7 +23,7 @@ export default async function LoginPage() {
           <Link href="/" className="text-lg font-semibold tracking-tight">
             ShareLink<span className="text-brand-coral-text">Student</span>
           </Link>
-          <Button variant="ghost" render={<Link href="/" />}>
+          <Button nativeButton={false} variant="ghost" render={<Link href="/" />}>
             <ArrowLeftIcon data-icon="inline-start" />
             Trang chủ
           </Button>

@@ -14,6 +14,13 @@ async function resetAdminLockout(): Promise<void> {
 test("administrator can sign in, view aggregate dashboard, and sign out", async ({
   page,
 }) => {
+  const nativeButtonWarnings: string[] = [];
+  page.on("console", (message) => {
+    if (message.text().includes("expected a native <button>")) {
+      nativeButtonWarnings.push(message.text());
+    }
+  });
+
   await page.goto("/dang-nhap");
 
   await page.getByLabel("Tài khoản").fill("admin@test.invalid");
@@ -21,6 +28,7 @@ test("administrator can sign in, view aggregate dashboard, and sign out", async 
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
   await expect(page).toHaveURL(/\/quan-tri$/);
+  expect(nativeButtonWarnings).toEqual([]);
   await expect(
     page.getByRole("heading", { name: /Chào Test Admin/ }),
   ).toBeVisible();

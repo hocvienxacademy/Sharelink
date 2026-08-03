@@ -18,7 +18,7 @@ export default function HomePage() {
           <Link href="/" className="text-lg font-semibold tracking-tight">
             ShareLink<span className="text-brand-coral-text">Student</span>
           </Link>
-          <Button variant="outline" render={<Link href="/dang-nhap" />}>
+          <Button nativeButton={false} variant="outline" render={<Link href="/dang-nhap" />}>
             Đăng nhập quản trị
             <ArrowRightIcon data-icon="inline-end" />
           </Button>
@@ -36,11 +36,16 @@ export default function HomePage() {
             ShareLinkStudent giúp đơn vị tuyển sinh gửi đúng biểu mẫu, tiếp nhận thông tin có cấu trúc và theo dõi tiến độ trong một hệ thống thống nhất.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" render={<Link href="/dang-nhap" />}>
+            <Button nativeButton={false} size="lg" render={<Link href="/dang-nhap" />}>
               Vào khu vực quản trị
               <ArrowRightIcon data-icon="inline-end" />
             </Button>
-            <Button size="lg" variant="outline" render={<a href="#quy-trinh" />}>
+            <Button
+              nativeButton={false}
+              size="lg"
+              variant="outline"
+              render={<a href="#quy-trinh" />}
+            >
               Xem cách hoạt động
             </Button>
           </div>

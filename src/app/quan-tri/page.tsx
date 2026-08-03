@@ -92,7 +92,7 @@ export default async function AdminDashboardPage() {
               Bảng điều khiển hiện hiển thị số liệu tổng hợp, không đưa thông tin định danh sinh viên ra màn hình tổng quan.
             </p>
           </div>
-          <Button variant="outline" render={<Link href="/" />}>
+          <Button nativeButton={false} variant="outline" render={<Link href="/" />}>
             Xem trang công khai
             <ArrowUpRightIcon data-icon="inline-end" />
           </Button>
