@@ -38,6 +38,19 @@ async function cleanupAdminUiDetails(): Promise<void> {
   );
 }
 
+async function cleanupCreatedUser(email: string): Promise<void> {
+  await withTestClient(async (client) => {
+    const users = await client.query<{ id: string }>(
+      "SELECT id FROM users WHERE email = $1",
+      [email],
+    );
+    for (const user of users.rows) {
+      await client.query("DELETE FROM audit_logs WHERE entity_id = $1", [user.id]);
+      await client.query("DELETE FROM users WHERE id = $1", [user.id]);
+    }
+  });
+}
+
 async function resetAdminLockout(): Promise<void> {
   await withTestClient(async (client) => {
     await client.query(
@@ -88,6 +101,7 @@ test("administrator can open every read-only management surface", async ({ page 
   await page.getByLabel("Tài khoản").fill("admin@test.invalid");
   await page.getByLabel("Mật khẩu").fill("admin-test-password");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
+  await expect(page).toHaveURL(/\/quan-tri$/);
 
   for (const { route, title } of [
     { route: "/quan-tri/lien-ket", title: "Liên kết đăng ký" },
@@ -124,6 +138,37 @@ test("administrator can open every read-only management surface", async ({ page 
   expect(consoleErrors).toEqual([]);
   } finally {
     await cleanupAdminUiDetails();
+  }
+});
+
+test("administrator can create a staff account from the management form", async ({ page }) => {
+  const email = "manager-created@test.invalid";
+  await cleanupCreatedUser(email);
+
+  try {
+    await page.goto("/dang-nhap");
+    await page.getByLabel("Tài khoản").fill("admin@test.invalid");
+    await page.getByLabel("Mật khẩu").fill("admin-test-password");
+    await page.getByRole("button", { name: "Đăng nhập" }).click();
+    await expect(page).toHaveURL(/\/quan-tri$/);
+
+    await page.goto("/quan-tri/nhan-su/moi");
+    await page.getByLabel("Họ và tên").fill("Quản lý kiểm thử");
+    await page.getByLabel("Email đăng nhập").fill(email);
+    await page.getByLabel("Vai trò").selectOption("MANAGER");
+    await page.getByLabel("Mật khẩu ban đầu").fill("manager-password-123");
+    await page.getByLabel("Xác nhận mật khẩu").fill("manager-password-123");
+    await page.getByRole("button", { name: "Tạo tài khoản" }).click();
+
+    await expect(page).toHaveURL(/\/quan-tri\/nhan-su\/[0-9a-f-]{36}$/);
+    await expect(page.getByRole("heading", { name: "Quản lý kiểm thử" })).toBeVisible();
+    await expect(page.getByText(email, { exact: true })).toBeVisible();
+    await expect(page.getByText("MANAGER", { exact: true })).toBeVisible();
+
+    await page.goto("/quan-tri/nhat-ky");
+    await expect(page.getByText("USER_CREATED", { exact: true })).toBeVisible();
+  } finally {
+    await cleanupCreatedUser(email);
   }
 });
 

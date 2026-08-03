@@ -6,6 +6,7 @@ import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detai
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
 import { getAdminUserDetail } from "@/modules/users";
+import { CreateUserForm } from "@/modules/users/presentation/ui/create-user-form";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +17,7 @@ export default async function UserDetailPage({ params }: { readonly params: Prom
     return (
       <div className="flex flex-col gap-8">
         <AdminPageHeader parent={{ href: "/quan-tri/nhan-su", label: "Nhân sự" }} title="Tạo tài khoản" description="Chuẩn bị tài khoản nội bộ mới." />
-        <BusinessRuleGate>
-          Cần phê duyệt ma trận ai được tạo từng vai trò, quy tắc gán quản lý và quy trình cấp mật khẩu ban đầu.
-        </BusinessRuleGate>
+        <CreateUserForm />
       </div>
     );
   }
