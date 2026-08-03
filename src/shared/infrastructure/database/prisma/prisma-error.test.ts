@@ -37,6 +37,35 @@ describe("mapPrismaError", () => {
     assert.ok(mapPrismaError(knownRequestError("P2025")) instanceof NotFoundError);
   });
 
+  it("maps PostgreSQL driver unique violations from parameterized raw SQL", () => {
+    const error = Object.assign(new Error("duplicate key contains private data"), {
+      code: "23505",
+      detail: "private row detail",
+    });
+    const mapped = mapPrismaError(error);
+    assert.ok(mapped instanceof ConflictError);
+    assert.equal(JSON.stringify(createErrorResponse(mapped)).includes("private"), false);
+  });
+
+  it("maps Prisma P2010 adapter metadata for raw unique violations", () => {
+    const error = new Prisma.PrismaClientKnownRequestError(
+      "raw query failed with private values",
+      {
+        code: "P2010",
+        clientVersion: "7.9.1",
+        meta: {
+          driverAdapterError: {
+            cause: {
+              kind: "UniqueConstraintViolation",
+              originalCode: "23505",
+            },
+          },
+        },
+      },
+    );
+    assert.ok(mapPrismaError(error) instanceof ConflictError);
+  });
+
   it("does not expose raw Prisma messages or metadata", () => {
     const response = createErrorResponse(
       mapPrismaError(knownRequestError("P2002")),

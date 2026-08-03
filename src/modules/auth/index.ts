@@ -1,9 +1,12 @@
 export {
   ADMIN_SESSION_COOKIE,
-  authenticateAdmin,
-  getAdminIdentityBySessionToken,
+  AdminAuthenticationService,
   normalizeLoginUsername,
-  revokeAdminSession,
+  parseLoginInput,
+  type AdminAuthenticationRecord,
   type AdminIdentity,
   type AuthenticatedAdminSession,
+  type AuthenticationRepository,
+  type CreateAdminSessionInput,
+  type LoginInput,
 } from "./application/authentication";

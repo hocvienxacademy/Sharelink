@@ -65,7 +65,9 @@ test("administrator can sign in, view aggregate dashboard, and sign out", async 
   page,
 }) => {
   const nativeButtonWarnings: string[] = [];
+  const consoleMessages: string[] = [];
   page.on("console", (message) => {
+    consoleMessages.push(message.text());
     if (message.text().includes("expected a native <button>")) {
       nativeButtonWarnings.push(message.text());
     }
@@ -83,9 +85,25 @@ test("administrator can sign in, view aggregate dashboard, and sign out", async 
     page.getByRole("heading", { name: /Chào Test Admin/ }),
   ).toBeVisible();
   await expect(page.getByText("Tổng hồ sơ", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: /Chào Test Admin/ }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => ({
+      local: Object.keys(localStorage),
+      session: Object.keys(sessionStorage),
+    })),
+  ).toEqual({ local: [], session: [] });
 
   await page.getByRole("button", { name: "Đăng xuất" }).click();
   await expect(page).toHaveURL(/\/dang-nhap$/);
+  await page.goBack();
+  await expect(page).not.toHaveURL(/\/quan-tri/);
+  await expect(page.getByText("Tổng hồ sơ", { exact: true })).toHaveCount(0);
+  await page.goto("/quan-tri");
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+  expect(consoleMessages.some((message) => message.includes("admin-test-password"))).toBe(false);
 });
 
 test("administrator can open every read-only management surface", async ({ page }) => {
@@ -233,10 +251,43 @@ test("administrator account locks after repeated invalid passwords", async ({ pa
     await page.getByLabel("Mật khẩu").fill("admin-test-password");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
     await expect(
-      page.getByText("Tên đăng nhập hoặc mật khẩu không đúng."),
+      page.getByText(
+        "Tài khoản đang bị khóa hoặc vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
+      ),
     ).toBeVisible();
     await expect(page).toHaveURL(/\/dang-nhap$/);
   } finally {
     await resetAdminLockout();
   }
+});
+
+test("login is single-flight and ignores an external return target", async ({ page }) => {
+  let loginRequests = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/api/auth/login")) {
+      loginRequests += 1;
+    }
+  });
+
+  await page.goto("/dang-nhap?returnTo=https://attacker.invalid/collect");
+  await page.getByLabel("Tên đăng nhập").fill("admin");
+  await page.getByLabel("Mật khẩu").fill("admin-test-password");
+  await page.getByRole("button", { name: "Đăng nhập" }).click({ clickCount: 2 });
+
+  await expect(page).toHaveURL(/\/quan-tri$/);
+  expect(loginRequests).toBe(1);
+});
+
+test("an expired session cannot reopen an admin route", async ({ page }) => {
+  await page.goto("/dang-nhap");
+  await page.getByLabel("Tên đăng nhập").fill("admin");
+  await page.getByLabel("Mật khẩu").fill("admin-test-password");
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+  await expect(page).toHaveURL(/\/quan-tri$/);
+
+  await withTestClient((client) =>
+    client.query("UPDATE app_sessions SET expire = $1", [new Date(0)]).then(() => undefined),
+  );
+  await page.goto("/quan-tri");
+  await expect(page).toHaveURL(/\/dang-nhap$/);
 });

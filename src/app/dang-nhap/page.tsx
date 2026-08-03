@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { ArrowLeftIcon, ShieldCheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ADMIN_SESSION_COOKIE, getAdminIdentityBySessionToken } from "@/modules/auth";
+import { getAdminIdentityBySessionToken } from "@/composition/auth";
+import { ADMIN_SESSION_COOKIE } from "@/modules/auth";
 import { AdminLoginForm } from "@/modules/auth/presentation/ui/admin-login-form";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +31,7 @@ export default async function LoginPage() {
         </nav>
 
         <div className="grid flex-1 items-stretch gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <section className="relative hidden min-h-[640px] overflow-hidden rounded-[2rem] bg-primary p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between">
+          <section className="relative hidden min-h-160 overflow-hidden rounded-[2rem] bg-primary p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between">
             <div className="absolute -right-24 -top-24 size-72 rounded-full bg-brand-coral blur-3xl" />
             <div className="absolute -bottom-28 left-10 size-80 rounded-full bg-brand-blue opacity-70 blur-3xl" />
             <div className="relative flex items-center gap-2 text-sm font-medium">

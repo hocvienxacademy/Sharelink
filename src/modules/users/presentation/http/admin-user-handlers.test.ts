@@ -7,6 +7,7 @@ import { createCreateAdminUserHandler } from "./admin-user-handlers";
 
 const identity: AdminIdentity = {
   id: "10000000-0000-4000-8000-000000000002",
+  username: "admin",
   fullName: "Test Admin",
   email: "admin@test.invalid",
   role: "ADMIN",

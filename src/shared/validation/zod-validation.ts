@@ -4,6 +4,7 @@ import { ValidationError } from "../errors/index";
 export function parseWithSchema<TSchema extends z.ZodType>(
   schema: TSchema,
   input: unknown,
+  message?: string,
 ): z.output<TSchema> {
   const result = schema.safeParse(input);
 
@@ -16,6 +17,7 @@ export function parseWithSchema<TSchema extends z.ZodType>(
         code: issue.code,
         message: issue.message,
       })),
+      message,
     );
   }
 

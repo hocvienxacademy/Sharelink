@@ -2,6 +2,8 @@ export {
   ApplicationError,
   type ApplicationErrorOptions,
 } from "./application-error";
+export { AccountDisabledError } from "./account-disabled-error";
+export { AccountLockedError } from "./account-locked-error";
 export { BadRequestError } from "./bad-request-error";
 export { ConflictError } from "./conflict-error";
 export { DatabaseError } from "./database-error";

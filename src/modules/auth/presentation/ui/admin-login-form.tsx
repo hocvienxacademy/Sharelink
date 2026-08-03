@@ -1,26 +1,50 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { ArrowRightIcon, LockKeyholeIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 
 export function AdminLoginForm() {
   const router = useRouter();
+  const requestLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    readonly password?: string;
+    readonly username?: string;
+  }>({});
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (requestLock.current) return;
 
     const formData = new FormData(event.currentTarget);
+    const username = formData.get("username");
+    const password = formData.get("password");
+    const nextFieldErrors = {
+      ...(typeof username !== "string" || username.trim().length === 0
+        ? { username: "Vui lòng nhập tên đăng nhập." }
+        : {}),
+      ...(typeof password !== "string" || password.length === 0
+        ? { password: "Vui lòng nhập mật khẩu." }
+        : {}),
+    };
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setErrorMessage("Vui lòng kiểm tra các trường được đánh dấu.");
+      return;
+    }
+
+    requestLock.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
+    setFieldErrors({});
 
     try {
       const response = await fetch("/api/auth/login", {
@@ -28,8 +52,8 @@ export function AdminLoginForm() {
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: formData.get("username"),
-          password: formData.get("password"),
+          username,
+          password,
         }),
       });
 
@@ -37,7 +61,11 @@ export function AdminLoginForm() {
         setErrorMessage(
           response.status === 401
             ? "Tên đăng nhập hoặc mật khẩu không đúng."
-            : "Không thể đăng nhập lúc này. Vui lòng thử lại.",
+            : response.status === 403
+              ? "Tài khoản đang bị khóa hoặc vô hiệu hóa. Vui lòng liên hệ quản trị viên."
+              : response.status === 422
+                ? "Vui lòng kiểm tra tên đăng nhập và mật khẩu."
+                : "Không thể đăng nhập lúc này. Vui lòng thử lại.",
         );
         return;
       }
@@ -47,6 +75,7 @@ export function AdminLoginForm() {
     } catch {
       setErrorMessage("Không thể kết nối đến hệ thống. Vui lòng thử lại.");
     } finally {
+      requestLock.current = false;
       setIsSubmitting(false);
     }
   }
@@ -62,7 +91,7 @@ export function AdminLoginForm() {
       )}
 
       <FieldGroup>
-        <Field>
+        <Field data-invalid={fieldErrors.username === undefined ? undefined : ""}>
           <FieldLabel htmlFor="username">Tên đăng nhập</FieldLabel>
           <Input
             id="username"
@@ -71,9 +100,14 @@ export function AdminLoginForm() {
             placeholder="Nhập tên đăng nhập"
             required
             autoFocus
+            aria-invalid={fieldErrors.username === undefined ? undefined : true}
+            aria-describedby={fieldErrors.username === undefined ? undefined : "username-error"}
           />
+          {fieldErrors.username === undefined ? null : (
+            <FieldError id="username-error">{fieldErrors.username}</FieldError>
+          )}
         </Field>
-        <Field>
+        <Field data-invalid={fieldErrors.password === undefined ? undefined : ""}>
           <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
           <Input
             id="password"
@@ -82,7 +116,12 @@ export function AdminLoginForm() {
             autoComplete="current-password"
             placeholder="Nhập mật khẩu"
             required
+            aria-invalid={fieldErrors.password === undefined ? undefined : true}
+            aria-describedby={fieldErrors.password === undefined ? undefined : "password-error"}
           />
+          {fieldErrors.password === undefined ? null : (
+            <FieldError id="password-error">{fieldErrors.password}</FieldError>
+          )}
         </Field>
       </FieldGroup>
 

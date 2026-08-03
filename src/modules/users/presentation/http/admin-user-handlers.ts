@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import {
   ADMIN_SESSION_COOKIE,
-  getAdminIdentityBySessionToken,
   type AdminIdentity,
 } from "@/modules/auth";
+import { getAdminIdentityBySessionToken } from "@/composition/auth";
 import { BadRequestError, UnauthorizedError } from "@/shared/errors";
 import { createSuccessResponse } from "@/shared/http";
 import {

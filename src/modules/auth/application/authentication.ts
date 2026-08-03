@@ -1,25 +1,47 @@
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
-import { UnauthorizedError } from "@/shared/errors";
-import { prisma } from "@/shared/infrastructure/database/prisma/prisma-client";
-import { verifyPassword } from "../infrastructure/security/password";
+import {
+  AccountDisabledError,
+  AccountLockedError,
+  ConflictError,
+  InternalServerError,
+  UnauthorizedError,
+} from "@/shared/errors";
+import { parseWithSchema } from "@/shared/validation";
 
 export const ADMIN_SESSION_COOKIE = "sls_admin_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
-const DUMMY_PASSWORD_HASH =
-  "scrypt-v1$8JFF_g74YQLtANAg9meghg$IfMVc2OsiBYps2ZVR-_esExx_JyF7OhIdAAZ2vlQFXWbzBXhvKA4FYnZe229fpQVpu3cYdB0zHNetqgwp8qaYw";
+const SESSION_CREATION_ATTEMPTS = 2;
 
 const loginUsernameSchema = z
-  .string()
+  .string("Vui lòng nhập tên đăng nhập.")
   .trim()
-  .min(1)
-  .max(100)
+  .min(1, "Vui lòng nhập tên đăng nhập.")
+  .max(100, "Tên đăng nhập không được vượt quá 100 ký tự.")
   .transform((value) => value.toLowerCase());
 
-const loginInputSchema = z.object({
-  username: loginUsernameSchema,
-  password: z.string().min(1).max(128),
-});
+const loginInputSchema = z
+  .object({
+    username: loginUsernameSchema,
+    password: z
+      .string("Vui lòng nhập mật khẩu.")
+      .min(1, "Vui lòng nhập mật khẩu.")
+      .max(128, "Mật khẩu không được vượt quá 128 ký tự."),
+  })
+  .strict();
+
+export interface LoginInput {
+  readonly username: string;
+  readonly password: string;
+}
+
+export function parseLoginInput(input: unknown): LoginInput {
+  return parseWithSchema(
+    loginInputSchema,
+    input,
+    "Dữ liệu đăng nhập không hợp lệ.",
+  );
+}
 
 export function normalizeLoginUsername(input: unknown): string | null {
   const parsed = loginUsernameSchema.safeParse(input);
@@ -28,6 +50,7 @@ export function normalizeLoginUsername(input: unknown): string | null {
 
 export interface AdminIdentity {
   readonly id: string;
+  readonly username: string;
   readonly fullName: string;
   readonly email: string;
   readonly role: "ADMIN";
@@ -39,6 +62,50 @@ export interface AuthenticatedAdminSession {
   readonly token: string;
 }
 
+export interface AdminAuthenticationRecord {
+  readonly id: string;
+  readonly username: string;
+  readonly fullName: string;
+  readonly email: string;
+  readonly passwordHash: string;
+  readonly isActive: boolean;
+  readonly lockedUntil: Date | null;
+}
+
+export interface CreateAdminSessionInput {
+  readonly sessionId: string;
+  readonly userId: string;
+  readonly issuedAt: Date;
+  readonly expiresAt: Date;
+}
+
+export interface AuthenticationRepository {
+  findAdminByUsername(username: string): Promise<AdminAuthenticationRecord | null>;
+  recordFailedLogin(input: {
+    readonly userId: string;
+    readonly attemptedAt: Date;
+    readonly maximumAttempts: number;
+    readonly lockedUntil: Date;
+  }): Promise<void>;
+  createSession(input: CreateAdminSessionInput): Promise<void>;
+  findIdentityBySessionId(
+    sessionId: string,
+    now: Date,
+  ): Promise<AdminIdentity | null>;
+  revokeSession(sessionId: string): Promise<void>;
+}
+
+export type PasswordVerifier = (
+  password: string,
+  encodedHash: string | null,
+) => Promise<boolean>;
+
+interface AuthenticationServiceOptions {
+  readonly now?: () => Date;
+  readonly token?: () => string;
+  readonly verifyPassword: PasswordVerifier;
+}
+
 function sessionId(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -48,163 +115,108 @@ function positiveInteger(value: string | undefined, fallback: number): number {
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-async function recordFailedLogin(
-  userId: string,
-  environment: Readonly<Record<string, string | undefined>>,
-): Promise<void> {
-  const maximumAttempts = positiveInteger(
-    environment.ADMIN_LOGIN_MAX_ATTEMPTS,
-    5,
-  );
-  const lockSeconds = positiveInteger(environment.ADMIN_LOGIN_LOCK_SECONDS, 900);
+export class AdminAuthenticationService {
+  private readonly now: () => Date;
+  private readonly token: () => string;
+  private readonly verifyPassword: PasswordVerifier;
 
-  await prisma.$transaction(async (transaction) => {
-    const updated = await transaction.users.update({
-      where: { id: userId },
-      data: {
-        failed_login_attempts: { increment: 1 },
-        updated_at: new Date(),
-      },
-      select: { failed_login_attempts: true },
-    });
-
-    if (updated.failed_login_attempts >= maximumAttempts) {
-      await transaction.users.update({
-        where: { id: userId },
-        data: {
-          locked_until: new Date(Date.now() + lockSeconds * 1000),
-          updated_at: new Date(),
-        },
-      });
-    }
-  });
-}
-
-export async function authenticateAdmin(
-  input: unknown,
-  environment: Readonly<Record<string, string | undefined>> = process.env,
-): Promise<AuthenticatedAdminSession> {
-  const parsed = loginInputSchema.safeParse(input);
-  if (!parsed.success) throw new UnauthorizedError();
-
-  const user = await prisma.users.findFirst({
-    where: {
-      username: { equals: parsed.data.username, mode: "insensitive" },
-      role: "ADMIN",
-      is_active: true,
-    },
-    select: {
-      id: true,
-      full_name: true,
-      email: true,
-      role: true,
-      password_hash: true,
-      locked_until: true,
-    },
-  });
-
-  const passwordIsValid = await verifyPassword(
-    parsed.data.password,
-    user?.password_hash ?? DUMMY_PASSWORD_HASH,
-  );
-  if (
-    user === null ||
-    !passwordIsValid ||
-    (user.locked_until !== null && user.locked_until > new Date())
+  constructor(
+    private readonly repository: AuthenticationRepository,
+    options: AuthenticationServiceOptions,
   ) {
-    if (
-      user !== null &&
-      !passwordIsValid &&
-      (user.locked_until === null || user.locked_until <= new Date())
-    ) {
-      await recordFailedLogin(user.id, environment);
-    }
-    throw new UnauthorizedError();
+    this.now = options.now ?? (() => new Date());
+    this.token = options.token ?? (() => randomBytes(32).toString("base64url"));
+    this.verifyPassword = options.verifyPassword;
   }
 
-  const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-  const now = new Date();
+  async authenticate(
+    input: unknown,
+    environment: Readonly<Record<string, string | undefined>> = process.env,
+  ): Promise<AuthenticatedAdminSession> {
+    const values = parseLoginInput(input);
+    const attemptedAt = this.now();
+    const user = await this.repository.findAdminByUsername(values.username);
 
-  await prisma.$transaction([
-    prisma.users.update({
-      where: { id: user.id },
-      data: {
-        last_login_at: now,
-        failed_login_attempts: 0,
-        locked_until: null,
-        updated_at: now,
-      },
-    }),
-    prisma.app_sessions.create({
-      data: {
-        sid: sessionId(token),
-        expire: expiresAt,
-        sess: {
+    let passwordIsValid: boolean;
+    try {
+      passwordIsValid = await this.verifyPassword(
+        values.password,
+        user?.passwordHash ?? null,
+      );
+    } catch (error: unknown) {
+      throw new InternalServerError({ cause: error });
+    }
+
+    const isLocked =
+      user?.lockedUntil !== null &&
+      user?.lockedUntil !== undefined &&
+      user.lockedUntil > attemptedAt;
+
+    if (user === null || !passwordIsValid) {
+      if (user !== null && user.isActive && !isLocked) {
+        const maximumAttempts = positiveInteger(
+          environment.ADMIN_LOGIN_MAX_ATTEMPTS,
+          5,
+        );
+        const lockSeconds = positiveInteger(
+          environment.ADMIN_LOGIN_LOCK_SECONDS,
+          900,
+        );
+        await this.repository.recordFailedLogin({
           userId: user.id,
-          role: user.role,
-          issuedAt: now.toISOString(),
-        },
-      },
-    }),
-  ]);
+          attemptedAt,
+          maximumAttempts,
+          lockedUntil: new Date(attemptedAt.getTime() + lockSeconds * 1000),
+        });
+      }
+      throw new UnauthorizedError();
+    }
 
-  return {
-    token,
-    expiresAt,
-    identity: {
-      id: user.id,
-      fullName: user.full_name,
-      email: user.email,
-      role: "ADMIN",
-    },
-  };
-}
+    if (!user.isActive) throw new AccountDisabledError();
+    if (isLocked) throw new AccountLockedError();
 
-export async function getAdminIdentityBySessionToken(
-  token: string | undefined,
-): Promise<AdminIdentity | null> {
-  if (!token || token.length > 255) return null;
+    const expiresAt = new Date(attemptedAt.getTime() + SESSION_DURATION_MS);
+    let lastConflict: ConflictError | null = null;
 
-  const session = await prisma.app_sessions.findFirst({
-    where: {
-      sid: sessionId(token),
-      expire: { gt: new Date() },
-    },
-    select: { sess: true },
-  });
+    for (let attempt = 0; attempt < SESSION_CREATION_ATTEMPTS; attempt += 1) {
+      const token = this.token();
+      try {
+        await this.repository.createSession({
+          sessionId: sessionId(token),
+          userId: user.id,
+          issuedAt: attemptedAt,
+          expiresAt,
+        });
+        return {
+          token,
+          expiresAt,
+          identity: {
+            id: user.id,
+            username: user.username,
+            fullName: user.fullName,
+            email: user.email,
+            role: "ADMIN",
+          },
+        };
+      } catch (error: unknown) {
+        if (!(error instanceof ConflictError)) throw error;
+        lastConflict = error;
+      }
+    }
 
-  if (
-    session === null ||
-    typeof session.sess !== "object" ||
-    session.sess === null ||
-    Array.isArray(session.sess) ||
-    typeof session.sess.userId !== "string" ||
-    session.sess.role !== "ADMIN"
-  ) {
-    return null;
+    throw lastConflict ?? new ConflictError();
   }
 
-  const user = await prisma.users.findFirst({
-    where: {
-      id: session.sess.userId,
-      role: "ADMIN",
-      is_active: true,
-    },
-    select: { id: true, full_name: true, email: true },
-  });
+  async getIdentity(token: string | undefined): Promise<AdminIdentity | null> {
+    if (!token || token.length > 255) return null;
+    return this.repository.findIdentityBySessionId(
+      sessionId(token),
+      this.now(),
+    );
+  }
 
-  return user === null
-    ? null
-    : {
-        id: user.id,
-        fullName: user.full_name,
-        email: user.email,
-        role: "ADMIN",
-      };
-}
-
-export async function revokeAdminSession(token: string | undefined): Promise<void> {
-  if (!token || token.length > 255) return;
-  await prisma.app_sessions.deleteMany({ where: { sid: sessionId(token) } });
+  async revoke(token: string | undefined): Promise<void> {
+    if (!token || token.length > 255) return;
+    await this.repository.revokeSession(sessionId(token));
+  }
 }
