@@ -59,6 +59,17 @@ describe("createCreateAdminUserHandler", () => {
     assert.equal(identityCalls, 0);
   });
 
+  it("returns 403 for an authenticated non-ADMIN staff session", async () => {
+    let serviceCalls = 0;
+    const handler = createCreateAdminUserHandler(
+      { execute: async () => { serviceCalls += 1; throw new Error("unexpected"); } },
+      async () => ({ ...identity, role: "SALE" }),
+    );
+    const response = await handler(request());
+    assert.equal(response.status, 403);
+    assert.equal(serviceCalls, 0);
+  });
+
   it("creates a safe account DTO for an authenticated ADMIN", async () => {
     let actorId: string | null = null;
     let receivedInput: unknown;

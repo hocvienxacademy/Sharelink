@@ -26,6 +26,15 @@ export function countActiveSales(): Promise<number> {
   return prisma.users.count({ where: { role: "SALE", is_active: true } });
 }
 
+export async function listActiveSaleOptions(): Promise<readonly { id: string; fullName: string; username: string }[]> {
+  const records = await prisma.users.findMany({
+    where: { role: "SALE", is_active: true },
+    orderBy: { full_name: "asc" },
+    select: { id: true, full_name: true, username: true },
+  });
+  return records.map((record) => ({ id: record.id, fullName: record.full_name, username: record.username }));
+}
+
 export async function listAdminUsers(): Promise<readonly AdminUserListItem[]> {
   const records = await prisma.users.findMany({
     orderBy: { full_name: "asc" },

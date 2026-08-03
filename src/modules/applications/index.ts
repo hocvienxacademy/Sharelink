@@ -7,6 +7,12 @@ export {
   type Gender,
 } from "./domain/application";
 export { isApplicationSubmittable } from "./domain/application-status-rules";
+export {
+  StaffApplicationAuthorizationPolicy,
+  assertStaffApplicationAuthorized,
+  type StaffApplicationAuthorizationResource,
+  type StaffApplicationCapability,
+} from "./application/authorization/staff-application-authorization";
 export type {
   ApplicationRelativeDto,
   DraftApplicationDto,
@@ -46,9 +52,7 @@ export {
   type SubmitApplicationInput,
   type UpdateDraftApplicationInput,
 } from "./application/validation/application-schemas";
-export {
-  getAdminApplicationDetail,
-  listAdminApplications,
-  type AdminApplicationDetail,
-  type AdminApplicationListItem,
-} from "./infrastructure/prisma-admin-application-queries";
+export type {
+  AdminApplicationDetail,
+  AdminApplicationListItem,
+} from "./application/dto/admin-application-dto";

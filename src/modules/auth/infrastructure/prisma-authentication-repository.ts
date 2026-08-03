@@ -4,6 +4,7 @@ import type {
   AuthenticationRepository,
   CreateAdminSessionInput,
 } from "../application/authentication";
+import { USER_ROLES, type UserRole } from "@/modules/users";
 import {
   executePrismaOperation,
   prisma,
@@ -11,7 +12,7 @@ import {
 import { AccountDisabledError, AccountLockedError } from "@/shared/errors";
 
 interface StoredAdminSession {
-  readonly role: "ADMIN";
+  readonly role: UserRole;
   readonly userId: string;
 }
 
@@ -23,7 +24,8 @@ function isStoredAdminSession(value: unknown): value is StoredAdminSession {
     "userId" in value &&
     typeof value.userId === "string" &&
     "role" in value &&
-    value.role === "ADMIN"
+    typeof value.role === "string" &&
+    USER_ROLES.includes(value.role as UserRole)
   );
 }
 
@@ -42,6 +44,7 @@ export class PrismaAuthenticationRepository
           is_active: boolean;
           locked_until_epoch_ms: string | null;
           password_hash: string;
+          role: UserRole;
           username: string;
         }>
       >`
@@ -51,11 +54,11 @@ export class PrismaAuthenticationRepository
           full_name,
           email,
           password_hash,
+          role::text AS role,
           is_active,
           (EXTRACT(EPOCH FROM locked_until) * 1000)::text AS locked_until_epoch_ms
         FROM users
         WHERE lower(username) = ${username}
-          AND role = 'ADMIN'
         LIMIT 1
       `;
       const user = users[0] ?? null;
@@ -73,6 +76,7 @@ export class PrismaAuthenticationRepository
               user.locked_until_epoch_ms === null
                 ? null
                 : new Date(Number(user.locked_until_epoch_ms)),
+            role: user.role,
           };
     });
   }
@@ -93,7 +97,6 @@ export class PrismaAuthenticationRepository
             failed_login_attempts = failed_login_attempts + 1,
             updated_at = ${input.attemptedAt.toISOString()}::timestamptz
           WHERE id = ${input.userId}::uuid
-            AND role = 'ADMIN'
             AND is_active = true
             AND (
               locked_until IS NULL
@@ -133,7 +136,12 @@ export class PrismaAuthenticationRepository
         `;
         const state = states[0] ?? null;
 
-        if (state === null || state.role !== "ADMIN" || !state.is_active) {
+        if (
+          state === null ||
+          !USER_ROLES.includes(state.role as UserRole) ||
+          state.role !== input.role ||
+          !state.is_active
+        ) {
           throw new AccountDisabledError();
         }
         if (state.is_locked) throw new AccountLockedError();
@@ -149,7 +157,7 @@ export class PrismaAuthenticationRepository
         `;
         const sessionData = JSON.stringify({
           userId: input.userId,
-          role: "ADMIN",
+          role: input.role,
           issuedAt: input.issuedAt.toISOString(),
         });
         await transaction.$executeRaw`
@@ -185,11 +193,11 @@ export class PrismaAuthenticationRepository
       const user = await prisma.users.findFirst({
         where: {
           id: session.sess.userId,
-          role: "ADMIN",
+          role: session.sess.role,
           is_active: true,
           OR: [{ locked_until: null }, { locked_until: { lte: now } }],
         },
-        select: { id: true, username: true, full_name: true, email: true },
+        select: { id: true, username: true, full_name: true, email: true, role: true },
       });
 
       return user === null
@@ -199,7 +207,7 @@ export class PrismaAuthenticationRepository
             username: user.username,
             fullName: user.full_name,
             email: user.email,
-            role: "ADMIN",
+            role: user.role,
           };
     });
   }

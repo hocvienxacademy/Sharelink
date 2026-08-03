@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { z } from "zod";
+
+const loginSuccessSchema = z.object({
+  success: z.literal(true),
+  data: z.object({ user: z.object({ role: z.enum(["SALE", "MANAGER", "ADMIN"]) }) }),
+});
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -70,7 +76,16 @@ export function AdminLoginForm() {
         return;
       }
 
-      router.replace("/quan-tri");
+      const result = loginSuccessSchema.safeParse(await response.json());
+      if (!result.success) {
+        setErrorMessage("Phản hồi đăng nhập không hợp lệ. Vui lòng thử lại.");
+        return;
+      }
+      router.replace(
+        result.data.data.user.role === "ADMIN"
+          ? "/quan-tri"
+          : "/quan-tri/lien-ket",
+      );
       router.refresh();
     } catch {
       setErrorMessage("Không thể kết nối đến hệ thống. Vui lòng thử lại.");

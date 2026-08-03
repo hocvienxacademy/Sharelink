@@ -6,7 +6,9 @@ export {
   type AdminAuthenticationRecord,
   type AdminIdentity,
   type AuthenticatedAdminSession,
+  type AuthenticatedStaffSession,
   type AuthenticationRepository,
   type CreateAdminSessionInput,
   type LoginInput,
+  type StaffIdentity,
 } from "./application/authentication";

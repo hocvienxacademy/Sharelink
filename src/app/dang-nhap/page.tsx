@@ -15,7 +15,9 @@ export default async function LoginPage() {
   const identity = await getAdminIdentityBySessionToken(
     cookieStore.get(ADMIN_SESSION_COOKIE)?.value,
   );
-  if (identity !== null) redirect("/quan-tri");
+  if (identity !== null) {
+    redirect(identity.role === "ADMIN" ? "/quan-tri" : "/quan-tri/lien-ket");
+  }
 
   return (
     <main className="min-h-dvh bg-surface px-4 py-6 sm:px-8 sm:py-10">

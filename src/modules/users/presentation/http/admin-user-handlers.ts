@@ -4,7 +4,7 @@ import {
   type AdminIdentity,
 } from "@/modules/auth";
 import { getAdminIdentityBySessionToken } from "@/composition/auth";
-import { BadRequestError, UnauthorizedError } from "@/shared/errors";
+import { BadRequestError, ForbiddenError, UnauthorizedError } from "@/shared/errors";
 import { createSuccessResponse } from "@/shared/http";
 import {
   handleNextRequest,
@@ -36,6 +36,7 @@ export function createCreateAdminUserHandler(
         request.cookies.get(ADMIN_SESSION_COOKIE)?.value,
       );
       if (identity === null) throw new UnauthorizedError();
+      if (identity.role !== "ADMIN") throw new ForbiddenError();
 
       const result = await service.execute(
         identity.id,

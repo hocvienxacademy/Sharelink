@@ -2,6 +2,7 @@ export {
   countActiveSales,
   getAdminUserDetail,
   listAdminUsers,
+  listActiveSaleOptions,
   type AdminUserDetail,
   type AdminUserListItem,
 } from "./infrastructure/prisma-admin-user-queries";

@@ -1,28 +1,45 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { requireAdminPage } from "@/modules/auth/presentation/require-admin-page";
+import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
+import { toAuthenticatedActor } from "@/shared/authorization";
 import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detail-grid";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
-import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
 import { formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
-import { getAdminRegistrationLinkDetail } from "@/modules/registration-links";
+import { registrationLinkQueries } from "@/composition/registration-links";
+import { listAdminAdmissionPeriods, listAdminMajors } from "@/modules/catalogs";
+import { listActiveSaleOptions } from "@/modules/users";
+import { RegistrationLinkActions } from "@/modules/registration-links/presentation/ui/registration-link-actions";
+import { RegistrationLinkForm } from "@/modules/registration-links/presentation/ui/registration-link-form";
 
 export const dynamic = "force-dynamic";
 
+const relatedLabel = (value: { readonly code: string; readonly name: string } | null) =>
+  value === null ? "Chưa gán" : `${value.code} — ${value.name}`;
+
 export default async function RegistrationLinkDetailPage({ params }: { readonly params: Promise<{ readonly id: string }> }) {
-  await requireAdminPage();
+  const identity = await requireStaffPage();
   const { id } = await params;
-  const item = await getAdminRegistrationLinkDetail(id);
+  const item = await registrationLinkQueries.detail(toAuthenticatedActor(identity), id);
   if (item === null) notFound();
+  const canMutate = identity.role === "ADMIN" || (identity.role === "SALE" && item.saleId === identity.id);
+  const editOptions = canMutate && item.status === "DRAFT" && item.applicationId === null
+    ? await Promise.all([
+        identity.role === "ADMIN"
+          ? listActiveSaleOptions()
+          : Promise.resolve([{ id: identity.id, fullName: identity.fullName, username: identity.username }]),
+        listAdminAdmissionPeriods(),
+        listAdminMajors(),
+      ])
+    : null;
   return (
     <div className="flex flex-col gap-8">
       <AdminPageHeader
         parent={{ href: "/quan-tri/lien-ket", label: "Liên kết" }}
         title={item.studentNameHint ?? "Chi tiết liên kết"}
-        description="Public token và ghi chú nội bộ không được trả về màn hình khi quyền hiển thị chưa được phê duyệt."
+        description="Quản lý thông tin, trạng thái và lịch sử của liên kết đăng ký."
         action={item.applicationId === null ? null : (
           <Button nativeButton={false} variant="outline" render={<Link href={`/quan-tri/ho-so/${item.applicationId}`} />}>
             Mở hồ sơ
@@ -34,8 +51,8 @@ export default async function RegistrationLinkDetailPage({ params }: { readonly 
         items={[
           { label: "Trạng thái", value: <AdminStatusBadge status={item.status} /> },
           { label: "SALE phụ trách", value: item.saleName },
-          { label: "Kỳ tuyển sinh", value: item.admissionPeriod },
-          { label: "Ngành", value: item.major },
+          { label: "Kỳ tuyển sinh", value: relatedLabel(item.admissionPeriod) },
+          { label: "Ngành", value: relatedLabel(item.major) },
           { label: "Học phí", value: formatMoney(item.tuitionAmount) },
           { label: "Đợt thanh toán", value: item.paymentRound },
           { label: "Ngày tạo", value: formatDateTime(item.createdAt) },
@@ -43,9 +60,16 @@ export default async function RegistrationLinkDetailPage({ params }: { readonly 
           { label: "Lần truy cập", value: item.accessCount },
         ]}
       />
-      <BusinessRuleGate>
-        Các thao tác kích hoạt, khóa, hủy và lưu trữ chờ transition matrix của registration link.
-      </BusinessRuleGate>
+      <RegistrationLinkActions id={item.id} status={item.status} applicationId={item.applicationId} publicUrl={item.publicUrl} updatedAtIso={item.updatedAtIso} canMutate={canMutate} />
+      {editOptions === null ? null : (
+        <RegistrationLinkForm
+          linkId={item.id}
+          initial={item}
+          sales={editOptions[0].map((value) => ({ id: value.id, label: `${value.fullName} (${value.username})` }))}
+          periods={editOptions[1].filter((value) => value.isActive).map((value) => ({ id: value.id, label: `${value.code} — ${value.name}` }))}
+          majors={editOptions[2].filter((value) => value.isActive).map((value) => ({ id: value.id, label: `${value.code} — ${value.name}` }))}
+        />
+      )}
       <AdminResourceTable
         columns={[
           { key: "transition", label: "Chuyển trạng thái" },

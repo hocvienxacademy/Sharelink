@@ -1,50 +1,12 @@
 import { z } from "zod";
 import { prisma } from "@/shared/infrastructure/database/prisma/prisma-client";
 import { maskSensitiveValue } from "@/shared/security/mask-sensitive-value";
-
-export interface AdminApplicationListItem {
-  readonly admissionPeriod: string;
-  readonly applicationCode: string | null;
-  readonly createdAt: Date;
-  readonly fullName: string | null;
-  readonly id: string;
-  readonly major: string;
-  readonly saleName: string;
-  readonly status: string;
-  readonly submittedAt: Date | null;
-}
-
-export interface AdminApplicationDetail extends AdminApplicationListItem {
-  readonly admissionDiploma: string | null;
-  readonly maskedCitizenId: string;
-  readonly contactAddressProvided: boolean;
-  readonly dataProcessingConsent: boolean;
-  readonly dateOfBirth: Date | null;
-  readonly declarationConfirmed: boolean;
-  readonly email: string | null;
-  readonly entryQualification: string | null;
-  readonly gender: string | null;
-  readonly graduateMajor: string | null;
-  readonly graduationYear: number | null;
-  readonly highSchoolName: string | null;
-  readonly histories: readonly {
-    readonly actorName: string;
-    readonly createdAt: Date;
-    readonly newStatus: string;
-    readonly previousStatus: string | null;
-    readonly reason: string | null;
-  }[];
-  readonly payment: { readonly amount: string | null; readonly status: string } | null;
-  readonly permanentAddressProvided: boolean;
-  readonly phone: string | null;
-  readonly relatives: readonly {
-    readonly fullName: string | null;
-    readonly position: number;
-    readonly relationship: string | null;
-  }[];
-  readonly reviewedAt: Date | null;
-  readonly reviewerName: string | null;
-}
+import type { AdminApplicationDetail, AdminApplicationListItem } from "../application/dto/admin-application-dto";
+import type {
+  AdminApplicationQueryRepository,
+  ApplicationQueryScope,
+} from "../application/ports/admin-application-query-repository";
+import type { StaffApplicationAuthorizationResource } from "../application/authorization/staff-application-authorization";
 
 const uuidSchema = z.uuid();
 
@@ -52,8 +14,16 @@ function relatedLabel(value: { readonly code: string; readonly name: string } | 
   return value === null ? "Chưa gán" : `${value.code} — ${value.name}`;
 }
 
-export async function listAdminApplications(): Promise<readonly AdminApplicationListItem[]> {
+function scopeWhere(scope: ApplicationQueryScope) {
+  if (scope.kind === "all") return {};
+  if (scope.kind === "sale") return { sale_id: scope.saleId };
+  return { users_applications_sale_idTousers: { manager_id: scope.managerId } };
+}
+
+export class PrismaAdminApplicationQueryRepository implements AdminApplicationQueryRepository {
+async list(scope: ApplicationQueryScope): Promise<readonly AdminApplicationListItem[]> {
   const records = await prisma.applications.findMany({
+    where: scopeWhere(scope),
     orderBy: { created_at: "desc" },
     take: 100,
     select: {
@@ -78,10 +48,25 @@ export async function listAdminApplications(): Promise<readonly AdminApplication
   }));
 }
 
-export async function getAdminApplicationDetail(id: string): Promise<AdminApplicationDetail | null> {
+async findAuthorizationResource(id: string): Promise<StaffApplicationAuthorizationResource | null> {
   if (!uuidSchema.safeParse(id).success) return null;
   const record = await prisma.applications.findUnique({
     where: { id },
+    select: {
+      sale_id: true,
+      users_applications_sale_idTousers: { select: { manager_id: true } },
+    },
+  });
+  return record === null ? null : {
+    ownerId: record.sale_id,
+    ownerManagerId: record.users_applications_sale_idTousers.manager_id,
+  };
+}
+
+async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplicationDetail | null> {
+  if (!uuidSchema.safeParse(id).success) return null;
+  const record = await prisma.applications.findFirst({
+    where: { id, ...scopeWhere(scope) },
     select: {
       id: true, application_code: true, status: true, full_name: true, gender: true,
       date_of_birth: true, citizen_id: true, phone: true, email: true,
@@ -152,4 +137,5 @@ export async function getAdminApplicationDetail(id: string): Promise<AdminApplic
       amount: record.payment_confirmations.amount?.toString() ?? null,
     },
   };
+}
 }

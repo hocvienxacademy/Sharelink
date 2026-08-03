@@ -189,9 +189,11 @@ export async function seedTestDatabase(): Promise<void> {
     await client.query("BEGIN");
     await client.query(
       `INSERT INTO users (id, username, full_name, email, password_hash, role)
-       VALUES ($1, 'sale-test', 'Test Sale', 'sale@test.invalid', 'not-a-real-password-hash', 'SALE')`,
-      [TEST_IDS.sale],
+       VALUES ($1, 'manager-test', 'Test Manager', 'manager@test.invalid', $3, 'MANAGER'),
+              ($2, 'sale-test', 'Test Sale', 'sale@test.invalid', $3, 'SALE')`,
+      [TEST_IDS.manager, TEST_IDS.sale, adminPasswordHash],
     );
+    await client.query("UPDATE users SET manager_id = $1 WHERE id = $2", [TEST_IDS.manager, TEST_IDS.sale]);
     await client.query(
       `INSERT INTO users (id, username, full_name, email, password_hash, role)
        VALUES ($1, 'admin', 'Test Admin', 'admin@test.invalid', $2, 'ADMIN')`,

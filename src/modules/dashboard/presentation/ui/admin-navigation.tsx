@@ -26,6 +26,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import type { UserRole } from "@/modules/users";
 
 interface NavigationItem {
   readonly href: string;
@@ -52,9 +53,12 @@ function isActiveRoute(pathname: string, href: string): boolean {
     : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavigationLinks({ onNavigate }: { readonly onNavigate?: () => void }) {
+function NavigationLinks({ onNavigate, role }: { readonly onNavigate?: () => void; readonly role: UserRole }) {
   const pathname = usePathname();
-  return navigationItems.map(({ href, icon: Icon, label }) => {
+  const visibleItems = role === "ADMIN"
+    ? navigationItems
+    : navigationItems.filter((item) => item.href === "/quan-tri/lien-ket" || item.href === "/quan-tri/ho-so");
+  return visibleItems.map(({ href, icon: Icon, label }) => {
     const active = isActiveRoute(pathname, href);
     return (
       <Link
@@ -76,7 +80,7 @@ function NavigationLinks({ onNavigate }: { readonly onNavigate?: () => void }) {
   });
 }
 
-export function AdminMobileNavigation() {
+export function AdminMobileNavigation({ role }: { readonly role: UserRole }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="border-b bg-background px-4 py-3 lg:hidden">
@@ -90,7 +94,7 @@ export function AdminMobileNavigation() {
             <SheetDescription>Chọn khu vực vận hành cần mở.</SheetDescription>
           </SheetHeader>
           <nav className="flex flex-col gap-1 px-4" aria-label="Điều hướng quản trị mobile">
-            <NavigationLinks onNavigate={() => setOpen(false)} />
+            <NavigationLinks role={role} onNavigate={() => setOpen(false)} />
           </nav>
         </SheetContent>
       </Sheet>
@@ -98,11 +102,11 @@ export function AdminMobileNavigation() {
   );
 }
 
-export function AdminDesktopNavigation() {
+export function AdminDesktopNavigation({ role }: { readonly role: UserRole }) {
   return (
     <aside className="hidden min-h-[calc(100dvh-73px)] border-r bg-background p-4 lg:block">
       <nav className="sticky top-4 flex flex-col gap-1" aria-label="Điều hướng quản trị">
-        <NavigationLinks />
+        <NavigationLinks role={role} />
       </nav>
     </aside>
   );

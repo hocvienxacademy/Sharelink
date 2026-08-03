@@ -6,11 +6,16 @@ import {
   UpdateDraftApplication,
 } from "../modules/applications/index";
 import { PrismaApplicationRepository } from "../modules/applications/infrastructure/index";
+import { PrismaAdminApplicationQueryRepository } from "@/modules/applications/infrastructure/prisma-admin-application-queries";
+import { QueryStaffApplications } from "@/modules/applications/application/services/query-staff-applications";
 import { catalogRepository } from "./catalogs";
 import { validateRegistrationLink } from "./registration-links";
 
 export const applicationRepository = new PrismaApplicationRepository();
 export const defaultSubmissionPolicy = new DefaultSubmissionPolicy();
+export const staffApplicationQueries = new QueryStaffApplications(
+  new PrismaAdminApplicationQueryRepository(),
+);
 
 export const createDraftApplication = new CreateDraftApplication(
   validateRegistrationLink,

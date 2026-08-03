@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { ShieldCheckIcon } from "lucide-react";
-import type { AdminIdentity } from "@/modules/auth";
+import type { StaffIdentity } from "@/modules/auth";
 import { LogoutButton } from "@/modules/auth/presentation/ui/logout-button";
 import { AdminDesktopNavigation, AdminMobileNavigation } from "./admin-navigation";
 
@@ -10,7 +10,7 @@ export function AdminShell({
   identity,
 }: {
   readonly children: ReactNode;
-  readonly identity: AdminIdentity;
+  readonly identity: StaffIdentity;
 }) {
   return (
     <main className="min-h-dvh bg-surface">
@@ -30,17 +30,17 @@ export function AdminShell({
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium">{identity.fullName}</p>
-              <p className="text-xs text-muted-foreground">Quản trị viên</p>
+              <p className="text-xs text-muted-foreground">{identity.role}</p>
             </div>
             <LogoutButton />
           </div>
         </div>
       </header>
 
-      <AdminMobileNavigation />
+      <AdminMobileNavigation role={identity.role} />
 
       <div className="mx-auto grid max-w-[1600px] lg:grid-cols-[240px_minmax(0,1fr)]">
-        <AdminDesktopNavigation />
+        <AdminDesktopNavigation role={identity.role} />
         <div className="min-w-0 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</div>
       </div>
     </main>

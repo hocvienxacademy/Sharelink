@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { getAdminApplicationDetail } from "@/modules/applications";
-import { requireAdminPage } from "@/modules/auth/presentation/require-admin-page";
+import { staffApplicationQueries } from "@/composition/applications";
+import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
+import { toAuthenticatedActor } from "@/shared/authorization";
 import { formatDate, formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
 import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detail-grid";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
@@ -13,9 +14,9 @@ import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-r
 export const dynamic = "force-dynamic";
 
 export default async function ApplicationDetailPage({ params }: { readonly params: Promise<{ readonly id: string }> }) {
-  await requireAdminPage();
+  const identity = await requireStaffPage();
   const { id } = await params;
-  const item = await getAdminApplicationDetail(id);
+  const item = await staffApplicationQueries.detail(toAuthenticatedActor(identity), id);
   if (item === null) notFound();
   return (
     <div className="flex flex-col gap-8">

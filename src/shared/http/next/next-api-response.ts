@@ -32,11 +32,11 @@ export async function handleNextRequest<T>(
   operation: () => Promise<ApiResponse<ApiSuccessBody<T>>>,
   headers?: HeadersInit,
   routeClass = "unknown",
+  requestId = randomUUID(),
 ): Promise<NextResponse> {
   const startedAt = performance.now();
   const telemetry = getOperationalTelemetry();
   const responseHeaders = new Headers(headers);
-  const requestId = randomUUID();
   responseHeaders.set("X-Request-ID", requestId);
   try {
     const result = await operation();

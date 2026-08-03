@@ -33,6 +33,7 @@ function admin(
     passwordHash: "stored-hash",
     isActive: true,
     lockedUntil: null,
+    role: "ADMIN",
     ...overrides,
   };
 }

@@ -8,6 +8,7 @@ import {
   UnauthorizedError,
 } from "@/shared/errors";
 import { parseWithSchema } from "@/shared/validation";
+import type { UserRole } from "@/modules/users";
 
 export const ADMIN_SESSION_COOKIE = "sls_admin_session";
 const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
@@ -48,19 +49,23 @@ export function normalizeLoginUsername(input: unknown): string | null {
   return parsed.success ? parsed.data : null;
 }
 
-export interface AdminIdentity {
+export interface StaffIdentity {
   readonly id: string;
   readonly username: string;
   readonly fullName: string;
   readonly email: string;
-  readonly role: "ADMIN";
+  readonly role: UserRole;
 }
 
-export interface AuthenticatedAdminSession {
-  readonly identity: AdminIdentity;
+export type AdminIdentity = StaffIdentity;
+
+export interface AuthenticatedStaffSession {
+  readonly identity: StaffIdentity;
   readonly expiresAt: Date;
   readonly token: string;
 }
+
+export type AuthenticatedAdminSession = AuthenticatedStaffSession;
 
 export interface AdminAuthenticationRecord {
   readonly id: string;
@@ -70,12 +75,14 @@ export interface AdminAuthenticationRecord {
   readonly passwordHash: string;
   readonly isActive: boolean;
   readonly lockedUntil: Date | null;
+  readonly role: UserRole;
 }
 
 export interface CreateAdminSessionInput {
   readonly sessionId: string;
   readonly userId: string;
   readonly issuedAt: Date;
+  readonly role: UserRole;
   readonly expiresAt: Date;
 }
 
@@ -91,7 +98,7 @@ export interface AuthenticationRepository {
   findIdentityBySessionId(
     sessionId: string,
     now: Date,
-  ): Promise<AdminIdentity | null>;
+  ): Promise<StaffIdentity | null>;
   revokeSession(sessionId: string): Promise<void>;
 }
 
@@ -186,6 +193,7 @@ export class AdminAuthenticationService {
           userId: user.id,
           issuedAt: attemptedAt,
           expiresAt,
+          role: user.role,
         });
         return {
           token,
@@ -195,7 +203,7 @@ export class AdminAuthenticationService {
             username: user.username,
             fullName: user.fullName,
             email: user.email,
-            role: "ADMIN",
+            role: user.role,
           },
         };
       } catch (error: unknown) {
@@ -207,7 +215,7 @@ export class AdminAuthenticationService {
     throw lastConflict ?? new ConflictError();
   }
 
-  async getIdentity(token: string | undefined): Promise<AdminIdentity | null> {
+  async getIdentity(token: string | undefined): Promise<StaffIdentity | null> {
     if (!token || token.length > 255) return null;
     return this.repository.findIdentityBySessionId(
       sessionId(token),

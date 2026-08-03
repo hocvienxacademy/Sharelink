@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { listAdminApplications } from "@/modules/applications";
-import { requireAdminPage } from "@/modules/auth/presentation/require-admin-page";
+import { staffApplicationQueries } from "@/composition/applications";
+import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
+import { toAuthenticatedActor } from "@/shared/authorization";
 import { formatDateTime } from "@/modules/dashboard/presentation/format-admin-value";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
@@ -11,11 +12,11 @@ import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-stat
 export const dynamic = "force-dynamic";
 
 export default async function ApplicationsPage() {
-  await requireAdminPage();
-  const applications = await listAdminApplications();
+  const identity = await requireStaffPage();
+  const applications = await staffApplicationQueries.list(toAuthenticatedActor(identity));
   return (
     <div className="flex flex-col gap-8">
-      <AdminPageHeader title="Hồ sơ sinh viên" description="Danh sách 100 hồ sơ mới nhất, chỉ khả dụng trong phiên ADMIN đã xác thực." />
+      <AdminPageHeader title="Hồ sơ sinh viên" description="Danh sách 100 hồ sơ mới nhất trong phạm vi bạn được phân quyền." />
       <AdminResourceTable
         columns={[
           { key: "code", label: "Mã hồ sơ" },
