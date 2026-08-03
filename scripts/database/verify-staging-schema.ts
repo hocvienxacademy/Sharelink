@@ -3,7 +3,7 @@ import { validateStagingDatabaseTarget } from "../../src/shared/config/runtime-e
 import { readSchemaFingerprint } from "./schema-fingerprint";
 
 const EXPECTED_SCHEMA_SHA256 =
-  "d60fc79485e151ca2533ecc51e0356913350ed97a850f813f08fa6fc313a074d";
+  "6190c6858f24781f1517a61d6cfb25b880ace8d57a0eba1d462ad7686b10ccda";
 
 const EXPECTED_TABLES = [
   "admission_periods",
@@ -39,6 +39,8 @@ const EXPECTED_CHECKS = [
   "chk_users_failed_login_attempts",
   "chk_users_not_own_manager",
   "chk_users_phone",
+  "chk_users_username_canonical",
+  "chk_users_username_not_blank",
 ] as const;
 
 const EXPECTED_ENUMS = {

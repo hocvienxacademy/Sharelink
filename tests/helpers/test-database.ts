@@ -188,13 +188,13 @@ export async function seedTestDatabase(): Promise<void> {
   try {
     await client.query("BEGIN");
     await client.query(
-      `INSERT INTO users (id, full_name, email, password_hash, role)
-       VALUES ($1, 'Test Sale', 'sale@test.invalid', 'not-a-real-password-hash', 'SALE')`,
+      `INSERT INTO users (id, username, full_name, email, password_hash, role)
+       VALUES ($1, 'sale-test', 'Test Sale', 'sale@test.invalid', 'not-a-real-password-hash', 'SALE')`,
       [TEST_IDS.sale],
     );
     await client.query(
-      `INSERT INTO users (id, full_name, email, password_hash, role)
-       VALUES ($1, 'Test Admin', 'admin@test.invalid', $2, 'ADMIN')`,
+      `INSERT INTO users (id, username, full_name, email, password_hash, role)
+       VALUES ($1, 'admin', 'Test Admin', 'admin@test.invalid', $2, 'ADMIN')`,
       [TEST_IDS.admin, adminPasswordHash],
     );
     await client.query(

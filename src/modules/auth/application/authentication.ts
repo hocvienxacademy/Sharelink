@@ -9,10 +9,22 @@ const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
 const DUMMY_PASSWORD_HASH =
   "scrypt-v1$8JFF_g74YQLtANAg9meghg$IfMVc2OsiBYps2ZVR-_esExx_JyF7OhIdAAZ2vlQFXWbzBXhvKA4FYnZe229fpQVpu3cYdB0zHNetqgwp8qaYw";
 
+const loginUsernameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(100)
+  .transform((value) => value.toLowerCase());
+
 const loginInputSchema = z.object({
-  identifier: z.string().trim().min(1).max(255),
+  username: loginUsernameSchema,
   password: z.string().min(1).max(128),
 });
+
+export function normalizeLoginUsername(input: unknown): string | null {
+  const parsed = loginUsernameSchema.safeParse(input);
+  return parsed.success ? parsed.data : null;
+}
 
 export interface AdminIdentity {
   readonly id: string;
@@ -68,30 +80,6 @@ async function recordFailedLogin(
   });
 }
 
-function localAdminEmail(
-  environment: Readonly<Record<string, string | undefined>>,
-): string {
-  return (
-    environment.LOCAL_ADMIN_EMAIL ?? "admin@local.sharelinkstudent.test"
-  ).toLowerCase();
-}
-
-export function resolveAdminLoginEmail(
-  identifier: string,
-  environment: Readonly<Record<string, string | undefined>> = process.env,
-): string {
-  const normalized = identifier.trim().toLowerCase();
-  const localUsername = (environment.LOCAL_ADMIN_USERNAME ?? "admin")
-    .trim()
-    .toLowerCase();
-
-  if (environment.APP_ENV === "development" && normalized === localUsername) {
-    return localAdminEmail(environment);
-  }
-
-  return normalized;
-}
-
 export async function authenticateAdmin(
   input: unknown,
   environment: Readonly<Record<string, string | undefined>> = process.env,
@@ -99,10 +87,9 @@ export async function authenticateAdmin(
   const parsed = loginInputSchema.safeParse(input);
   if (!parsed.success) throw new UnauthorizedError();
 
-  const email = resolveAdminLoginEmail(parsed.data.identifier, environment);
   const user = await prisma.users.findFirst({
     where: {
-      email: { equals: email, mode: "insensitive" },
+      username: { equals: parsed.data.username, mode: "insensitive" },
       role: "ADMIN",
       is_active: true,
     },

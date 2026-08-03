@@ -9,6 +9,12 @@ export const createUserSchema = z
       .trim()
       .min(1, "Vui lòng nhập họ và tên.")
       .max(150, "Họ và tên không được vượt quá 150 ký tự."),
+    username: z
+      .string()
+      .trim()
+      .min(1, "Vui lòng nhập tên đăng nhập.")
+      .max(100, "Tên đăng nhập không được vượt quá 100 ký tự.")
+      .transform((value) => value.toLowerCase()),
     email: z
       .string()
       .trim()

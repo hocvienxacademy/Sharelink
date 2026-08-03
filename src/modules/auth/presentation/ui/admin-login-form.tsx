@@ -28,7 +28,7 @@ export function AdminLoginForm() {
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          identifier: formData.get("identifier"),
+          username: formData.get("username"),
           password: formData.get("password"),
         }),
       });
@@ -63,12 +63,12 @@ export function AdminLoginForm() {
 
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="identifier">Tài khoản</FieldLabel>
+          <FieldLabel htmlFor="username">Tên đăng nhập</FieldLabel>
           <Input
-            id="identifier"
-            name="identifier"
+            id="username"
+            name="username"
             autoComplete="username"
-            placeholder="Nhập tài khoản quản trị"
+            placeholder="Nhập tên đăng nhập"
             required
             autoFocus
           />

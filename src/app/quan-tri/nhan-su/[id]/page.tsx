@@ -29,6 +29,7 @@ export default async function UserDetailPage({ params }: { readonly params: Prom
       <AdminDetailGrid
         title="Thông tin tài khoản"
         items={[
+          { label: "Tên đăng nhập", value: item.username },
           { label: "Email", value: item.email },
           { label: "Điện thoại", value: item.phone },
           { label: "Vai trò", value: <Badge variant="outline">{item.role}</Badge> },

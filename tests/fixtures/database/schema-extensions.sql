@@ -43,6 +43,8 @@ ALTER TABLE registration_links
 ALTER TABLE users
   ADD CONSTRAINT chk_users_failed_login_attempts CHECK (failed_login_attempts >= 0),
   ADD CONSTRAINT chk_users_not_own_manager CHECK (manager_id IS NULL OR manager_id <> id),
+  ADD CONSTRAINT chk_users_username_not_blank CHECK (btrim(username) <> ''),
+  ADD CONSTRAINT chk_users_username_canonical CHECK (username = lower(btrim(username))),
   ADD CONSTRAINT chk_users_phone
   CHECK (phone IS NULL OR phone::text ~ '^[0-9]{10,15}$'::text);
 
@@ -51,3 +53,4 @@ CREATE INDEX idx_applications_full_name_lower
   WHERE full_name IS NOT NULL;
 CREATE UNIQUE INDEX uq_majors_name_lower ON majors (lower(name::text));
 CREATE UNIQUE INDEX uq_users_email_lower ON users (lower(email::text));
+CREATE UNIQUE INDEX uq_users_username_lower ON users (lower(username::text));

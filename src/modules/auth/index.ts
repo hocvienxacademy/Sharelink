@@ -2,7 +2,7 @@ export {
   ADMIN_SESSION_COOKIE,
   authenticateAdmin,
   getAdminIdentityBySessionToken,
-  resolveAdminLoginEmail,
+  normalizeLoginUsername,
   revokeAdminSession,
   type AdminIdentity,
   type AuthenticatedAdminSession,

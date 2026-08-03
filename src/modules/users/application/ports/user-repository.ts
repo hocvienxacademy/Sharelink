@@ -7,6 +7,7 @@ export interface CreateUserPersistenceInput {
   readonly passwordHash: string;
   readonly phone: string | null;
   readonly role: UserRole;
+  readonly username: string;
 }
 
 export interface UserRepository {

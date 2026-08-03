@@ -19,6 +19,7 @@ export class CreateUser {
       passwordHash,
       phone: values.phone,
       role: values.role,
+      username: values.username,
     });
   }
 }

@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_SESSION_COOKIE, authenticateAdmin } from "@/modules/auth";
+import {
+  ADMIN_SESSION_COOKIE,
+  authenticateAdmin,
+  normalizeLoginUsername,
+} from "@/modules/auth";
 import { createErrorResponse } from "@/shared/http";
 import { isSameOriginRequest, readJsonBody } from "@/shared/http/next";
 import { getRateLimitGuard } from "@/shared/rate-limit";
@@ -20,18 +24,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const payload = await readJsonBody(request, 2_048);
-    const identifier =
+    const usernameInput =
       typeof payload === "object" &&
       payload !== null &&
-      "identifier" in payload &&
-      typeof payload.identifier === "string"
-        ? payload.identifier
-        : "unknown";
+      "username" in payload &&
+      typeof payload.username === "string"
+        ? payload.username
+        : null;
+    const normalizedUsername = normalizeLoginUsername(usernameInput);
 
     await getRateLimitGuard().enforce({
       endpoint: "auth-login",
       request,
-      token: identifier,
+      token: normalizedUsername ?? "invalid-username",
     });
 
     const session = await authenticateAdmin(payload);

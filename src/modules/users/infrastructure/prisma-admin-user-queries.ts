@@ -9,6 +9,7 @@ export interface AdminUserListItem {
   readonly lastLoginAt: Date | null;
   readonly managerName: string | null;
   readonly role: string;
+  readonly username: string;
 }
 
 export interface AdminUserDetail extends AdminUserListItem {
@@ -30,12 +31,13 @@ export async function listAdminUsers(): Promise<readonly AdminUserListItem[]> {
     orderBy: { full_name: "asc" },
     take: 100,
     select: {
-      id: true, full_name: true, email: true, role: true, is_active: true, last_login_at: true,
+      id: true, username: true, full_name: true, email: true, role: true, is_active: true, last_login_at: true,
       users: { select: { full_name: true } },
     },
   });
   return records.map((record) => ({
     id: record.id,
+    username: record.username,
     fullName: record.full_name,
     email: record.email,
     role: record.role,
@@ -50,7 +52,7 @@ export async function getAdminUserDetail(id: string): Promise<AdminUserDetail | 
   const record = await prisma.users.findUnique({
     where: { id },
     select: {
-      id: true, full_name: true, email: true, phone: true, role: true, is_active: true,
+      id: true, username: true, full_name: true, email: true, phone: true, role: true, is_active: true,
       failed_login_attempts: true, locked_until: true, last_login_at: true,
       password_changed_at: true, created_at: true,
       users: { select: { full_name: true } },
@@ -59,6 +61,7 @@ export async function getAdminUserDetail(id: string): Promise<AdminUserDetail | 
   if (record === null) return null;
   return {
     id: record.id,
+    username: record.username,
     fullName: record.full_name,
     email: record.email,
     phone: record.phone,

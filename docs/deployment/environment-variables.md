@@ -25,7 +25,9 @@ For a local-only administrator, set `LOCAL_ADMIN_USERNAME`,
 run `npm run db:seed:local-admin`. The command refuses non-development or
 non-loopback database targets, hashes the password with scrypt, and updates or
 creates only the configured local admin record. Never reuse this local password
-in staging or production. Failed logins lock the account after five attempts
+in staging or production. Staff authentication uses `LOCAL_ADMIN_USERNAME` as
+the login identifier; email remains contact data and is not accepted by the
+login endpoint. Failed logins lock the account after five attempts
 for 15 minutes by default; `ADMIN_LOGIN_MAX_ATTEMPTS` and
 `ADMIN_LOGIN_LOCK_SECONDS` can override that policy.
 

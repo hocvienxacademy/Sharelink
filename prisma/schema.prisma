@@ -268,6 +268,7 @@ model system_settings {
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model users {
   id                                                              String                               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username                                                        String                               @db.VarChar(100)
   full_name                                                       String                               @db.VarChar(150)
   email                                                           String                               @db.VarChar(255)
   phone                                                           String?                              @unique(map: "uq_users_phone", where: raw("(phone IS NOT NULL)")) @db.VarChar(15)

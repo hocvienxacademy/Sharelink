@@ -52,6 +52,7 @@ export function CreateUserForm() {
   const form = useForm<CreateUserFormValues>({
     defaultValues: {
       fullName: "",
+      username: "",
       email: "",
       phone: "",
       role: "SALE",
@@ -91,7 +92,7 @@ export function CreateUserForm() {
       }
       setGeneralError(
         error.kind === "conflict"
-          ? "Email hoặc số điện thoại đã được sử dụng."
+          ? "Tên đăng nhập, email hoặc số điện thoại đã được sử dụng."
           : error.kind === "unauthorized"
             ? "Phiên quản trị đã hết hạn. Vui lòng đăng nhập lại."
             : error.kind === "network"
@@ -118,9 +119,15 @@ export function CreateUserForm() {
               <FieldError>{errors.fullName?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.email)}>
-              <FieldLabel htmlFor="email">Email đăng nhập *</FieldLabel>
+              <FieldLabel htmlFor="email">Email liên hệ *</FieldLabel>
               <Input id="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} {...register("email")} />
               <FieldError>{errors.email?.message}</FieldError>
+            </Field>
+            <Field data-invalid={Boolean(errors.username)}>
+              <FieldLabel htmlFor="username">Tên đăng nhập *</FieldLabel>
+              <Input id="username" autoComplete="username" aria-invalid={Boolean(errors.username)} {...register("username")} />
+              <FieldDescription>Không phân biệt chữ hoa và chữ thường.</FieldDescription>
+              <FieldError>{errors.username?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.phone)}>
               <FieldLabel htmlFor="phone">Số điện thoại (không bắt buộc)</FieldLabel>

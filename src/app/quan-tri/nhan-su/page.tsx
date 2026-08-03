@@ -27,6 +27,7 @@ export default async function UsersPage() {
       <AdminResourceTable
         columns={[
           { key: "name", label: "Họ tên" },
+          { key: "username", label: "Tên đăng nhập" },
           { key: "email", label: "Email" },
           { key: "role", label: "Vai trò" },
           { key: "manager", label: "Quản lý" },
@@ -38,6 +39,7 @@ export default async function UsersPage() {
         rows={users.map((item) => ({
           id: item.id,
           name: item.fullName,
+          username: item.username,
           email: item.email,
           role: <Badge variant="outline">{item.role}</Badge>,
           manager: item.managerName ?? "—",

@@ -14,6 +14,7 @@ const identity: AdminIdentity = {
 
 const input = {
   fullName: "Test Sale",
+  username: "sale-new",
   email: "sale-new@test.invalid",
   phone: null,
   role: "SALE",

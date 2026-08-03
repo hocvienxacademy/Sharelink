@@ -31,6 +31,7 @@ describe("CreateUser", () => {
 
     const result = await service.execute("admin-id", {
       fullName: "  Nguyễn Văn Sale  ",
+      username: "  Sale.One  ",
       email: "  SALE@Example.COM ",
       phone: "",
       role: "SALE",
@@ -44,6 +45,7 @@ describe("CreateUser", () => {
       email: "sale@example.com",
       phone: null,
       role: "SALE",
+      username: "sale.one",
       passwordHash: "hashed:12",
     });
     assert.equal("password" in (repository.lastInput ?? {}), false);
@@ -61,6 +63,7 @@ describe("CreateUser", () => {
     await assert.rejects(
       service.execute("admin-id", {
         fullName: "Test User",
+        username: "test-user",
         email: "user@example.com",
         phone: null,
         role: "STUDENT",
@@ -78,6 +81,7 @@ describe("CreateUser", () => {
     await assert.rejects(
       service.execute("admin-id", {
         fullName: "Test User",
+        username: "test-user",
         email: "user@example.com",
         phone: "090-123-4567",
         role: "SALE",

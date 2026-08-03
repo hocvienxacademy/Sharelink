@@ -18,25 +18,27 @@ export class PrismaUserRepository implements UserRepository {
     return executePrismaOperation(() =>
       prisma.$transaction(async (transaction) => {
         await transaction.$queryRaw`
-          SELECT pg_advisory_xact_lock(hashtext(${`users:create:${input.email}`}))::text
+          SELECT pg_advisory_xact_lock(hashtext(${`users:create:${input.username}`}))::text
         `;
 
         const existing = await transaction.users.findFirst({
           where: {
             OR: [
               { email: { equals: input.email, mode: "insensitive" } },
+              { username: { equals: input.username, mode: "insensitive" } },
               ...(input.phone === null ? [] : [{ phone: input.phone }]),
             ],
           },
           select: { id: true },
         });
         if (existing !== null) {
-          throw new ConflictError("Email hoặc số điện thoại đã được sử dụng.");
+          throw new ConflictError("Tên đăng nhập, email hoặc số điện thoại đã được sử dụng.");
         }
 
         const now = new Date();
         const user = await transaction.users.create({
           data: {
+            username: input.username,
             full_name: input.fullName,
             email: input.email,
             phone: input.phone,

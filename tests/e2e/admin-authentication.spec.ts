@@ -73,7 +73,7 @@ test("administrator can sign in, view aggregate dashboard, and sign out", async 
 
   await page.goto("/dang-nhap");
 
-  await page.getByLabel("Tài khoản").fill("admin@test.invalid");
+  await page.getByLabel("Tên đăng nhập").fill("admin");
   await page.getByLabel("Mật khẩu").fill("admin-test-password");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
@@ -98,7 +98,7 @@ test("administrator can open every read-only management surface", async ({ page 
   try {
 
   await page.goto("/dang-nhap");
-  await page.getByLabel("Tài khoản").fill("admin@test.invalid");
+  await page.getByLabel("Tên đăng nhập").fill("admin");
   await page.getByLabel("Mật khẩu").fill("admin-test-password");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
   await expect(page).toHaveURL(/\/quan-tri$/);
@@ -147,14 +147,15 @@ test("administrator can create a staff account from the management form", async 
 
   try {
     await page.goto("/dang-nhap");
-    await page.getByLabel("Tài khoản").fill("admin@test.invalid");
+    await page.getByLabel("Tên đăng nhập").fill("admin");
     await page.getByLabel("Mật khẩu").fill("admin-test-password");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
     await expect(page).toHaveURL(/\/quan-tri$/);
 
     await page.goto("/quan-tri/nhan-su/moi");
     await page.getByLabel("Họ và tên").fill("Quản lý kiểm thử");
-    await page.getByLabel("Email đăng nhập").fill(email);
+    await page.getByLabel("Tên đăng nhập").fill("manager-created");
+    await page.getByLabel("Email liên hệ").fill(email);
     await page.getByLabel("Vai trò").selectOption("MANAGER");
     await page.getByLabel("Mật khẩu ban đầu").fill("manager-password-123");
     await page.getByLabel("Xác nhận mật khẩu").fill("manager-password-123");
@@ -162,6 +163,7 @@ test("administrator can create a staff account from the management form", async 
 
     await expect(page).toHaveURL(/\/quan-tri\/nhan-su\/[0-9a-f-]{36}$/);
     await expect(page.getByRole("heading", { name: "Quản lý kiểm thử" })).toBeVisible();
+    await expect(page.getByText("manager-created", { exact: true })).toBeVisible();
     await expect(page.getByText(email, { exact: true })).toBeVisible();
     await expect(page.getByText("MANAGER", { exact: true })).toBeVisible();
 
@@ -181,8 +183,18 @@ test("administrator login rejects invalid credentials without revealing account 
   page,
 }) => {
   await page.goto("/dang-nhap");
-  await page.getByLabel("Tài khoản").fill("admin@test.invalid");
+  await page.getByLabel("Tên đăng nhập").fill("admin");
   await page.getByLabel("Mật khẩu").fill("wrong-password");
+  await page.getByRole("button", { name: "Đăng nhập" }).click();
+
+  await expect(page.getByText("Tên đăng nhập hoặc mật khẩu không đúng.")).toBeVisible();
+  await expect(page).toHaveURL(/\/dang-nhap$/);
+});
+
+test("administrator cannot use email as the login identifier", async ({ page }) => {
+  await page.goto("/dang-nhap");
+  await page.getByLabel("Tên đăng nhập").fill("admin@test.invalid");
+  await page.getByLabel("Mật khẩu").fill("admin-test-password");
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
   await expect(page.getByText("Tên đăng nhập hoặc mật khẩu không đúng.")).toBeVisible();
@@ -196,7 +208,7 @@ test("administrator account locks after repeated invalid passwords", async ({ pa
     await page.goto("/dang-nhap");
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
-      await page.getByLabel("Tài khoản").fill("admin@test.invalid");
+      await page.getByLabel("Tên đăng nhập").fill("admin");
       await page.getByLabel("Mật khẩu").fill("wrong-password");
       await page.getByRole("button", { name: "Đăng nhập" }).click();
       await expect(
@@ -210,7 +222,7 @@ test("administrator account locks after repeated invalid passwords", async ({ pa
     await page.getByRole("button", { name: "Đăng xuất" }).click();
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      await page.getByLabel("Tài khoản").fill("admin@test.invalid");
+      await page.getByLabel("Tên đăng nhập").fill("admin");
       await page.getByLabel("Mật khẩu").fill("wrong-password");
       await page.getByRole("button", { name: "Đăng nhập" }).click();
       await expect(

@@ -6,7 +6,7 @@ loadEnv({ path: ".env", override: false, quiet: true });
 loadEnv({ path: ".env.local", override: true, quiet: true });
 validateDevelopmentEnvironment(process.env);
 
-const username = process.env.LOCAL_ADMIN_USERNAME?.trim();
+const username = process.env.LOCAL_ADMIN_USERNAME?.trim().toLowerCase();
 const email = process.env.LOCAL_ADMIN_EMAIL?.trim().toLowerCase();
 const password = process.env.LOCAL_ADMIN_PASSWORD;
 
@@ -24,13 +24,18 @@ const { prisma } = await import(
   "../src/shared/infrastructure/database/prisma/prisma-client"
 );
 const existing = await prisma.users.findMany({
-  where: { email: { equals: email, mode: "insensitive" } },
+  where: {
+    OR: [
+      { username: { equals: username, mode: "insensitive" } },
+      { email: { equals: email, mode: "insensitive" } },
+    ],
+  },
   select: { id: true },
   take: 2,
 });
 
 if (existing.length > 1) {
-  throw new Error("More than one local admin record uses the configured email.");
+  throw new Error("Configured local admin username and email belong to different records.");
 }
 
 const now = new Date();
@@ -41,7 +46,9 @@ if (existing.length === 1) {
     prisma.users.update({
       where: { id: existing[0].id },
       data: {
+        username,
         full_name: "Quản trị viên Local",
+        email,
         password_hash: passwordHash,
         role: "ADMIN",
         is_active: true,
@@ -60,6 +67,7 @@ if (existing.length === 1) {
 } else {
   await prisma.users.create({
     data: {
+      username,
       full_name: "Quản trị viên Local",
       email,
       password_hash: passwordHash,
