@@ -14,3 +14,9 @@ export {
   parseRegistrationToken,
   registrationTokenSchema,
 } from "./application/validation/registration-token-schema";
+export {
+  getAdminRegistrationLinkDetail,
+  listAdminRegistrationLinks,
+  type AdminRegistrationLinkDetail,
+  type AdminRegistrationLinkListItem,
+} from "./infrastructure/prisma-admin-registration-link-queries";

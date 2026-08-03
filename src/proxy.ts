@@ -1,10 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-export function proxy(request: NextRequest): NextResponse {
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const developmentDirective =
-    process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
-  const contentSecurityPolicy = [
+export function buildContentSecurityPolicy(
+  nonce: string,
+  nodeEnvironment = process.env.NODE_ENV,
+): string {
+  const developmentScriptDirective =
+    nodeEnvironment === "development" ? " 'unsafe-eval'" : "";
+  const styleDirective = nodeEnvironment === "development"
+    ? "style-src 'self' 'unsafe-inline'"
+    : `style-src 'self' 'nonce-${nonce}'`;
+
+  return [
     "default-src 'self'",
     "base-uri 'self'",
     "connect-src 'self'",
@@ -12,10 +18,15 @@ export function proxy(request: NextRequest): NextResponse {
     "frame-ancestors 'none'",
     "img-src 'self' blob: data:",
     "object-src 'none'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentDirective}`,
-    `style-src 'self' 'nonce-${nonce}'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${developmentScriptDirective}`,
+    styleDirective,
     "form-action 'self'",
   ].join("; ");
+}
+
+export function proxy(request: NextRequest): NextResponse {
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+  const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

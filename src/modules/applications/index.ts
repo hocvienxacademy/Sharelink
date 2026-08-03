@@ -46,3 +46,9 @@ export {
   type SubmitApplicationInput,
   type UpdateDraftApplicationInput,
 } from "./application/validation/application-schemas";
+export {
+  getAdminApplicationDetail,
+  listAdminApplications,
+  type AdminApplicationDetail,
+  type AdminApplicationListItem,
+} from "./infrastructure/prisma-admin-application-queries";

@@ -14,3 +14,11 @@ export {
 } from "./application/mappers/catalog-mapper";
 export { GetCurrentAdmissionPeriod } from "./application/services/get-current-admission-period";
 export { ListAvailableMajors } from "./application/services/list-available-majors";
+export {
+  listAdminAdmissionPeriods,
+  listAdminBankAccounts,
+  listAdminMajors,
+  type AdminAdmissionPeriodItem,
+  type AdminBankAccountItem,
+  type AdminMajorItem,
+} from "./infrastructure/prisma-admin-catalog-queries";
