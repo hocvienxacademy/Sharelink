@@ -1,21 +1,22 @@
 import Link from "next/link";
 import { ArrowRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { requireAdminPage } from "@/modules/auth/presentation/require-admin-page";
+import { paymentQueries } from "@/composition/payments";
+import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
 import { formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
-import { listAdminPayments } from "@/modules/payments";
+import { toAuthenticatedActor } from "@/shared/authorization";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentsPage() {
-  await requireAdminPage();
-  const payments = await listAdminPayments();
+  const identity = await requireStaffPage();
+  const payments = await paymentQueries.list(toAuthenticatedActor(identity));
   return (
     <div className="flex flex-col gap-8">
-      <AdminPageHeader title="Xác nhận thanh toán" description="Theo dõi các bản ghi thanh toán mà không hiển thị số tài khoản đầy đủ trên danh sách." />
+      <AdminPageHeader title="Xác nhận thanh toán" description="Dữ liệu được giới hạn theo phạm vi phụ trách; số tài khoản không được hiển thị đầy đủ trên danh sách." />
       <AdminResourceTable
         columns={[
           { key: "application", label: "Hồ sơ" },

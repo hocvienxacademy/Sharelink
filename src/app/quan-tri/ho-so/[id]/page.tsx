@@ -26,7 +26,7 @@ export default async function ApplicationDetailPage({ params }: { readonly param
         title={item.fullName ?? "Chi tiết hồ sơ"}
         description={`Mã hồ sơ: ${item.applicationCode ?? item.id.slice(0, 8)}`}
         action={item.payment === null ? null : (
-          <Button nativeButton={false} variant="outline" render={<Link href="/quan-tri/thanh-toan" />}>
+          <Button nativeButton={false} variant="outline" render={<Link href={`/quan-tri/thanh-toan/${item.payment.id}`} />}>
             Mở thanh toán
           </Button>
         )}

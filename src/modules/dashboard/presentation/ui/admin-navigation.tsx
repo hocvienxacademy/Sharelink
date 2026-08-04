@@ -57,7 +57,11 @@ function NavigationLinks({ onNavigate, role }: { readonly onNavigate?: () => voi
   const pathname = usePathname();
   const visibleItems = role === "ADMIN"
     ? navigationItems
-    : navigationItems.filter((item) => item.href === "/quan-tri/lien-ket" || item.href === "/quan-tri/ho-so");
+    : navigationItems.filter((item) => [
+        "/quan-tri/lien-ket",
+        "/quan-tri/ho-so",
+        "/quan-tri/thanh-toan",
+      ].includes(item.href));
   return visibleItems.map(({ href, icon: Icon, label }) => {
     const active = isActiveRoute(pathname, href);
     return (

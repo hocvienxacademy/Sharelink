@@ -1,21 +1,24 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { requireAdminPage } from "@/modules/auth/presentation/require-admin-page";
+import { paymentQueries } from "@/composition/payments";
+import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
 import { formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
 import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detail-grid";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
-import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
-import { getAdminPaymentDetail } from "@/modules/payments";
+import { PaymentActions } from "@/modules/payments/presentation/ui/payment-actions";
+import { toAuthenticatedActor } from "@/shared/authorization";
 
 export const dynamic = "force-dynamic";
 
 export default async function PaymentDetailPage({ params }: { readonly params: Promise<{ readonly id: string }> }) {
-  await requireAdminPage();
+  const identity = await requireStaffPage();
+  const actor = toAuthenticatedActor(identity);
   const { id } = await params;
-  const item = await getAdminPaymentDetail(id);
+  const item = await paymentQueries.detailByPaymentId(actor, id);
   if (item === null) notFound();
+  const history = (await paymentQueries.history(actor, item.applicationId)) ?? [];
   return (
     <div className="flex flex-col gap-8">
       <AdminPageHeader
@@ -34,6 +37,9 @@ export default async function PaymentDetailPage({ params }: { readonly params: P
           { label: "Trạng thái", value: <AdminStatusBadge status={item.status} /> },
           { label: "Sinh viên", value: item.studentName },
           { label: "Số tiền", value: formatMoney(item.amount) },
+          { label: "Học phí cấu hình", value: formatMoney(item.tuitionAmount) },
+          { label: "Đối soát học phí", value: item.amountMatchesTuition ? "Khớp chính xác" : "Chưa khớp hoặc chưa cấu hình" },
+          { label: "Trạng thái hồ sơ", value: <AdminStatusBadge status={item.applicationStatus} /> },
           { label: "Ngân hàng", value: item.bankName },
           { label: "Số tài khoản", value: item.maskedAccountNumber },
           { label: "Tên tài khoản", value: item.accountName },
@@ -41,13 +47,40 @@ export default async function PaymentDetailPage({ params }: { readonly params: P
           { label: "Ngày tạo", value: formatDateTime(item.createdAt) },
           { label: "Người xác nhận", value: item.confirmerName },
           { label: "Ngày xác nhận", value: formatDateTime(item.confirmedAt) },
+          { label: "Ghi chú xác nhận", value: item.confirmationNote },
+          { label: "Người hủy", value: item.cancellerName },
           { label: "Ngày hủy", value: formatDateTime(item.cancelledAt) },
           { label: "Lý do hủy", value: item.cancellationReason },
         ]}
       />
-      <BusinessRuleGate>
-        Xác nhận và hủy thanh toán chỉ được bật sau khi chốt quyền thực hiện, nguồn số tiền và trạng thái hồ sơ đi kèm.
-      </BusinessRuleGate>
+      <PaymentActions
+        amountMatchesTuition={item.amountMatchesTuition}
+        applicationId={item.applicationId}
+        applicationStatus={item.applicationStatus}
+        role={identity.role}
+        status={item.status}
+        updatedAtIso={item.updatedAtIso}
+      />
+      <section className="flex flex-col gap-4" aria-labelledby="payment-history-title">
+        <h2 id="payment-history-title" className="text-xl font-semibold">Lịch sử trạng thái</h2>
+        <div className="overflow-x-auto rounded-2xl border bg-background">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/40 text-left">
+              <tr><th className="p-4">Thời gian</th><th className="p-4">Thay đổi</th><th className="p-4">Người thực hiện</th><th className="p-4">Nội dung</th></tr>
+            </thead>
+            <tbody>
+              {history.map((event) => (
+                <tr key={event.id} className="border-b last:border-0">
+                  <td className="p-4">{formatDateTime(event.createdAt)}</td>
+                  <td className="p-4"><AdminStatusBadge status={event.newStatus} /></td>
+                  <td className="p-4">{event.actorName}</td>
+                  <td className="max-w-xl whitespace-pre-wrap p-4">{event.reason ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

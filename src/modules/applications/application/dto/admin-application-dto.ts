@@ -36,7 +36,7 @@ export interface AdminApplicationDetail extends AdminApplicationListItem {
   readonly graduationYear: number | null;
   readonly highSchoolName: string | null;
   readonly histories: AdminApplicationHistory;
-  readonly payment: { readonly amount: string | null; readonly status: string } | null;
+  readonly payment: { readonly amount: string | null; readonly id: string; readonly status: string } | null;
   readonly permanentAddressProvided: boolean;
   readonly phone: string | null;
   readonly relatives: readonly {

@@ -91,7 +91,7 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
           users: { select: { full_name: true } },
         },
       },
-      payment_confirmations: { select: { status: true, amount: true } },
+      payment_confirmations: { select: { id: true, status: true, amount: true } },
     },
   });
 
@@ -137,6 +137,7 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
       actorName: history.users?.full_name ?? "Hệ thống",
     })),
     payment: record.payment_confirmations === null ? null : {
+      id: record.payment_confirmations.id,
       status: record.payment_confirmations.status,
       amount: record.payment_confirmations.amount?.toString() ?? null,
     },
