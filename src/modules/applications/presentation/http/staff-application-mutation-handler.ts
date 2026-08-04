@@ -2,35 +2,34 @@ import { randomUUID } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { getAdminIdentityBySessionToken } from "@/composition/auth";
 import { ADMIN_SESSION_COOKIE, type StaffIdentity } from "@/modules/auth";
-import { toAuthenticatedActor } from "@/shared/authorization";
-import { BadRequestError, ForbiddenError, UnauthorizedError } from "@/shared/errors";
-import { handleNextRequest, isSameOriginRequest, PRIVATE_RESPONSE_HEADERS } from "@/shared/http/next";
-import {
-  assertStaffApplicationAuthorized,
-  StaffApplicationAuthorizationPolicy,
-} from "../../application/authorization/staff-application-authorization";
+import { toAuthenticatedActor, type AuthenticatedActor } from "@/shared/authorization";
+import { BadRequestError, UnauthorizedError } from "@/shared/errors";
+import { createSuccessResponse } from "@/shared/http";
+import { handleNextRequest, isSameOriginRequest, PRIVATE_RESPONSE_HEADERS, readJsonBody } from "@/shared/http/next";
+import { parseApplicationIdentifier } from "../../application/validation/application-schemas";
 
 type IdentityResolver = (token: string | undefined) => Promise<StaffIdentity | null>;
+type Operation = (actor: AuthenticatedActor, id: string, input: unknown, requestId: string) => Promise<unknown>;
 
-export function createDeniedStaffApplicationUpdateHandler(
+async function actor(request: NextRequest, resolve: IdentityResolver) {
+  if (!isSameOriginRequest(request)) throw new BadRequestError("Yêu cầu không hợp lệ.");
+  const identity = await resolve(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+  if (identity === null) throw new UnauthorizedError();
+  return toAuthenticatedActor(identity);
+}
+
+export function createStaffApplicationMutationHandler(
+  operation: Operation,
+  eventName: string,
   resolveIdentity: IdentityResolver = getAdminIdentityBySessionToken,
 ) {
-  return async (request: NextRequest): Promise<Response> => {
+  return async (request: NextRequest, context: { params: Promise<{ id: string }> }): Promise<Response> => {
     const requestId = randomUUID();
     return handleNextRequest(async () => {
-      if (!isSameOriginRequest(request)) throw new BadRequestError("Yêu cầu không hợp lệ.");
-      const identity = await resolveIdentity(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
-      if (identity === null) throw new UnauthorizedError();
-
-      // Prompt 11 deliberately ships no staff application mutation use case.
-      // The capability remains denied for every staff role until the dedicated
-      // mutation use case adds state, validation, concurrency, and audit rules.
-      assertStaffApplicationAuthorized(
-        new StaffApplicationAuthorizationPolicy(),
-        "application.updateDetails",
-        toAuthenticatedActor(identity),
-      );
-      throw new ForbiddenError();
-    }, PRIVATE_RESPONSE_HEADERS, "staff-application-update-denied", requestId);
+      const authenticatedActor = await actor(request, resolveIdentity);
+      const { id } = await context.params;
+      const result = await operation(authenticatedActor, parseApplicationIdentifier(id), await readJsonBody(request, 65_536), requestId);
+      return createSuccessResponse(result);
+    }, PRIVATE_RESPONSE_HEADERS, eventName, requestId);
   };
 }

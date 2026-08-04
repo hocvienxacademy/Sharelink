@@ -65,6 +65,7 @@ const applicationRelativeDtoSchema = z.object({
 });
 
 const editableApplicationSchema = draftApplicationSchema.extend({
+  latestRevisionReason: z.string().nullable().optional(),
   majorId: z.uuid().nullable(),
   entryQualification: z.enum(ADMISSION_QUALIFICATIONS).nullable(),
   fullName: z.string().nullable(),

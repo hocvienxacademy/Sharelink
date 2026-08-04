@@ -56,6 +56,7 @@ export function initialFormValues(
       id: _id,
       status: _status,
       version: _version,
+      latestRevisionReason: _latestRevisionReason,
       ...values
     } = application;
 

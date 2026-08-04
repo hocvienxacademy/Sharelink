@@ -21,6 +21,7 @@ export interface UpdateDraftPersistenceInput {
   readonly applicationId: string;
   readonly registrationLinkId: string;
   readonly expectedVersion: number;
+  readonly expectedStatus: "DRAFT" | "NEEDS_REVISION";
   readonly majorId: string | null | undefined;
   readonly entryQualification: AdmissionQualification | null | undefined;
   readonly values: UpdateDraftApplicationInput;
@@ -30,6 +31,7 @@ export interface SubmitApplicationPersistenceInput {
   readonly applicationId: string;
   readonly registrationLinkId: string;
   readonly expectedVersion: number;
+  readonly expectedStatus: "DRAFT" | "NEEDS_REVISION";
   readonly submittedAt: Date;
 }
 

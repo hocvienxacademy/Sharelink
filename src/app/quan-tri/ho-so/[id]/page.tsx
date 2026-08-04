@@ -10,6 +10,7 @@ import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
 import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
+import { StaffApplicationActions } from "@/modules/applications/presentation/ui/staff-application-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -83,9 +84,9 @@ export default async function ApplicationDetailPage({ params }: { readonly param
           relationship: relative.relationship ?? "—",
         }))}
       />
-      <BusinessRuleGate>
-        Xét duyệt, yêu cầu bổ sung và các chuyển trạng thái chờ ma trận quyền/trạng thái được phê duyệt.
-      </BusinessRuleGate>
+      {identity.role === "SALE" ? <BusinessRuleGate>SALE chỉ có quyền đọc hồ sơ sinh viên.</BusinessRuleGate> : (
+        <StaffApplicationActions id={item.id} status={item.status} version={item.version} fullName={item.fullName} phone={item.phone} email={item.email} />
+      )}
       <AdminResourceTable
         columns={[
           { key: "transition", label: "Chuyển trạng thái" },
@@ -94,8 +95,8 @@ export default async function ApplicationDetailPage({ params }: { readonly param
           { key: "time", label: "Thời gian" },
         ]}
         emptyDescription="Hồ sơ chưa có lịch sử trạng thái."
-        rows={item.histories.map((history, index) => ({
-          id: `${index}`,
+        rows={item.histories.map((history) => ({
+          id: history.id,
           transition: `${history.previousStatus ?? "Khởi tạo"} → ${history.newStatus}`,
           actor: history.actorName,
           reason: history.reason ?? "—",

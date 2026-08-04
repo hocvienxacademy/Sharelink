@@ -4,6 +4,7 @@ import type { EditableApplicationDto } from "../dto/application-dto";
 import { toEditableApplicationDto } from "../mappers/application-mapper";
 import type { ApplicationRepository } from "../ports/application-repository";
 import { parseApplicationIdentifier } from "../validation/application-schemas";
+import { isApplicationStudentEditable } from "../../domain/application-status-rules";
 
 export class GetEditableApplication {
   constructor(
@@ -28,7 +29,7 @@ export class GetEditableApplication {
       throw new NotFoundError("Application");
     }
 
-    if (application.status !== "DRAFT") {
+    if (!isApplicationStudentEditable(application.status)) {
       throw new ConflictError("The application is not editable.");
     }
 

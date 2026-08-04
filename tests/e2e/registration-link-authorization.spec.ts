@@ -4,6 +4,8 @@ import { withTestClient } from "../helpers/test-database";
 const OUTSIDE_SALE_ID = "10000000-0000-4000-8000-000000000011";
 const OUTSIDE_LINK_ID = "40000000-0000-4000-8000-000000000011";
 const OUTSIDE_APPLICATION_ID = "60000000-0000-4000-8000-000000000011";
+const SALE_APPLICATION_ID = "60000000-0000-4000-8000-000000000012";
+const SALE_APPLICATION_LINK_ID = "40000000-0000-4000-8000-000000000012";
 
 test.beforeAll(async () => {
   await withTestClient(async (client) => {
@@ -22,11 +24,23 @@ test.beforeAll(async () => {
        VALUES ($1, $2, $3)`,
       [OUTSIDE_APPLICATION_ID, OUTSIDE_LINK_ID, OUTSIDE_SALE_ID],
     );
+    await client.query(
+      `INSERT INTO registration_links (id, sale_id, created_by, status)
+       VALUES ($1, $2, $2, 'DRAFT')`,
+      [SALE_APPLICATION_LINK_ID, "10000000-0000-4000-8000-000000000001"],
+    );
+    await client.query(
+      `INSERT INTO applications (id, registration_link_id, sale_id)
+       VALUES ($1, $2, $3)`,
+      [SALE_APPLICATION_ID, SALE_APPLICATION_LINK_ID, "10000000-0000-4000-8000-000000000001"],
+    );
   });
 });
 
 test.afterAll(async () => {
   await withTestClient(async (client) => {
+    await client.query("DELETE FROM applications WHERE id = $1", [SALE_APPLICATION_ID]);
+    await client.query("DELETE FROM registration_links WHERE id = $1", [SALE_APPLICATION_LINK_ID]);
     await client.query("DELETE FROM applications WHERE id = $1", [OUTSIDE_APPLICATION_ID]);
     await client.query("DELETE FROM audit_logs WHERE entity_type = 'registration_links' AND entity_id IN (SELECT id FROM registration_links WHERE sale_id = $1)", [OUTSIDE_SALE_ID]);
     await client.query("DELETE FROM registration_link_status_histories WHERE registration_link_id IN (SELECT id FROM registration_links WHERE sale_id = $1)", [OUTSIDE_SALE_ID]);
@@ -81,14 +95,14 @@ test("SALE creates self-owned links but cannot assign them to another user", asy
   })).status);
   expect(status).toBe(403);
 
-  const applicationPatchStatus = await page.evaluate(async () => (await fetch(
-    "/api/admin/applications/40000000-0000-4000-8000-000000000001",
+  const applicationPatchStatus = await page.evaluate(async (applicationId) => (await fetch(
+    `/api/admin/applications/${applicationId}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fullName: "Forbidden" }),
     },
-  )).status);
+  )).status, SALE_APPLICATION_ID);
   expect(applicationPatchStatus).toBe(403);
 
   page.on("dialog", (dialog) => dialog.accept("SALE lifecycle test"));
@@ -113,6 +127,7 @@ test("SALE creates self-owned links but cannot assign them to another user", asy
   await expect(page.getByRole("heading", { name: "Hồ sơ sinh viên" })).toBeVisible();
   expect(await page.evaluate(() => localStorage.length + sessionStorage.length)).toBe(0);
   await page.getByRole("button", { name: "Đăng xuất" }).click();
+  await expect(page).toHaveURL(/\/dang-nhap$/);
   const afterLogoutStatus = await page.evaluate(async () => (await fetch("/api/admin/registration-links", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

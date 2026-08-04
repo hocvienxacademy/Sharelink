@@ -1,10 +1,13 @@
 import type { AuthenticatedActor } from "@/shared/authorization";
-import { ForbiddenError, UnauthorizedError } from "@/shared/errors";
+import { ConflictError, ForbiddenError, UnauthorizedError } from "@/shared/errors";
 
 export const STAFF_APPLICATION_CAPABILITIES = [
   "application.list",
   "application.read",
-  "application.updateDetails",
+  "application.updateContent",
+  "application.requestRevision",
+  "application.validate",
+  "application.viewHistory",
 ] as const;
 
 export type StaffApplicationCapability = (typeof STAFF_APPLICATION_CAPABILITIES)[number];
@@ -12,28 +15,38 @@ export type StaffApplicationCapability = (typeof STAFF_APPLICATION_CAPABILITIES)
 export interface StaffApplicationAuthorizationResource {
   readonly ownerId: string;
   readonly ownerManagerId: string | null;
+  readonly status: import("../../domain/application").ApplicationStatus;
 }
 
 type Decision =
   | { readonly allowed: true }
-  | { readonly allowed: false; readonly reason: "unauthenticated" | "role-not-allowed" | "resource-required" | "outside-scope" };
+  | { readonly allowed: false; readonly reason: "unauthenticated" | "role-not-allowed" | "resource-required" | "outside-scope" | "invalid-state" };
 
 export class StaffApplicationAuthorizationPolicy {
   authorize(
-    capability: StaffApplicationCapability,
+    capabilityInput: string,
     actor: AuthenticatedActor | null,
     resource?: StaffApplicationAuthorizationResource,
   ): Decision {
     if (actor === null) return { allowed: false, reason: "unauthenticated" };
-    if (capability === "application.list") return { allowed: true };
-    if (capability === "application.updateDetails") {
+    if (!STAFF_APPLICATION_CAPABILITIES.includes(capabilityInput as StaffApplicationCapability)) {
       return { allowed: false, reason: "role-not-allowed" };
     }
+    const capability = capabilityInput as StaffApplicationCapability;
+    if (capability === "application.list") return { allowed: true };
     if (resource === undefined) return { allowed: false, reason: "resource-required" };
-    if (actor.role === "ADMIN") return { allowed: true };
-    if (actor.role === "SALE" && resource.ownerId === actor.userId) return { allowed: true };
-    if (actor.role === "MANAGER" && resource.ownerManagerId === actor.userId) return { allowed: true };
-    return { allowed: false, reason: "outside-scope" };
+    const inScope = actor.role === "ADMIN" ||
+      (actor.role === "SALE" && resource.ownerId === actor.userId) ||
+      (actor.role === "MANAGER" && resource.ownerManagerId === actor.userId);
+    if (!inScope) return { allowed: false, reason: "outside-scope" };
+    if (capability === "application.read" || capability === "application.viewHistory") return { allowed: true };
+    if (actor.role === "SALE") return { allowed: false, reason: "role-not-allowed" };
+    if (capability === "application.updateContent") {
+      return ["DRAFT", "SUBMITTED", "NEEDS_REVISION"].includes(resource.status)
+        ? { allowed: true } : { allowed: false, reason: "invalid-state" };
+    }
+    return resource.status === "SUBMITTED"
+      ? { allowed: true } : { allowed: false, reason: "invalid-state" };
   }
 }
 
@@ -46,5 +59,6 @@ export function assertStaffApplicationAuthorized(
   const decision = policy.authorize(capability, actor, resource);
   if (decision.allowed) return;
   if (decision.reason === "unauthenticated") throw new UnauthorizedError();
+  if (decision.reason === "invalid-state") throw new ConflictError();
   throw new ForbiddenError();
 }

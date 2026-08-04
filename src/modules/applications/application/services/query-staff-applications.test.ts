@@ -16,6 +16,7 @@ class FakeRepository implements AdminApplicationQueryRepository {
   resource: StaffApplicationAuthorizationResource | null = {
     ownerId: sale.userId,
     ownerManagerId: manager.userId,
+    status: "SUBMITTED",
   };
   async list(scope: ApplicationQueryScope) {
     this.scope = scope;
@@ -38,7 +39,7 @@ describe("QueryStaffApplications", () => {
 
   it("hides an out-of-scope application from SALE", async () => {
     const repository = new FakeRepository();
-    repository.resource = { ownerId: "sale-2", ownerManagerId: manager.userId };
+    repository.resource = { ownerId: "sale-2", ownerManagerId: manager.userId, status: "SUBMITTED" };
     assert.equal(
       await new QueryStaffApplications(repository).detail(sale, "application-1"),
       null,

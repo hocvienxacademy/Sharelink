@@ -12,6 +12,7 @@ import {
   resolveEntryQualification,
   resolveMajorId,
 } from "./application-rules";
+import { isApplicationStudentEditable } from "../../domain/application-status-rules";
 
 export class UpdateDraftApplication {
   constructor(
@@ -39,7 +40,7 @@ export class UpdateDraftApplication {
       throw new NotFoundError("Application");
     }
 
-    if (existing.status !== "DRAFT") {
+    if (!isApplicationStudentEditable(existing.status)) {
       throw new ConflictError("The application is not editable.");
     }
 
@@ -66,6 +67,7 @@ export class UpdateDraftApplication {
       majorId,
       entryQualification,
       values,
+      expectedStatus: existing.status,
     });
 
     return toEditableApplicationDto(application);

@@ -6,7 +6,7 @@ export {
   type ApplicationStatus,
   type Gender,
 } from "./domain/application";
-export { isApplicationSubmittable } from "./domain/application-status-rules";
+export { isApplicationStaffEditable, isApplicationStudentEditable, isApplicationSubmittable } from "./domain/application-status-rules";
 export {
   StaffApplicationAuthorizationPolicy,
   assertStaffApplicationAuthorized,
@@ -37,6 +37,7 @@ export { CreateDraftApplication } from "./application/services/create-draft-appl
 export { GetEditableApplication } from "./application/services/get-editable-application";
 export { SubmitApplication } from "./application/services/submit-application";
 export { UpdateDraftApplication } from "./application/services/update-draft-application";
+export { StaffApplicationAdministration } from "./application/services/staff-application-administration";
 export {
   applicationIdentifierSchema,
   applicationRelativeInputSchema,

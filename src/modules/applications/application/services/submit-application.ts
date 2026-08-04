@@ -104,6 +104,7 @@ export class SubmitApplication {
       applicationId,
       registrationLinkId: link.id,
       expectedVersion: values.expectedVersion,
+      expectedStatus: application.status,
       submittedAt: this.clock.now(),
     });
 

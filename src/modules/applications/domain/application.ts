@@ -62,5 +62,6 @@ export interface Application {
   readonly dataProcessingConsent: boolean;
   readonly submittedAt: Date | null;
   readonly version: number;
+  readonly latestRevisionReason?: string | null;
   readonly relatives: readonly ApplicationRelative[];
 }

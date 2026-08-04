@@ -8,13 +8,21 @@ import {
 import { PrismaApplicationRepository } from "../modules/applications/infrastructure/index";
 import { PrismaAdminApplicationQueryRepository } from "@/modules/applications/infrastructure/prisma-admin-application-queries";
 import { QueryStaffApplications } from "@/modules/applications/application/services/query-staff-applications";
+import { StaffApplicationAdministration } from "@/modules/applications/application/services/staff-application-administration";
 import { catalogRepository } from "./catalogs";
 import { validateRegistrationLink } from "./registration-links";
 
 export const applicationRepository = new PrismaApplicationRepository();
 export const defaultSubmissionPolicy = new DefaultSubmissionPolicy();
+const adminApplicationQueryRepository = new PrismaAdminApplicationQueryRepository();
 export const staffApplicationQueries = new QueryStaffApplications(
-  new PrismaAdminApplicationQueryRepository(),
+  adminApplicationQueryRepository,
+);
+export const staffApplicationAdministration = new StaffApplicationAdministration(
+  adminApplicationQueryRepository,
+  applicationRepository,
+  catalogRepository,
+  defaultSubmissionPolicy,
 );
 
 export const createDraftApplication = new CreateDraftApplication(

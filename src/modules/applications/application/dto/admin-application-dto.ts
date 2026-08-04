@@ -10,7 +10,19 @@ export interface AdminApplicationListItem {
   readonly submittedAt: Date | null;
 }
 
+export interface AdminApplicationHistoryItem {
+  readonly id: string;
+  readonly actorName: string;
+  readonly createdAt: Date;
+  readonly newStatus: string;
+  readonly previousStatus: string | null;
+  readonly reason: string | null;
+}
+
+export type AdminApplicationHistory = readonly AdminApplicationHistoryItem[];
+
 export interface AdminApplicationDetail extends AdminApplicationListItem {
+  readonly version: number;
   readonly admissionDiploma: string | null;
   readonly maskedCitizenId: string;
   readonly contactAddressProvided: boolean;
@@ -23,13 +35,7 @@ export interface AdminApplicationDetail extends AdminApplicationListItem {
   readonly graduateMajor: string | null;
   readonly graduationYear: number | null;
   readonly highSchoolName: string | null;
-  readonly histories: readonly {
-    readonly actorName: string;
-    readonly createdAt: Date;
-    readonly newStatus: string;
-    readonly previousStatus: string | null;
-    readonly reason: string | null;
-  }[];
+  readonly histories: AdminApplicationHistory;
   readonly payment: { readonly amount: string | null; readonly status: string } | null;
   readonly permanentAddressProvided: boolean;
   readonly phone: string | null;

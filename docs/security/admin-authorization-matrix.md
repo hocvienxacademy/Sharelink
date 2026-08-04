@@ -27,13 +27,13 @@ The confirmed lifecycle is deny-by-default. `ARCHIVED` is terminal and read-only
 | Capability | Student token | SALE | MANAGER | ADMIN | Current implementation |
 | --- | --- | --- | --- | --- | --- |
 | Read in scope | Own token + application ID | Own links | Direct-report SALEs | All | Implemented |
-| Edit DRAFT content | Own token + application ID | Deny | Planned separate staff use case | Planned separate staff use case | Public student flow only |
-| Edit relatives | Own token + application ID | Deny | Planned separate staff use case | Planned separate staff use case | Public student flow only |
-| Submit | Own DRAFT | Deny | Deny | Deny | Implemented |
-| Review / request revision | Deny | Deny | Not implemented | Not implemented | Denied |
-| Change application status | Deny except submit use case | Deny | Not implemented | Not implemented | Denied |
+| Edit content/relatives | Own DRAFT or NEEDS_REVISION | Deny | Direct-report scope in DRAFT/SUBMITTED/NEEDS_REVISION | DRAFT/SUBMITTED/NEEDS_REVISION | Confirmed 2026-08-04 |
+| Submit / resubmit | Own DRAFT or NEEDS_REVISION | Deny | Deny | Deny | Confirmed 2026-08-04 |
+| Request revision | Deny | Deny | Direct-report SUBMITTED | Any SUBMITTED | Confirmed 2026-08-04 |
+| Validate application | Deny | Deny | Direct-report SUBMITTED | Any SUBMITTED | SUBMITTED → VALID; confirmed 2026-08-04 |
+| View history | Own public revision reason only | Own links | Direct-report SALEs | All | Confirmed 2026-08-04 |
 
-No staff application mutation use case is enabled in this change. The reserved staff PATCH boundary is deny-only and returns 403; SALE remains read-only even when an application is DRAFT. Future MANAGER/ADMIN editing must replace that boundary with a dedicated staff use case using field allowlisting, application status policy, optimistic concurrency, transaction, and PII-minimized audit logging; it must not reuse the public student endpoint.
+The confirmed graph is DRAFT → SUBMITTED, SUBMITTED → NEEDS_REVISION or VALID, and NEEDS_REVISION → SUBMITTED. VALID is terminal. Staff content edits do not change status. SALE remains read-only for every application state.
 
 ## Safety properties
 
@@ -44,4 +44,4 @@ No staff application mutation use case is enabled in this change. The reserved s
 - Public URL is absent from detail responses unless the caller has the copy capability and the link is ACTIVE.
 - Admission-period activation uses PostgreSQL `CURRENT_DATE`, matching the database calendar boundary.
 
-Pending behavior remains denied: multi-level manager scope, cancelling a link after any application exists, `SUBMITTED` link transitions, automatic expiry, unarchive, reassignment, and staff application mutation.
+Pending behavior remains denied: multi-level manager scope, cancelling a link after any application exists, `SUBMITTED` link transitions, automatic expiry, unarchive, reassignment, and application transitions outside the confirmed graph.

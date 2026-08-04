@@ -350,6 +350,12 @@ export function ApplicationForm({
         onSubmit={(event) => event.preventDefault()}
         className="flex flex-col gap-5"
       >
+        {application?.status === "NEEDS_REVISION" && typeof application.latestRevisionReason === "string" ? (
+          <Alert>
+            <AlertTitle>Hồ sơ cần bổ sung</AlertTitle>
+            <AlertDescription className="whitespace-pre-wrap">{application.latestRevisionReason}</AlertDescription>
+          </Alert>
+        ) : null}
         <div className="flex flex-col gap-3">
           <Progress value={progressValue}>
             <ProgressLabel>

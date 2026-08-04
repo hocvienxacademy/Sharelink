@@ -21,6 +21,7 @@ export interface DraftApplicationDto {
 }
 
 export interface EditableApplicationDto extends DraftApplicationDto {
+  readonly latestRevisionReason?: string | null;
   readonly majorId: string | null;
   readonly entryQualification: AdmissionQualification | null;
   readonly fullName: string | null;

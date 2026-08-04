@@ -208,7 +208,7 @@ export function RegistrationFormShellView({
         return;
       }
 
-      if (context.application.status !== "DRAFT") {
+      if (!["DRAFT", "NEEDS_REVISION"].includes(context.application.status)) {
         setState({ kind: "submitted", context });
         return;
       }

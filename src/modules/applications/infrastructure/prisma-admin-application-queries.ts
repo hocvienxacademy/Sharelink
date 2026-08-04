@@ -54,12 +54,14 @@ async findAuthorizationResource(id: string): Promise<StaffApplicationAuthorizati
     where: { id },
     select: {
       sale_id: true,
+      status: true,
       users_applications_sale_idTousers: { select: { manager_id: true } },
     },
   });
   return record === null ? null : {
     ownerId: record.sale_id,
     ownerManagerId: record.users_applications_sale_idTousers.manager_id,
+    status: record.status,
   };
 }
 
@@ -73,7 +75,7 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
       permanent_address: true, contact_address: true, entry_qualification: true,
       admission_diploma: true, graduate_major: true, graduation_year: true,
       high_school_name: true, declaration_confirmed: true, data_processing_consent: true,
-      reviewed_at: true, submitted_at: true, created_at: true,
+      reviewed_at: true, submitted_at: true, created_at: true, version: true,
       users_applications_sale_idTousers: { select: { full_name: true } },
       users_applications_reviewed_byTousers: { select: { full_name: true } },
       majors: { select: { code: true, name: true } },
@@ -83,9 +85,9 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
         select: { position: true, full_name: true, relationship: true },
       },
       application_status_histories: {
-        orderBy: { created_at: "desc" },
+        orderBy: [{ created_at: "desc" }, { id: "desc" }],
         select: {
-          previous_status: true, new_status: true, reason: true, created_at: true,
+          id: true, previous_status: true, new_status: true, reason: true, created_at: true,
           users: { select: { full_name: true } },
         },
       },
@@ -115,6 +117,7 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
     dataProcessingConsent: record.data_processing_consent,
     reviewedAt: record.reviewed_at,
     reviewerName: record.users_applications_reviewed_byTousers?.full_name ?? null,
+    version: record.version,
     submittedAt: record.submitted_at,
     createdAt: record.created_at,
     saleName: record.users_applications_sale_idTousers.full_name,
@@ -126,6 +129,7 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
       relationship: relative.relationship,
     })),
     histories: record.application_status_histories.map((history) => ({
+      id: history.id,
       previousStatus: history.previous_status,
       newStatus: history.new_status,
       reason: history.reason,

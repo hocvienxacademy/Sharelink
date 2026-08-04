@@ -20,6 +20,7 @@ export function toEditableApplicationDto(
 ): EditableApplicationDto {
   return {
     ...toDraftApplicationDto(application),
+    latestRevisionReason: application.latestRevisionReason ?? null,
     majorId: application.majorId,
     entryQualification: application.entryQualification,
     fullName: application.fullName,

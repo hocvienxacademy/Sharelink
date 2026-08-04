@@ -3,7 +3,7 @@ import {
   assertStaffApplicationAuthorized,
   StaffApplicationAuthorizationPolicy,
 } from "../authorization/staff-application-authorization";
-import type { AdminApplicationDetail, AdminApplicationListItem } from "../dto/admin-application-dto";
+import type { AdminApplicationDetail, AdminApplicationHistory, AdminApplicationListItem } from "../dto/admin-application-dto";
 import type { AdminApplicationQueryRepository, ApplicationQueryScope } from "../ports/admin-application-query-repository";
 
 function scopeFor(actor: AuthenticatedActor): ApplicationQueryScope {
@@ -28,5 +28,12 @@ export class QueryStaffApplications {
     if (resource === null) return null;
     if (!this.policy.authorize("application.read", actor, resource).allowed) return null;
     return this.repository.findDetail(id, scopeFor(actor));
+  }
+
+  async history(actor: AuthenticatedActor, id: string): Promise<AdminApplicationHistory | null> {
+    const resource = await this.repository.findAuthorizationResource(id);
+    if (resource === null) return null;
+    if (!this.policy.authorize("application.viewHistory", actor, resource).allowed) return null;
+    return (await this.repository.findDetail(id, scopeFor(actor)))?.histories ?? null;
   }
 }
