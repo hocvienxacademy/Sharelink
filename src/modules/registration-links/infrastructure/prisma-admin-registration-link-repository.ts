@@ -166,6 +166,7 @@ export class PrismaAdminRegistrationLinkRepository implements AdminRegistrationL
         now,
       });
       if (action === "activate") {
+        await this.lockCatalogReferences(transaction, current.admission_period_id, current.major_id);
         await this.assertReferences(transaction, current.sale_id, current.admission_period_id, current.major_id);
         await this.assertActivationPeriod(transaction, current.admission_period_id);
       }
@@ -236,6 +237,19 @@ export class PrismaAdminRegistrationLinkRepository implements AdminRegistrationL
     if (sale === null) throw new ConflictError("SALE được chọn không còn hoạt động.");
     if (admissionPeriodId !== null && period === null) throw new ConflictError("Kỳ tuyển sinh không hợp lệ.");
     if (majorId !== null && major === null) throw new ConflictError("Ngành học không hợp lệ.");
+  }
+
+  private async lockCatalogReferences(
+    transaction: Prisma.TransactionClient,
+    admissionPeriodId: string | null,
+    majorId: string | null,
+  ): Promise<void> {
+    if (admissionPeriodId !== null) {
+      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`catalogs:admission-period:${admissionPeriodId}`}))::text`;
+    }
+    if (majorId !== null) {
+      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`catalogs:major:${majorId}`}))::text`;
+    }
   }
 
   private async assertActivationPeriod(

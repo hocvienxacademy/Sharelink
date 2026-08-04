@@ -1,32 +1,18 @@
-import { Badge } from "@/components/ui/badge";
-import { requireAdminPage } from "@/modules/auth/presentation/require-admin-page";
-import { listAdminMajors } from "@/modules/catalogs";
+import { queryManagedCatalogs } from "@/composition/catalogs";
+import { toAuthenticatedActor } from "@/shared/authorization";
+import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
-import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
-import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
+import { MajorManagementPanel } from "@/modules/catalogs/presentation/ui/catalog-management-panels";
 
 export const dynamic = "force-dynamic";
 
 export default async function MajorsPage() {
-  await requireAdminPage();
-  const majors = await listAdminMajors();
+  const identity = await requireStaffPage();
+  const majors = await queryManagedCatalogs.listMajors(toAuthenticatedActor(identity));
   return (
     <div className="flex flex-col gap-8">
       <AdminPageHeader title="Ngành học" description="Danh mục ngành hiển thị cho biểu mẫu đăng ký sinh viên." />
-      <BusinessRuleGate>
-        Tạo, đổi mã và vô hiệu hóa ngành chờ quy tắc xử lý các hồ sơ hoặc liên kết đang tham chiếu.
-      </BusinessRuleGate>
-      <AdminResourceTable
-        columns={[
-          { key: "order", label: "Thứ tự" }, { key: "code", label: "Mã ngành" },
-          { key: "name", label: "Tên ngành" }, { key: "status", label: "Trạng thái" },
-        ]}
-        emptyDescription="Chưa có ngành học."
-        rows={majors.map((item) => ({
-          id: item.id, order: item.displayOrder, code: item.code, name: item.name,
-          status: <Badge variant="secondary">{item.isActive ? "Hoạt động" : "Tạm dừng"}</Badge>,
-        }))}
-      />
+      <MajorManagementPanel canManage={identity.role === "ADMIN"} initialItems={majors.map((item) => ({ ...item, updatedAt: item.updatedAt.toISOString() }))} />
     </div>
   );
 }
