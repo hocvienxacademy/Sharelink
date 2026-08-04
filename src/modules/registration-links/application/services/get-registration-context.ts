@@ -7,12 +7,14 @@ import {
 import type { RegistrationContextDto } from "../dto/registration-context-dto";
 import { ValidateRegistrationLink } from "./validate-registration-link";
 import type { BankAccountManagementRepository } from "../../../catalogs/application/ports/bank-account-management-repository";
+import type { GetPublicSystemSettings } from "../../../system-settings";
 
 export class GetRegistrationContext {
   constructor(
     private readonly validateRegistrationLink: ValidateRegistrationLink,
     private readonly catalogRepository: CatalogRepository,
     private readonly bankAccounts?: Pick<BankAccountManagementRepository, "findPublicDefault">,
+    private readonly publicSettings?: Pick<GetPublicSystemSettings, "execute">,
   ) {}
 
   async execute(tokenInput: unknown): Promise<RegistrationContextDto> {
@@ -25,6 +27,8 @@ export class GetRegistrationContext {
         : await this.getFixedMajor(link.majorId);
 
     const bankAccount = await this.bankAccounts?.findPublicDefault() ?? null;
+    const { paymentInstructions } = await this.publicSettings?.execute()
+      ?? { paymentInstructions: null };
 
     return {
       status: link.status,
@@ -41,6 +45,7 @@ export class GetRegistrationContext {
               status: link.applicationStatus,
             },
       bankAccount,
+      paymentInstructions,
     };
   }
 

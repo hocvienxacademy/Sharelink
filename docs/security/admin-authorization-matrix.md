@@ -46,12 +46,23 @@ The confirmed graph is DRAFT → SUBMITTED, SUBMITTED → NEEDS_REVISION or VALI
 
 The client cannot submit or change an amount during confirmation. An optional confirmation note is trimmed, rejects HTML, and becomes null when blank; the PostgreSQL field is `text`, so the private endpoint body limit is the effective transport bound. CANCELLED is terminal: it cannot be confirmed again or hard-deleted. Cancellation retains the original confirmer, confirmation timestamp, and note. Each transition uses a row lock plus expected status and `updated_at`, changes no application status, and writes a PII-minimized audit event in the same transaction.
 
+## System settings
+
+| Capability | SALE | MANAGER | ADMIN | Scope | Status |
+| --- | --- | --- | --- | --- | --- |
+| `systemSetting.list` | Deny | Deny | Allow | Exact three-key registry; internal keys expose metadata only. | Confirmed 2026-08-04 |
+| `systemSetting.update` | Deny | Deny | Allow | Only `payment.instructions.message`; no create/upsert or batch update. | Confirmed 2026-08-04 |
+| `systemSetting.viewHistory` | Deny | Deny | Allow | Safe audit DTO without setting values. | Confirmed 2026-08-04 |
+
+The public registration context exposes only the validated `payment.instructions.message` as nullable `paymentInstructions`. Missing or malformed data returns null and does not block application submission. The client cannot mutate `requireReceiptUpload`; values of `payment.transfer_content` and `registration.link_policy` are never returned. Updates require `expectedUpdatedAt`, lock the existing row, preserve all server-owned JSON fields, and commit with a fail-closed audit containing only changed keys, actor, correlation ID, and timestamp.
+
 ## Safety properties
 
 - Role and actor identity come only from the server session, never from the request body.
 - Public token, owner, status, timestamps, history, and audit fields are server-owned.
 - Registration-link mutation, status history, and success audit commit in one transaction; audit failure rolls the mutation back.
 - Payment status and its success audit commit in one transaction; failed or concurrent-losing transitions write neither success audit nor partial payment state.
+- System-setting value and its success audit commit in one transaction; no-op, stale, unsupported-key, and audit-failure paths do not partially update the setting.
 - Audit metadata contains IDs, status/changed-field names, result, and request ID—not tokens, credentials, full PII, request bodies, or raw database errors.
 - Public URL is absent from detail responses unless the caller has the copy capability and the link is ACTIVE.
 - Admission-period activation uses PostgreSQL `CURRENT_DATE`, matching the database calendar boundary.

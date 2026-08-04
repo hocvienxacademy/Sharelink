@@ -8,6 +8,7 @@ import { PrismaAdminRegistrationLinkRepository } from "@/modules/registration-li
 import { RegistrationLinkAdministrationService } from "@/modules/registration-links/application/services/registration-link-administration";
 import { QueryRegistrationLinks } from "@/modules/registration-links/application/services/query-registration-links";
 import { PrismaAdminRegistrationLinkQueryRepository } from "@/modules/registration-links/infrastructure/prisma-admin-registration-link-queries";
+import { getPublicSystemSettings } from "./system-settings";
 
 export const registrationLinkRepository =
   new PrismaRegistrationLinkRepository();
@@ -19,6 +20,7 @@ export const getRegistrationContext = new GetRegistrationContext(
   validateRegistrationLink,
   catalogRepository,
   bankAccountManagementRepository,
+  getPublicSystemSettings,
 );
 const adminRegistrationLinkRepository = new PrismaAdminRegistrationLinkRepository();
 export const adminRegistrationLinks = new RegistrationLinkAdministrationService(

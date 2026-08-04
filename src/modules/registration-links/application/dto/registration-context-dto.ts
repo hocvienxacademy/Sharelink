@@ -24,4 +24,5 @@ export interface RegistrationContextDto {
   readonly hasApplication: boolean;
   readonly application: RegistrationContextApplicationDto | null;
   readonly bankAccount: RegistrationContextBankAccountDto | null;
+  readonly paymentInstructions: string | null;
 }

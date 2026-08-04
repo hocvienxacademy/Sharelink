@@ -185,6 +185,21 @@ function PaymentAccountCard({ context }: { readonly context: RegistrationContext
   );
 }
 
+function PaymentInstructionsCard({ context }: { readonly context: RegistrationContext }) {
+  if (context.paymentInstructions === null) return null;
+  return (
+    <Card className="rounded-[2rem]">
+      <CardHeader>
+        <CardTitle>Hướng dẫn thanh toán</CardTitle>
+        <CardDescription>Nội dung hướng dẫn chính thức từ đơn vị tuyển sinh.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="whitespace-pre-line text-sm leading-6">{context.paymentInstructions}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RegistrationFormShellView({
   applicationId,
   queryClient = defaultQueryClient,
@@ -355,6 +370,7 @@ export function RegistrationFormShellView({
       <div className="flex flex-col gap-5">
         <RegistrationContextHeader context={state.context} />
         <PaymentAccountCard context={state.context} />
+        <PaymentInstructionsCard context={state.context} />
         <StateAlert
           icon={CheckCircle2Icon}
           title="Hồ sơ không còn ở trạng thái bản nháp"
@@ -368,6 +384,7 @@ export function RegistrationFormShellView({
     <div className="flex flex-col gap-6">
       <RegistrationContextHeader context={state.context} />
       <PaymentAccountCard context={state.context} />
+      <PaymentInstructionsCard context={state.context} />
       <ApplicationForm
         token={token}
         context={state.context}

@@ -30,6 +30,7 @@ function context(
     hasApplication: false,
     application: null,
     bankAccount: null,
+    paymentInstructions: null,
     ...overrides,
   };
 }
@@ -127,6 +128,16 @@ describe("registration form shell", () => {
     );
 
     assert.ok(await screen.findByLabelText(/Họ và tên/));
+  });
+
+  it("renders public payment instructions as text", async () => {
+    const queryClient: RegistrationQueryClient = {
+      getContext: async () => context({ paymentInstructions: "Chuyển khoản và giữ lại biên nhận." }),
+      getApplication: async () => editable(),
+    };
+    render(<RegistrationFormShellView token={token} queryClient={queryClient} replaceRoute={() => undefined} />);
+    const instructions = await screen.findByText("Chuyển khoản và giữ lại biên nhận.");
+    assert.equal(instructions.tagName, "P");
   });
 
   it("routes to the existing application URL", async () => {

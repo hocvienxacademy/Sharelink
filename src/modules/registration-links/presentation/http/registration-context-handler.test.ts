@@ -26,6 +26,7 @@ const contextDto: RegistrationContextDto = {
   hasApplication: false,
   application: null,
   bankAccount: null,
+  paymentInstructions: null,
 };
 
 function routeContext(value: string) {

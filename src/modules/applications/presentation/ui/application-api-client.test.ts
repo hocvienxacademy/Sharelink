@@ -26,6 +26,7 @@ describe("application API client", () => {
           hasApplication: false,
           application: null,
           bankAccount: null,
+          paymentInstructions: null,
         },
       }),
     );
