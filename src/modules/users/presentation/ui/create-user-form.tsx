@@ -46,7 +46,7 @@ const roleOptions = [
   { value: "ADMIN", label: "ADMIN — toàn quyền quản trị" },
 ] as const;
 
-export function CreateUserForm() {
+export function CreateUserForm({ managers = [] }: { readonly managers?: readonly { readonly id: string; readonly fullName: string }[] }) {
   const router = useRouter();
   const [generalError, setGeneralError] = useState<string | null>(null);
   const form = useForm<CreateUserFormValues>({
@@ -56,6 +56,7 @@ export function CreateUserForm() {
       email: "",
       phone: "",
       role: "SALE",
+      managerId: null,
       password: "",
       confirmPassword: "",
     },
@@ -66,7 +67,9 @@ export function CreateUserForm() {
     handleSubmit,
     register,
     setError,
+    watch,
   } = form;
+  const selectedRole = watch("role");
 
   const submit = handleSubmit(async (values) => {
     setGeneralError(null);
@@ -155,6 +158,14 @@ export function CreateUserForm() {
               <FieldDescription>Từ 8 đến 128 ký tự.</FieldDescription>
               <FieldError>{errors.password?.message}</FieldError>
             </Field>
+            {selectedRole === "SALE" ? <Field data-invalid={Boolean(errors.managerId)}>
+              <FieldLabel htmlFor="managerId">Quản lý trực tiếp</FieldLabel>
+              <select id="managerId" className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm" {...register("managerId", { setValueAs: (value) => value === "" ? null : value })}>
+                <option value="">Chưa phân công</option>
+                {managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.fullName}</option>)}
+              </select>
+              <FieldError>{errors.managerId?.message}</FieldError>
+            </Field> : null}
             <Field data-invalid={Boolean(errors.confirmPassword)}>
               <FieldLabel htmlFor="confirmPassword">Xác nhận mật khẩu *</FieldLabel>
               <Input id="confirmPassword" type="password" autoComplete="new-password" aria-invalid={Boolean(errors.confirmPassword)} {...register("confirmPassword")} />

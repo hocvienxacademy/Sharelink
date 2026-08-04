@@ -32,10 +32,16 @@ export const createUserSchema = z
         ]),
       ),
     role: z.enum(USER_ROLES, "Vai trò không hợp lệ."),
+    managerId: z.uuid("Quản lý không hợp lệ.").nullable().optional(),
     password: z
       .string()
       .min(8, "Mật khẩu ban đầu phải có ít nhất 8 ký tự.")
       .max(128, "Mật khẩu không được vượt quá 128 ký tự."),
+  })
+  .superRefine((values, context) => {
+    if (values.role !== "SALE" && values.managerId != null) {
+      context.addIssue({ code: "custom", path: ["managerId"], message: "Chỉ SALE mới có quản lý trực tiếp." });
+    }
   })
   .strict();
 

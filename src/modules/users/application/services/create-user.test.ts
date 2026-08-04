@@ -25,11 +25,12 @@ const passwordHasher: PasswordHasher = {
 };
 
 describe("CreateUser", () => {
+  const actor = { userId: "admin-id", username: "admin", role: "ADMIN" as const };
   it("normalizes safe account fields and persists only a password hash", async () => {
     const repository = new FakeUserRepository();
     const service = new CreateUser(repository, passwordHasher);
 
-    const result = await service.execute("admin-id", {
+    const result = await service.execute(actor, {
       fullName: "  Nguyễn Văn Sale  ",
       username: "  Sale.One  ",
       email: "  SALE@Example.COM ",
@@ -47,6 +48,7 @@ describe("CreateUser", () => {
       role: "SALE",
       username: "sale.one",
       passwordHash: "hashed:12",
+      managerId: null,
     });
     assert.equal("password" in (repository.lastInput ?? {}), false);
   });
@@ -61,7 +63,7 @@ describe("CreateUser", () => {
     });
 
     await assert.rejects(
-      service.execute("admin-id", {
+      service.execute(actor, {
         fullName: "Test User",
         username: "test-user",
         email: "user@example.com",
@@ -79,7 +81,7 @@ describe("CreateUser", () => {
     const service = new CreateUser(repository, passwordHasher);
 
     await assert.rejects(
-      service.execute("admin-id", {
+      service.execute(actor, {
         fullName: "Test User",
         username: "test-user",
         email: "user@example.com",

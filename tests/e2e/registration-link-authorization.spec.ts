@@ -139,7 +139,11 @@ test("SALE creates self-owned links but cannot assign them to another user", asy
 test("MANAGER has direct-report read scope without ADMIN navigation", async ({ page }) => {
   await login(page, "manager-test");
   await expect(page.getByText("Test Sale").first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Nhân sự" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Nhân sự" }).click();
+  await expect(page.getByRole("heading", { name: "Nhân sự" })).toBeVisible();
+  await expect(page.getByText("Test Sale", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Tạo tài khoản" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Tạo tài khoản" })).toHaveCount(0);
   await page.getByRole("link", { name: "Hồ sơ" }).click();
   await expect(page.getByRole("heading", { name: "Hồ sơ sinh viên" })).toBeVisible();
   const outsideApplicationResponse = await page.goto(`/quan-tri/ho-so/${OUTSIDE_APPLICATION_ID}`);

@@ -79,3 +79,30 @@ export async function createAdminUser(
   if (!envelope.success) throw new AdminUserApiError("server");
   return envelope.data.data;
 }
+
+export async function mutateAdminUser(
+  userId: string,
+  operation: "profile" | "role" | "manager" | "enable" | "disable" | "unlock-security" | "reset-password" | "revoke-sessions",
+  input: unknown,
+  fetchImplementation: typeof fetch = fetch,
+): Promise<void> {
+  const path = operation === "profile" ? "" : `/${operation}`;
+  let response: Response;
+  try {
+    response = await fetchImplementation(`/api/admin/users/${userId}${path}`, {
+      method: operation === "profile" ? "PATCH" : "POST",
+      credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(input),
+    });
+  } catch { throw new AdminUserApiError("network"); }
+  if (response.ok) return;
+  let payload: unknown = null;
+  try { payload = JSON.parse(await response.text()) as unknown; } catch {}
+  const error = errorEnvelopeSchema.safeParse(payload);
+  const issues = error.success ? validationIssueSchema.array().safeParse(error.data.error.details) : null;
+  throw new AdminUserApiError(
+    response.status === 422 ? "validation" : response.status === 409 ? "conflict" : response.status === 401 || response.status === 403 ? "unauthorized" : "server",
+    issues?.success ? issues.data : [],
+  );
+}

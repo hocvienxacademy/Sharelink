@@ -1,50 +1,36 @@
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { requireAdminPage } from "@/modules/auth/presentation/require-admin-page";
+import { queryUsers } from "@/composition/users";
+import { requireAdminPage, requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
+import { toAuthenticatedActor } from "@/shared/authorization";
 import { formatDateTime } from "@/modules/dashboard/presentation/format-admin-value";
 import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detail-grid";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
-import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
-import { getAdminUserDetail } from "@/modules/users";
 import { CreateUserForm } from "@/modules/users/presentation/ui/create-user-form";
+import { UserManagementPanel } from "@/modules/users/presentation/ui/user-management-panel";
 
 export const dynamic = "force-dynamic";
-
 export default async function UserDetailPage({ params }: { readonly params: Promise<{ readonly id: string }> }) {
-  await requireAdminPage();
   const { id } = await params;
   if (id === "moi") {
-    return (
-      <div className="flex flex-col gap-8">
-        <AdminPageHeader parent={{ href: "/quan-tri/nhan-su", label: "Nhân sự" }} title="Tạo tài khoản" description="Chuẩn bị tài khoản nội bộ mới." />
-        <CreateUserForm />
-      </div>
-    );
+    const admin = await requireAdminPage();
+    const managers = (await queryUsers.list(toAuthenticatedActor(admin))).filter((user) => user.role === "MANAGER" && user.status === "ACTIVE").map((user) => ({ id: user.id, fullName: user.fullName }));
+    return <div className="flex flex-col gap-8"><AdminPageHeader parent={{ href: "/quan-tri/nhan-su", label: "Nhân sự" }} title="Tạo tài khoản" description="Tạo tài khoản ACTIVE và phân công quản lý cho SALE nếu cần." /><CreateUserForm managers={managers} /></div>;
   }
-  const item = await getAdminUserDetail(id);
-  if (item === null) notFound();
-  return (
-    <div className="flex flex-col gap-8">
-      <AdminPageHeader parent={{ href: "/quan-tri/nhan-su", label: "Nhân sự" }} title={item.fullName} description="Chi tiết tài khoản và trạng thái bảo mật." />
-      <AdminDetailGrid
-        title="Thông tin tài khoản"
-        items={[
-          { label: "Tên đăng nhập", value: item.username },
-          { label: "Email", value: item.email },
-          { label: "Điện thoại", value: item.phone },
-          { label: "Vai trò", value: <Badge variant="outline">{item.role}</Badge> },
-          { label: "Quản lý", value: item.managerName },
-          { label: "Hoạt động", value: item.isActive ? "Có" : "Không" },
-          { label: "Đăng nhập sai", value: item.failedLoginAttempts },
-          { label: "Khóa tới", value: formatDateTime(item.lockedUntil) },
-          { label: "Đăng nhập cuối", value: formatDateTime(item.lastLoginAt) },
-          { label: "Đổi mật khẩu", value: formatDateTime(item.passwordChangedAt) },
-          { label: "Ngày tạo", value: formatDateTime(item.createdAt) },
-        ]}
-      />
-      <BusinessRuleGate>
-        Đổi vai trò, vô hiệu hóa, mở khóa, đặt lại mật khẩu và thu hồi phiên chờ ma trận quyền được duyệt.
-      </BusinessRuleGate>
-    </div>
-  );
+  const identity = await requireStaffPage(); const actor = toAuthenticatedActor(identity);
+  const [item, users, history] = await Promise.all([queryUsers.detail(actor, id), queryUsers.list(actor), queryUsers.history(actor, id)]);
+  if (item === null || history === null) notFound();
+  const managers = identity.role === "ADMIN" ? users.filter((user) => user.role === "MANAGER" && user.status === "ACTIVE").map(({ id: managerId, fullName }) => ({ id: managerId, fullName })) : [];
+  return <div className="flex flex-col gap-8">
+    <AdminPageHeader parent={{ href: "/quan-tri/nhan-su", label: "Nhân sự" }} title={item.fullName} description={identity.role === "ADMIN" ? "Chi tiết tài khoản và trạng thái bảo mật." : "Thông tin SALE báo cáo trực tiếp; chế độ chỉ đọc."} />
+    <AdminDetailGrid title="Thông tin tài khoản" items={[
+      { label: "Tên đăng nhập", value: item.username },
+      ...(identity.role === "ADMIN" ? [{ label: "Email", value: item.email }, { label: "Điện thoại", value: item.phone }] : []),
+      { label: "Vai trò", value: <Badge variant="outline">{item.role}</Badge> }, { label: "Quản lý", value: item.managerName },
+      { label: "Trạng thái", value: item.status === "ACTIVE" ? "Hoạt động" : "Vô hiệu hóa" },
+      ...(identity.role === "ADMIN" ? [{ label: "Đăng nhập sai", value: item.failedLoginAttempts }, { label: "Khóa bảo mật tới", value: formatDateTime(item.lockedUntil) }, { label: "Đăng nhập cuối", value: formatDateTime(item.lastLoginAt) }, { label: "Đổi mật khẩu", value: formatDateTime(item.passwordChangedAt) }, { label: "Ngày tạo", value: formatDateTime(item.createdAt) }] : []),
+    ]} />
+    {identity.role === "ADMIN" ? <UserManagementPanel user={item} managers={managers} /> : null}
+    <AdminDetailGrid title="Lịch sử quản trị" items={history.length === 0 ? [{ label: "Lịch sử", value: "Chưa có sự kiện." }] : history.slice(0, 20).map((event) => ({ label: formatDateTime(event.occurredAt), value: `${event.action} · ${event.actorName ?? "Hệ thống"}` }))} />
+  </div>;
 }

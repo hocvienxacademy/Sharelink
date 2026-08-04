@@ -183,7 +183,7 @@ test("administrator can create a staff account from the management form", async 
     await expect(page.getByRole("heading", { name: "Quản lý kiểm thử" })).toBeVisible();
     await expect(page.getByText("manager-created", { exact: true })).toBeVisible();
     await expect(page.getByText(email, { exact: true })).toBeVisible();
-    await expect(page.getByText("MANAGER", { exact: true })).toBeVisible();
+    await expect(page.locator('[data-slot="badge"]').filter({ hasText: "MANAGER" })).toBeVisible();
 
     await page.goto("/quan-tri/nhat-ky");
     await expect(page.getByText("USER_CREATED", { exact: true })).toBeVisible();
