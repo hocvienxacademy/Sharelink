@@ -6,11 +6,13 @@ import {
 } from "../../../catalogs/index";
 import type { RegistrationContextDto } from "../dto/registration-context-dto";
 import { ValidateRegistrationLink } from "./validate-registration-link";
+import type { BankAccountManagementRepository } from "../../../catalogs/application/ports/bank-account-management-repository";
 
 export class GetRegistrationContext {
   constructor(
     private readonly validateRegistrationLink: ValidateRegistrationLink,
     private readonly catalogRepository: CatalogRepository,
+    private readonly bankAccounts?: Pick<BankAccountManagementRepository, "findPublicDefault">,
   ) {}
 
   async execute(tokenInput: unknown): Promise<RegistrationContextDto> {
@@ -21,6 +23,8 @@ export class GetRegistrationContext {
       link.majorId === null
         ? await this.catalogRepository.listActiveMajors()
         : await this.getFixedMajor(link.majorId);
+
+    const bankAccount = await this.bankAccounts?.findPublicDefault() ?? null;
 
     return {
       status: link.status,
@@ -36,6 +40,7 @@ export class GetRegistrationContext {
               id: link.applicationId,
               status: link.applicationStatus,
             },
+      bankAccount,
     };
   }
 

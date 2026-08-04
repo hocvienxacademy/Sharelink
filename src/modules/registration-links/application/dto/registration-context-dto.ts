@@ -7,6 +7,14 @@ export interface RegistrationContextApplicationDto {
   readonly status: string;
 }
 
+export interface RegistrationContextBankAccountDto {
+  readonly bankCode: string;
+  readonly bankName: string;
+  readonly branchName: string | null;
+  readonly accountNumber: string;
+  readonly accountName: string;
+}
+
 export interface RegistrationContextDto {
   readonly status: RegistrationLinkStatus;
   readonly admissionPeriod: AdmissionPeriodDto;
@@ -15,4 +23,5 @@ export interface RegistrationContextDto {
   readonly entryQualification: AdmissionQualification | null;
   readonly hasApplication: boolean;
   readonly application: RegistrationContextApplicationDto | null;
+  readonly bankAccount: RegistrationContextBankAccountDto | null;
 }

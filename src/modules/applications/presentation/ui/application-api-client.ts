@@ -47,6 +47,13 @@ const registrationContextSchema = z.object({
       status: z.string(),
     })
     .nullable(),
+  bankAccount: z.object({
+    bankCode: z.string(),
+    bankName: z.string(),
+    branchName: z.string().nullable(),
+    accountNumber: z.string(),
+    accountName: z.string(),
+  }).nullable(),
 });
 
 const draftApplicationSchema = z.object({

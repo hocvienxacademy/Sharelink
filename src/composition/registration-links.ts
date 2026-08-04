@@ -3,7 +3,7 @@ import {
   ValidateRegistrationLink,
 } from "../modules/registration-links/index";
 import { PrismaRegistrationLinkRepository } from "../modules/registration-links/infrastructure/index";
-import { catalogRepository } from "./catalogs";
+import { bankAccountManagementRepository, catalogRepository } from "./catalogs";
 import { PrismaAdminRegistrationLinkRepository } from "@/modules/registration-links/infrastructure/prisma-admin-registration-link-repository";
 import { RegistrationLinkAdministrationService } from "@/modules/registration-links/application/services/registration-link-administration";
 import { QueryRegistrationLinks } from "@/modules/registration-links/application/services/query-registration-links";
@@ -18,6 +18,7 @@ export const validateRegistrationLink = new ValidateRegistrationLink(
 export const getRegistrationContext = new GetRegistrationContext(
   validateRegistrationLink,
   catalogRepository,
+  bankAccountManagementRepository,
 );
 const adminRegistrationLinkRepository = new PrismaAdminRegistrationLinkRepository();
 export const adminRegistrationLinks = new RegistrationLinkAdministrationService(

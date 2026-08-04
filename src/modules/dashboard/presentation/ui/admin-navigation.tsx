@@ -63,6 +63,7 @@ function NavigationLinks({ onNavigate, role }: { readonly onNavigate?: () => voi
         "/quan-tri/thanh-toan",
         "/quan-tri/ky-tuyen-sinh",
         "/quan-tri/nganh-hoc",
+        "/quan-tri/tai-khoan-ngan-hang",
         ...(role === "MANAGER" ? ["/quan-tri/nhan-su"] : []),
       ].includes(item.href));
   return visibleItems.map(({ href, icon: Icon, label }) => {

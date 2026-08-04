@@ -115,6 +115,17 @@ describe("ValidateRegistrationLink", () => {
 });
 
 describe("GetRegistrationContext", () => {
+  it("returns only the active default payment account public DTO", async () => {
+    const service = new GetRegistrationContext(
+      validator(link()),
+      new FakeCatalogRepository(),
+      { findPublicDefault: async () => ({ bankCode: "VCB", bankName: "Vietcombank", branchName: null, accountNumber: "001234", accountName: "TRUONG A" }) },
+    );
+    const result = await service.execute(token);
+    assert.deepEqual(result.bankAccount, { bankCode: "VCB", bankName: "Vietcombank", branchName: null, accountNumber: "001234", accountName: "TRUONG A" });
+    assert.equal("id" in result.bankAccount!, false);
+  });
+
   it("does not return the token or internal link identifier", async () => {
     const service = new GetRegistrationContext(
       validator(link()),

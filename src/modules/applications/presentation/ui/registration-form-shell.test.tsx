@@ -29,6 +29,7 @@ function context(
     entryQualification: null,
     hasApplication: false,
     application: null,
+    bankAccount: null,
     ...overrides,
   };
 }

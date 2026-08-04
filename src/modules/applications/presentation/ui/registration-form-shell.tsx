@@ -155,6 +155,36 @@ function RegistrationContextHeader({
   );
 }
 
+function PaymentAccountCard({ context }: { readonly context: RegistrationContext }) {
+  const account = context.bankAccount;
+  if (account === null) {
+    return (
+      <Card className="rounded-[2rem]">
+        <CardHeader>
+          <CardTitle>Chưa có tài khoản nhận thanh toán</CardTitle>
+          <CardDescription>
+          Nhà trường chưa cấu hình tài khoản nhận tiền mặc định. Vui lòng liên hệ đơn vị tuyển sinh trước khi chuyển khoản.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  return (
+    <Card className="rounded-[2rem]">
+      <CardHeader>
+        <CardTitle>Thông tin tài khoản nhận thanh toán</CardTitle>
+        <CardDescription>Chỉ sử dụng thông tin hiển thị trực tiếp từ hệ thống tại thời điểm chuyển khoản.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
+        <div><p className="text-muted-foreground">Ngân hàng</p><p className="font-medium">{account.bankCode} — {account.bankName}</p></div>
+        <div><p className="text-muted-foreground">Số tài khoản</p><p className="font-mono text-base font-semibold">{account.accountNumber}</p></div>
+        <div><p className="text-muted-foreground">Chủ tài khoản</p><p className="font-medium">{account.accountName}</p></div>
+        <div><p className="text-muted-foreground">Chi nhánh</p><p className="font-medium">{account.branchName ?? "—"}</p></div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function RegistrationFormShellView({
   applicationId,
   queryClient = defaultQueryClient,
@@ -324,6 +354,7 @@ export function RegistrationFormShellView({
     return (
       <div className="flex flex-col gap-5">
         <RegistrationContextHeader context={state.context} />
+        <PaymentAccountCard context={state.context} />
         <StateAlert
           icon={CheckCircle2Icon}
           title="Hồ sơ không còn ở trạng thái bản nháp"
@@ -336,6 +367,7 @@ export function RegistrationFormShellView({
   return (
     <div className="flex flex-col gap-6">
       <RegistrationContextHeader context={state.context} />
+      <PaymentAccountCard context={state.context} />
       <ApplicationForm
         token={token}
         context={state.context}

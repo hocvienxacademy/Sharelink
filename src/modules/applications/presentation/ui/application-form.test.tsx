@@ -33,6 +33,7 @@ const context: RegistrationContext = {
   entryQualification: null,
   hasApplication: false,
   application: null,
+  bankAccount: null,
 };
 
 function editable(version: number): EditableApplication {

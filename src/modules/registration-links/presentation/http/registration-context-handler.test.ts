@@ -25,6 +25,7 @@ const contextDto: RegistrationContextDto = {
   entryQualification: "THPT",
   hasApplication: false,
   application: null,
+  bankAccount: null,
 };
 
 function routeContext(value: string) {
