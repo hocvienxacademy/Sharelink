@@ -19,8 +19,11 @@ import type {
 } from "../ports/application-repository";
 import {
   parseApplicationIdentifier,
+  parseCreateDraftApplicationInput,
   parseSubmitApplicationInput,
+  WORD_EXPORT_TEXT_LIMITS,
 } from "../validation/application-schemas";
+import { ExportCredentialFactory } from "@/modules/word-export/application/export-credential";
 
 export class SubmitApplication {
   constructor(
@@ -30,6 +33,7 @@ export class SubmitApplication {
     private readonly submissionPolicy: SubmissionPolicy =
       new DefaultSubmissionPolicy(),
     private readonly clock: Clock = systemClock,
+    private readonly credentialFactory = new ExportCredentialFactory(),
   ) {}
 
   async execute(
@@ -76,12 +80,10 @@ export class SubmitApplication {
       );
     }
 
-    if (
-      application.majorId !== null &&
-      (await this.catalogRepository.findActiveMajorById(
-        application.majorId,
-      )) === null
-    ) {
+    const major = application.majorId === null
+      ? null
+      : await this.catalogRepository.findActiveMajorById(application.majorId);
+    if (application.majorId !== null && major === null) {
       throw new ValidationError([
         {
           path: ["majorId"],
@@ -90,6 +92,47 @@ export class SubmitApplication {
         },
       ]);
     }
+
+    if (major !== null && major.name.length > WORD_EXPORT_TEXT_LIMITS.majorName) {
+      throw new ValidationError([{
+        path: ["majorId"],
+        code: "print_capacity",
+        message: "Tên ngành vượt quá khả năng hiển thị của phiếu Word một trang.",
+      }]);
+    }
+
+    parseCreateDraftApplicationInput({
+      majorId: application.majorId,
+      entryQualification: application.entryQualification,
+      fullName: application.fullName,
+      gender: application.gender,
+      dateOfBirth: application.dateOfBirth,
+      placeOfBirth: application.placeOfBirth,
+      ethnicity: application.ethnicity,
+      religion: application.religion,
+      nationality: application.nationality,
+      citizenId: application.citizenId,
+      citizenIdIssuedDate: application.citizenIdIssuedDate,
+      citizenIdIssuedPlace: application.citizenIdIssuedPlace,
+      permanentAddress: application.permanentAddress,
+      workplace: application.workplace,
+      phone: application.phone,
+      email: application.email,
+      contactAddress: application.contactAddress,
+      admissionDiploma: application.admissionDiploma,
+      graduateMajor: application.graduateMajor,
+      graduationYear: application.graduationYear,
+      highSchoolName: application.highSchoolName,
+      highSchoolWard: application.highSchoolWard,
+      highSchoolProvince: application.highSchoolProvince,
+      declarationPlace: application.declarationPlace,
+      declarationDate: application.declarationDate,
+      declarationConfirmed: application.declarationConfirmed,
+      dataProcessingConsent: application.dataProcessingConsent,
+      relatives: application.relatives.map(({ position, fullName, relationship, occupation, phone, address }) => ({
+        position, fullName, relationship, occupation, phone, address,
+      })),
+    });
 
     const issues = this.submissionPolicy.validate(application);
 
@@ -100,14 +143,16 @@ export class SubmitApplication {
       );
     }
 
+    const credential = this.credentialFactory.create();
     const submitted = await this.applicationRepository.submit({
       applicationId,
       registrationLinkId: link.id,
       expectedVersion: values.expectedVersion,
       expectedStatus: application.status,
       submittedAt: this.clock.now(),
+      exportCredentialDigest: credential.digest,
     });
 
-    return toSubmittedApplicationResultDto(submitted);
+    return toSubmittedApplicationResultDto(submitted, credential.code);
   }
 }

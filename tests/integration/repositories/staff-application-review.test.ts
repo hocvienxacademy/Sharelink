@@ -38,7 +38,7 @@ describe("staff application review PostgreSQL transaction", () => {
     const { linkId, applicationId } = await seed("NEEDS_REVISION"); const repository = new PrismaApplicationRepository();
     await withTestClient((client) => client.query("INSERT INTO application_status_histories (application_id,previous_status,new_status,reason) VALUES ($1,'SUBMITTED','NEEDS_REVISION','Bổ sung số điện thoại')", [applicationId]));
     const edited = await repository.updateDraft({ applicationId, registrationLinkId: linkId, expectedStatus: "NEEDS_REVISION", expectedVersion: 1, majorId: undefined, entryQualification: undefined, values: { expectedVersion: 1, phone: "0901234567" } });
-    const submitted = await repository.submit({ applicationId, registrationLinkId: linkId, expectedStatus: "NEEDS_REVISION", expectedVersion: edited.version, submittedAt: new Date() });
+    const submitted = await repository.submit({ applicationId, registrationLinkId: linkId, expectedStatus: "NEEDS_REVISION", expectedVersion: edited.version, submittedAt: new Date(), exportCredentialDigest: "a".repeat(64) });
     assert.equal(submitted.status, "SUBMITTED");
     await withTestClient(async (client) => { const rows = await client.query("SELECT new_status,reason FROM application_status_histories WHERE application_id=$1", [applicationId]); assert.deepEqual(new Set(rows.rows.map((row) => row.new_status)), new Set(["NEEDS_REVISION", "SUBMITTED"])); assert.equal(rows.rows.find((row) => row.new_status === "NEEDS_REVISION")?.reason, "Bổ sung số điện thoại"); });
   });

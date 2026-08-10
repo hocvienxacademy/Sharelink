@@ -3,6 +3,7 @@ import { parseWithSchema } from "@/shared/validation";
 
 const code = z.string().trim().min(1).max(50);
 const name = z.string().trim().min(1).max(255);
+const majorName = z.string().trim().min(1).max(80);
 const dateOnly = z.iso.date();
 const expectedUpdatedAt = z.iso.datetime({ offset: true });
 
@@ -36,14 +37,14 @@ export const updateAdmissionPeriodSchema = z.object({
 
 export const createMajorSchema = z.object({
   code: code.transform((value) => value.toUpperCase()),
-  name,
+  name: majorName,
   displayOrder: z.number().int().nonnegative(),
 }).strict();
 
 export const updateMajorSchema = z.object({
   expectedUpdatedAt,
   code: code.transform((value) => value.toUpperCase()).optional(),
-  name: name.optional(),
+  name: majorName.optional(),
   displayOrder: z.number().int().nonnegative().optional(),
 }).strict().superRefine((value, context) => {
   if (value.code === undefined && value.name === undefined && value.displayOrder === undefined) {

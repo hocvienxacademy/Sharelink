@@ -30,6 +30,7 @@ import {
   type RegistrationContext,
 } from "./application-api-client";
 import { ApplicationForm } from "./application-form";
+import { StudentWordDownload } from "@/modules/word-export/presentation/ui/student-word-download";
 
 export interface RegistrationQueryClient {
   getContext(token: string): Promise<RegistrationContext>;
@@ -307,11 +308,14 @@ export function RegistrationFormShellView({
 
   if (state.kind === "unavailable") {
     return (
-      <StateAlert
-        icon={AlertTriangleIcon}
-        title="Liên kết không còn khả dụng"
-        description="Liên kết có thể không tồn tại, đã hết hạn, không còn hoạt động hoặc hiện không có kỳ tuyển sinh đang mở. Hệ thống không cung cấp thêm chi tiết để bảo vệ hồ sơ."
-      />
+      <div className="grid gap-5">
+        <StateAlert
+          icon={AlertTriangleIcon}
+          title="Liên kết không còn khả dụng để chỉnh sửa"
+          description="Liên kết có thể không tồn tại, đã hết hạn hoặc không còn hoạt động. Nếu hồ sơ đã được nộp, bạn vẫn có thể dùng mã đã lưu để tải lại phiếu Word."
+        />
+        <StudentWordDownload token={token} />
+      </div>
     );
   }
 
@@ -376,6 +380,7 @@ export function RegistrationFormShellView({
           title="Hồ sơ không còn ở trạng thái bản nháp"
           description="Hồ sơ đã được nộp hoặc đang được xử lý. Giao diện chỉnh sửa đã được khóa."
         />
+        <StudentWordDownload token={token} />
       </div>
     );
   }

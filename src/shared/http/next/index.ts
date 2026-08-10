@@ -1,4 +1,5 @@
 export {
+  handleNextBinaryRequest,
   handleNextRequest,
   PRIVATE_RESPONSE_HEADERS,
 } from "./next-api-response";

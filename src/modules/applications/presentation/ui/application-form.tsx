@@ -47,6 +47,7 @@ import { EducationSection } from "./sections/education-section";
 import { PersonalInformationSection } from "./sections/personal-information-section";
 import { RelativesSection } from "./sections/relatives-section";
 import { ReviewSection } from "./sections/review-section";
+import { StudentWordDownload } from "@/modules/word-export/presentation/ui/student-word-download";
 
 const steps = [
   { title: "Thông tin cá nhân", shortTitle: "Cá nhân" },
@@ -329,14 +330,17 @@ export function ApplicationForm({
 
   if (submitted !== null) {
     return (
-      <Alert>
-        <CheckCircle2Icon />
-        <AlertTitle>Hồ sơ đã được nộp thành công</AlertTitle>
-        <AlertDescription>
-          Mã tham chiếu hồ sơ: <strong>{submitted.id}</strong>. Hồ sơ hiện ở
-          trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
-        </AlertDescription>
-      </Alert>
+      <div className="grid gap-4">
+        <Alert>
+          <CheckCircle2Icon />
+          <AlertTitle>Hồ sơ đã được nộp thành công</AlertTitle>
+          <AlertDescription>
+            Mã tham chiếu hồ sơ: <strong>{submitted.id}</strong>. Hồ sơ hiện ở
+            trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
+          </AlertDescription>
+        </Alert>
+        <StudentWordDownload token={token} initialCode={submitted.downloadCode} />
+      </div>
     );
   }
 

@@ -105,6 +105,7 @@ const editableApplicationSchema = draftApplicationSchema.extend({
 });
 
 const submittedApplicationSchema = draftApplicationSchema.extend({
+  downloadCode: z.string().min(20).max(128),
   submittedAt: z.string(),
 });
 

@@ -59,6 +59,7 @@ const editableDto: EditableApplicationDto = {
 };
 
 const submittedDto: SubmittedApplicationResultDto = {
+  downloadCode: "ASNFZ4mrze8BI0VniavN7w",
   id: applicationId,
   status: "SUBMITTED",
   submittedAt: "2026-07-31T08:00:00.000Z",

@@ -399,6 +399,21 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
           },
         });
 
+        await transaction.application_export_credentials.upsert({
+          where: { application_id: input.applicationId },
+          create: {
+            application_id: input.applicationId,
+            secret_hash: input.exportCredentialDigest,
+          },
+          update: {
+            secret_hash: input.exportCredentialDigest,
+            failed_attempts: 0,
+            locked_until: null,
+            revoked_at: null,
+            updated_at: input.submittedAt,
+          },
+        });
+
         return loadApplication(transaction, input.applicationId);
       }),
     );

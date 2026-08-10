@@ -53,6 +53,7 @@ export interface EditableApplicationDto extends DraftApplicationDto {
 }
 
 export interface SubmittedApplicationResultDto {
+  readonly downloadCode: string;
   readonly id: string;
   readonly status: ApplicationStatus;
   readonly submittedAt: string;

@@ -5,8 +5,37 @@ import {
 import { parseWithSchema } from "../../../../shared/validation/index";
 import { GENDERS } from "../../domain/application";
 
+export const WORD_EXPORT_TEXT_LIMITS = {
+  fullName: 50,
+  placeOfBirth: 50,
+  ethnicity: 20,
+  religion: 20,
+  nationality: 20,
+  citizenIdIssuedPlace: 80,
+  permanentAddress: 80,
+  workplace: 60,
+  contactAddress: 80,
+  email: 60,
+  majorName: 80,
+  graduateMajor: 60,
+  highSchoolName: 80,
+  highSchoolWard: 40,
+  highSchoolProvince: 40,
+  declarationPlace: 30,
+  relativeFullName: 40,
+  relativeRelationship: 15,
+  relativeOccupation: 30,
+  relativeAddress: 50,
+} as const;
+
 function optionalNullableString(maxLength: number) {
-  return z.string().trim().max(maxLength).nullable().optional();
+  return z
+    .string()
+    .trim()
+    .refine((value) => !/[\r\n]/u.test(value), "Nội dung phải nằm trên một dòng để bảo đảm phiếu Word nằm trên một trang.")
+    .max(maxLength, `Nội dung không được vượt quá ${maxLength} ký tự để bảo đảm phiếu Word nằm trên một trang.`)
+    .nullable()
+    .optional();
 }
 
 const dateOnlySchema = z
@@ -23,16 +52,16 @@ const dateOnlySchema = z
 export const applicationRelativeInputSchema = z
   .object({
     position: z.int().min(1).max(2),
-    fullName: optionalNullableString(150),
-    relationship: optionalNullableString(100),
-    occupation: optionalNullableString(255),
+    fullName: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeFullName),
+    relationship: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeRelationship),
+    occupation: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeOccupation),
     phone: z
       .string()
       .trim()
       .regex(/^[0-9]{10,15}$/)
       .nullable()
       .optional(),
-    address: z.string().trim().nullable().optional(),
+    address: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeAddress),
   })
   .strict();
 
@@ -58,13 +87,13 @@ const relativesSchema = z
 const draftFields = {
   majorId: z.uuid().nullable().optional(),
   entryQualification: z.enum(ADMISSION_QUALIFICATIONS).nullable().optional(),
-  fullName: optionalNullableString(150),
+  fullName: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.fullName),
   gender: z.enum(GENDERS).nullable().optional(),
   dateOfBirth: dateOnlySchema.nullable().optional(),
-  placeOfBirth: optionalNullableString(255),
-  ethnicity: optionalNullableString(100),
-  religion: optionalNullableString(100),
-  nationality: optionalNullableString(100),
+  placeOfBirth: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.placeOfBirth),
+  ethnicity: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.ethnicity),
+  religion: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.religion),
+  nationality: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.nationality),
   citizenId: z
     .string()
     .trim()
@@ -72,27 +101,27 @@ const draftFields = {
     .nullable()
     .optional(),
   citizenIdIssuedDate: dateOnlySchema.nullable().optional(),
-  citizenIdIssuedPlace: optionalNullableString(255),
-  permanentAddress: z.string().trim().nullable().optional(),
-  workplace: z.string().trim().nullable().optional(),
+  citizenIdIssuedPlace: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.citizenIdIssuedPlace),
+  permanentAddress: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.permanentAddress),
+  workplace: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.workplace),
   phone: z.string().trim().regex(/^[0-9]{10}$/).nullable().optional(),
   email: z
     .string()
     .trim()
-    .pipe(z.email().max(255))
+    .pipe(z.email().max(WORD_EXPORT_TEXT_LIMITS.email))
     .nullable()
     .optional(),
-  contactAddress: z.string().trim().nullable().optional(),
+  contactAddress: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.contactAddress),
   admissionDiploma: z
     .enum(ADMISSION_QUALIFICATIONS)
     .nullable()
     .optional(),
-  graduateMajor: optionalNullableString(255),
+  graduateMajor: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.graduateMajor),
   graduationYear: z.int().min(1950).max(2100).nullable().optional(),
-  highSchoolName: optionalNullableString(255),
-  highSchoolWard: optionalNullableString(255),
-  highSchoolProvince: optionalNullableString(255),
-  declarationPlace: optionalNullableString(255),
+  highSchoolName: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.highSchoolName),
+  highSchoolWard: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.highSchoolWard),
+  highSchoolProvince: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.highSchoolProvince),
+  declarationPlace: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.declarationPlace),
   declarationDate: dateOnlySchema.nullable().optional(),
   declarationConfirmed: z.boolean().optional(),
   dataProcessingConsent: z.boolean().optional(),

@@ -61,12 +61,14 @@ export function toEditableApplicationDto(
 
 export function toSubmittedApplicationResultDto(
   application: Application,
+  downloadCode: string,
 ): SubmittedApplicationResultDto {
   if (application.submittedAt === null) {
     throw new Error("Submitted application is missing submittedAt.");
   }
 
   return {
+    downloadCode,
     id: application.id,
     status: application.status,
     submittedAt: application.submittedAt.toISOString(),

@@ -33,6 +33,7 @@ export interface SubmitApplicationPersistenceInput {
   readonly expectedVersion: number;
   readonly expectedStatus: "DRAFT" | "NEEDS_REVISION";
   readonly submittedAt: Date;
+  readonly exportCredentialDigest: string;
 }
 
 export interface ApplicationRepository {

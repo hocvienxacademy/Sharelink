@@ -28,6 +28,7 @@ import { CreateDraftApplication } from "./create-draft-application";
 import { GetEditableApplication } from "./get-editable-application";
 import { SubmitApplication } from "./submit-application";
 import { UpdateDraftApplication } from "./update-draft-application";
+import { ExportCredentialFactory } from "@/modules/word-export/application/export-credential";
 
 const token = "11111111-1111-4111-8111-111111111111";
 const applicationId = "22222222-2222-4222-8222-222222222222";
@@ -141,6 +142,7 @@ class FakeApplicationRepository implements ApplicationRepository {
   current: Application | null;
   failNextUpdate = false;
   submitCalls = 0;
+  lastSubmitInput: SubmitApplicationPersistenceInput | null = null;
 
   constructor(initial: Application | null = null) {
     this.current = initial;
@@ -237,6 +239,7 @@ class FakeApplicationRepository implements ApplicationRepository {
     }
 
     this.submitCalls += 1;
+    this.lastSubmitInput = input;
     this.current = {
       ...this.current,
       status: "SUBMITTED",
@@ -509,6 +512,9 @@ describe("UpdateDraftApplication", () => {
 });
 
 describe("SubmitApplication", () => {
+  const credentialFactory = new ExportCredentialFactory(() =>
+    Buffer.from("0123456789abcdef0123456789abcdef", "hex"),
+  );
   it("uses the default policy and calls the repository for a complete draft", async () => {
     const { catalogs, validateLink } = dependencies();
     const repository = new FakeApplicationRepository(
@@ -552,6 +558,7 @@ describe("SubmitApplication", () => {
       repository,
       completePolicy,
       clock,
+      credentialFactory,
     );
 
     const result = await service.execute(token, applicationId, {
@@ -561,6 +568,8 @@ describe("SubmitApplication", () => {
     assert.equal(result.status, "SUBMITTED");
     assert.equal(result.version, 2);
     assert.equal(result.submittedAt, "2026-07-31T08:00:00.000Z");
+    assert.equal(result.downloadCode, "ASNFZ4mrze8BI0VniavN7w");
+    assert.match(repository.lastSubmitInput?.exportCredentialDigest ?? "", /^[a-f0-9]{64}$/);
   });
 
   it("returns a conflict for a second submission", async () => {

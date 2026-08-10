@@ -12,6 +12,7 @@ const DEFAULT_POLICIES: Readonly<Record<RateLimitEndpoint, RateLimitPolicy>> = {
   create: { limit: 5, windowMs: 600_000, failOpen: false },
   update: { limit: 30, windowMs: 600_000, failOpen: false },
   submit: { limit: 5, windowMs: 600_000, failOpen: false },
+  "word-export": { limit: 10, windowMs: 600_000, failOpen: false },
 };
 
 function positiveInteger(value: string | undefined, fallback: number): number {

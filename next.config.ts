@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingIncludes: {
+    "/*": ["./src/modules/word-export/templates/phieu-du-tuyen-v1.docx"],
+  },
   productionBrowserSourceMaps: false,
   experimental: {
     useTypeScriptCli: true,

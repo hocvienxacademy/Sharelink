@@ -21,6 +21,13 @@ describe("StaffApplicationAuthorizationPolicy", () => {
     assert.equal(policy.authorize("application.read", admin, outside).allowed, true);
   });
 
+  it("uses the same ownership scope for Word exports", () => {
+    assert.equal(policy.authorize("application.exportWord", sale, own).allowed, true);
+    assert.equal(policy.authorize("application.exportWord", sale, outside).allowed, false);
+    assert.equal(policy.authorize("application.exportWord", manager, own).allowed, true);
+    assert.equal(policy.authorize("application.exportWord", admin, outside).allowed, true);
+  });
+
   it("keeps SALE read-only for every application mutation", () => {
     for (const capability of ["application.updateContent", "application.requestRevision", "application.validate"] as const) {
       assert.deepEqual(policy.authorize(capability, sale, own), { allowed: false, reason: "role-not-allowed" });

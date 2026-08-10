@@ -81,3 +81,44 @@ export async function handleNextRequest<T>(
     return toNextResponse(result, responseHeaders);
   }
 }
+
+export async function handleNextBinaryRequest(
+  operation: () => Promise<Response>,
+  headers?: HeadersInit,
+  routeClass = "unknown",
+  requestId = randomUUID(),
+): Promise<Response> {
+  const startedAt = performance.now();
+  const telemetry = getOperationalTelemetry();
+  const responseHeaders = new Headers(headers);
+  responseHeaders.set("X-Request-ID", requestId);
+  try {
+    const result = await operation();
+    for (const [name, value] of responseHeaders) {
+      if (!result.headers.has(name)) result.headers.set(name, value);
+    }
+    telemetry.record("request_count", { requestId, routeClass, status: result.status });
+    telemetry.record("latency_ms", {
+      durationMs: Math.round(performance.now() - startedAt),
+      requestId,
+      routeClass,
+      status: result.status,
+    });
+    return result;
+  } catch (error: unknown) {
+    if (error instanceof TooManyRequestsError) {
+      responseHeaders.set("Retry-After", String(error.retryAfterSeconds));
+    }
+    const result = createErrorResponse(error);
+    telemetry.record("request_count", { requestId, routeClass, status: result.status });
+    telemetry.record("error_count", { requestId, routeClass, status: result.status });
+    telemetry.record("latency_ms", {
+      durationMs: Math.round(performance.now() - startedAt),
+      requestId,
+      routeClass,
+      status: result.status,
+    });
+    if (error instanceof DatabaseError) telemetry.record("database_failure");
+    return toNextResponse(result, responseHeaders);
+  }
+}

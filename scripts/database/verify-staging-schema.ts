@@ -3,12 +3,13 @@ import { validateStagingDatabaseTarget } from "../../src/shared/config/runtime-e
 import { readSchemaFingerprint } from "./schema-fingerprint";
 
 const EXPECTED_SCHEMA_SHA256 =
-  "6190c6858f24781f1517a61d6cfb25b880ace8d57a0eba1d462ad7686b10ccda";
+  "1b5d16b6e4354f96cdb0044a9e5f6e313d3b2f370ea98929832f43c844f22b46";
 
 const EXPECTED_TABLES = [
   "admission_periods",
   "app_sessions",
   "application_relatives",
+  "application_export_credentials",
   "application_status_histories",
   "applications",
   "audit_logs",
@@ -25,6 +26,8 @@ const EXPECTED_CHECKS = [
   "chk_admission_period_dates",
   "chk_application_relatives_phone",
   "chk_application_relatives_position",
+  "chk_application_export_credentials_failed_attempts",
+  "chk_application_export_credentials_secret_hash",
   "chk_applications_citizen_id",
   "chk_applications_graduation_year",
   "chk_applications_phone",

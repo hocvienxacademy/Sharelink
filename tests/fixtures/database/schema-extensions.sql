@@ -12,6 +12,12 @@ ALTER TABLE application_relatives
   ADD CONSTRAINT chk_application_relatives_position
   CHECK ("position" >= 1 AND "position" <= 2);
 
+ALTER TABLE application_export_credentials
+  ADD CONSTRAINT chk_application_export_credentials_secret_hash
+  CHECK (secret_hash::text ~ '^[0-9a-f]{64}$'::text),
+  ADD CONSTRAINT chk_application_export_credentials_failed_attempts
+  CHECK (failed_attempts >= 0);
+
 ALTER TABLE applications
   ADD CONSTRAINT chk_applications_citizen_id
   CHECK (citizen_id IS NULL OR citizen_id::text ~ '^[0-9]{9,12}$'::text),

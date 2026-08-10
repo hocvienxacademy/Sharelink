@@ -4,6 +4,7 @@ import { ConflictError, ForbiddenError, UnauthorizedError } from "@/shared/error
 export const STAFF_APPLICATION_CAPABILITIES = [
   "application.list",
   "application.read",
+  "application.exportWord",
   "application.updateContent",
   "application.requestRevision",
   "application.validate",
@@ -39,7 +40,7 @@ export class StaffApplicationAuthorizationPolicy {
       (actor.role === "SALE" && resource.ownerId === actor.userId) ||
       (actor.role === "MANAGER" && resource.ownerManagerId === actor.userId);
     if (!inScope) return { allowed: false, reason: "outside-scope" };
-    if (capability === "application.read" || capability === "application.viewHistory") return { allowed: true };
+    if (capability === "application.read" || capability === "application.exportWord" || capability === "application.viewHistory") return { allowed: true };
     if (actor.role === "SALE") return { allowed: false, reason: "role-not-allowed" };
     if (capability === "application.updateContent") {
       return ["DRAFT", "SUBMITTED", "NEEDS_REVISION"].includes(resource.status)
