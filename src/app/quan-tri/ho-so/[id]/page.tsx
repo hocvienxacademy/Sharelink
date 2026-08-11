@@ -84,9 +84,20 @@ export default async function ApplicationDetailPage({ params }: { readonly param
           relationship: relative.relationship ?? "—",
         }))}
       />
-      {identity.role === "SALE" ? <BusinessRuleGate>SALE chỉ có quyền đọc hồ sơ sinh viên.</BusinessRuleGate> : (
-        <StaffApplicationActions id={item.id} status={item.status} version={item.version} fullName={item.fullName} phone={item.phone} email={item.email} />
-      )}
+      <StaffApplicationActions
+        canManage={identity.role !== "SALE"}
+        email={item.email}
+        fullName={item.fullName}
+        id={item.id}
+        phone={item.phone}
+        status={item.status}
+        version={item.version}
+      />
+      {identity.role === "SALE" ? (
+        <BusinessRuleGate>
+          SALE có thể xem và tải phiếu Word của hồ sơ mình phụ trách, nhưng không thể chỉnh sửa hoặc xét duyệt.
+        </BusinessRuleGate>
+      ) : null}
       <AdminResourceTable
         columns={[
           { key: "transition", label: "Chuyển trạng thái" },
