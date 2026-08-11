@@ -34,7 +34,7 @@ const record: ApplicationWordExportRecord = {
   permanentAddress: repeated(WORD_EXPORT_TEXT_LIMITS.permanentAddress),
   workplace: repeated(WORD_EXPORT_TEXT_LIMITS.workplace),
   phone: "0912345678",
-  email: `${repeated(48)}@example.com`,
+  email: `${repeated(WORD_EXPORT_TEXT_LIMITS.email - "@example.com".length)}@example.com`,
   contactAddress: repeated(WORD_EXPORT_TEXT_LIMITS.contactAddress),
   admissionDiploma: "THPT",
   graduateMajor: repeated(WORD_EXPORT_TEXT_LIMITS.graduateMajor),
@@ -49,6 +49,6 @@ const record: ApplicationWordExportRecord = {
 
 const outputDirectory = path.join(process.cwd(), ".scratch", "word-export");
 fs.mkdirSync(outputDirectory, { recursive: true });
-const outputPath = path.join(outputDirectory, "phieu-du-tuyen-max.docx");
+const outputPath = path.join(outputDirectory, "phieu-du-tuyen-max-qa.docx");
 fs.writeFileSync(outputPath, new DocxTemplateGenerator().generate(record));
 console.log(outputPath);

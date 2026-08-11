@@ -31,119 +31,155 @@ function blueLabel(text) {
   return run(text, { size: 20 });
 }
 
-function blueValue(tag, size = 16) {
-  return run(`{${tag}}`, { size, underline: true });
+function blueValue(tag) {
+  return run(`{${tag}}`, { size: 20 });
 }
 
-function replaceParagraph(paraId, content) {
+function tab() {
+  return "<w:r><w:tab/></w:r>";
+}
+
+function dottedTabs(positions) {
+  return `<w:tabs>${positions
+    .map((position) => `<w:tab w:val="left" w:leader="dot" w:pos="${position}"/>`)
+    .join("")}</w:tabs>`;
+}
+
+function replaceParagraph(paraId, content, tabPositions = null) {
   const pattern = new RegExp(
     `(<w:p\\b[^>]*w14:paraId="${paraId}"[^>]*>)(<w:pPr>[\\s\\S]*?<\\/w:pPr>)?[\\s\\S]*?<\\/w:p>`,
   );
   if (!pattern.test(xml)) {
     throw new Error(`Paragraph ${paraId} was not found in the converted template.`);
   }
-  xml = xml.replace(pattern, (_match, opening, properties = "") =>
-    `${opening}${properties}${content}</w:p>`,
-  );
+  xml = xml.replace(pattern, (_match, opening, properties = "") => {
+    let nextProperties = properties;
+    if (tabPositions !== null) {
+      const tabs = dottedTabs(tabPositions);
+      nextProperties = nextProperties.includes("<w:tabs>")
+        ? nextProperties.replace(/<w:tabs>[\s\S]*?<\/w:tabs>/, tabs)
+        : nextProperties.replace("<w:pPr>", `<w:pPr>${tabs}`);
+    }
+    return `${opening}${nextProperties}${content}</w:p>`;
+  });
 }
 
 replaceParagraph(
   "6594E461",
   run("Ngành: ", { color: "FF0000", size: 28 }) +
-    run("{major_name}", { color: "FF0000", size: 14, underline: true }),
+    run("{major_name}", { color: "FF0000", size: 20 }),
 );
 replaceParagraph(
   "51934D8C",
-    run("Đối tượng: từ (", { color: "FF0000", size: 20 }) +
-    run("{entry_qualification}", { color: "FF0000", size: 16, underline: true }) +
-    run(") học lên Đại học", { color: "FF0000", size: 20 }),
+    run("Đối tượng: từ (THPT/TC/CĐ/ĐH).....................học lên Đại học", {
+      color: "FF0000",
+      size: 20,
+    }),
 );
 replaceParagraph(
   "4CBB0D89",
-  blueLabel(" Họ và tên khai sinh: ") + blueValue("full_name") +
-    blueLabel("    Giới tính: ") + blueValue("gender"),
+  blueLabel(" Họ và tên khai sinh: ") + blueValue("full_name") + tab() +
+    blueLabel("Giới tính: ") + blueValue("gender") + tab(),
+  [6000, 9072],
 );
 replaceParagraph(
   "3F030D80",
-  blueLabel(" Ngày sinh: ") + blueValue("date_of_birth") +
-    blueLabel("    Nơi sinh: ") + blueValue("place_of_birth"),
+  blueLabel(" Ngày sinh: ") + blueValue("date_of_birth") + tab() +
+    blueLabel("Nơi sinh: ") + blueValue("place_of_birth") + tab(),
+  [3600, 9072],
 );
 replaceParagraph(
   "7329B1FA",
-  blueLabel(" Dân tộc: ") + blueValue("ethnicity") +
-    blueLabel("  Tôn giáo: ") + blueValue("religion") +
-    blueLabel("  Quốc tịch: ") + blueValue("nationality"),
+  blueLabel(" Dân tộc: ") + blueValue("ethnicity") + tab() +
+    blueLabel("Tôn giáo: ") + blueValue("religion") + tab() +
+    blueLabel("Quốc tịch: ") + blueValue("nationality") + tab(),
+  [3000, 6200, 9072],
 );
 replaceParagraph(
   "219DB2CB",
-  blueLabel(" Số CCCD: ") + blueValue("citizen_id") +
-    blueLabel("  Ngày cấp: ") + blueValue("citizen_id_issued_date") +
-    blueLabel("  Nơi cấp: ") + blueValue("citizen_id_issued_place", 18),
+  blueLabel(" Số CCCD: ") + blueValue("citizen_id") + tab() +
+    blueLabel("Ngày cấp: ") + blueValue("citizen_id_issued_date") + tab() +
+    blueLabel("Nơi cấp: ") + blueValue("citizen_id_issued_place") + tab(),
+  [3200, 6200, 9072],
 );
 replaceParagraph(
   "39E0C9AC",
-  blueLabel(" Nơi thường trú: ") + blueValue("permanent_address", 18),
+  blueLabel(" Nơi thường trú: ") + blueValue("permanent_address") + tab(),
+  [9072],
 );
 replaceParagraph(
   "100F1AFA",
-  blueLabel(" Công việc/ Đơn vị công tác: ") + blueValue("workplace", 18),
+  blueLabel(" Công việc/ Đơn vị công tác: ") + blueValue("workplace") + tab(),
+  [9072],
 );
 replaceParagraph(
   "2E8A9302",
-  blueLabel(" Điện thoại: ") + blueValue("phone") +
-    blueLabel("    E-mail: ") + blueValue("email", 18),
+  blueLabel(" Điện thoại: ") + blueValue("phone") + tab() +
+    blueLabel("E-mail: ") + blueValue("email") + tab(),
+  [3600, 9072],
 );
 replaceParagraph(
   "15367152",
-  blueLabel(" Địa chỉ liên hệ: ") + blueValue("contact_address", 18),
+  blueLabel(" Địa chỉ liên hệ: ") + blueValue("contact_address") + tab(),
+  [9072],
 );
 replaceParagraph(
   "52AACFF1",
   blueLabel(" Bằng tốt nghiệp sử dụng đăng ký xét tuyển (THPT/TC/CĐ/ĐH): ") +
-    blueValue("admission_diploma"),
+    blueValue("admission_diploma") + tab(),
+  [9072],
 );
 replaceParagraph(
   "7DF82AFC",
-  blueLabel(" Ngành tốt nghiệp: ") + blueValue("graduate_major", 18) +
-    blueLabel("    Năm tốt nghiệp: ") + blueValue("graduation_year"),
+  blueLabel(" Ngành tốt nghiệp: ") + blueValue("graduate_major") + tab() +
+    blueLabel("Năm tốt nghiệp: ") + blueValue("graduation_year") + tab(),
+  [5800, 9072],
 );
 replaceParagraph(
   "34960EF7",
   blueLabel(" Nơi học lớp 12 bậc THPT - Tên trường: ") +
-    blueValue("high_school_name", 18),
+    blueValue("high_school_name") + tab(),
+  [9072],
 );
 replaceParagraph(
   "7BC8F8A9",
-  blueLabel(" Tại xã/Phường: ") + blueValue("high_school_ward", 18) +
-    blueLabel("    Tỉnh/TP: ") + blueValue("high_school_province", 18),
+  blueLabel(" Tại xã/Phường: ") + blueValue("high_school_ward") + tab() +
+    blueLabel("Tỉnh/TP: ") + blueValue("high_school_province") + tab(),
+  [5200, 9072],
 );
 replaceParagraph(
   "4110B539",
-  blueLabel("Họ và tên: ") + blueValue("relative_1_full_name", 18) +
-    blueLabel("    Quan hệ: ") + blueValue("relative_1_relationship", 18),
+  blueLabel("Họ và tên: ") + blueValue("relative_1_full_name") + tab() +
+    blueLabel("Quan hệ: ") + blueValue("relative_1_relationship") + tab(),
+  [5670, 9072],
 );
 replaceParagraph(
   "39051AFB",
-  blueLabel("Nghề nghiệp: ") + blueValue("relative_1_occupation", 18) +
-    blueLabel("    Điện thoại: ") + blueValue("relative_1_phone", 18),
+  blueLabel("Nghề nghiệp: ") + blueValue("relative_1_occupation") + tab() +
+    blueLabel("Điện thoại: ") + blueValue("relative_1_phone") + tab(),
+  [5103, 9072],
 );
 replaceParagraph(
   "13E8EFC5",
-  blueLabel("Địa chỉ: ") + blueValue("relative_1_address", 18),
+  blueLabel("Địa chỉ: ") + blueValue("relative_1_address") + tab(),
+  [9072],
 );
 replaceParagraph(
   "6A431136",
-  blueLabel("Họ và tên: ") + blueValue("relative_2_full_name", 18) +
-    blueLabel("    Quan hệ: ") + blueValue("relative_2_relationship", 18),
+  blueLabel("Họ và tên: ") + blueValue("relative_2_full_name") + tab() +
+    blueLabel("Quan hệ: ") + blueValue("relative_2_relationship") + tab(),
+  [5670, 9072],
 );
 replaceParagraph(
   "29F82ABF",
-  blueLabel("Nghề nghiệp: ") + blueValue("relative_2_occupation", 18) +
-    blueLabel("    Điện thoại: ") + blueValue("relative_2_phone", 18),
+  blueLabel("Nghề nghiệp: ") + blueValue("relative_2_occupation") + tab() +
+    blueLabel("Điện thoại: ") + blueValue("relative_2_phone") + tab(),
+  [5103, 9072],
 );
 replaceParagraph(
   "308CAAF8",
-  blueLabel("Địa chỉ: ") + blueValue("relative_2_address", 18),
+  blueLabel("Địa chỉ: ") + blueValue("relative_2_address") + tab(),
+  [9072],
 );
 replaceParagraph(
   "33239D24",

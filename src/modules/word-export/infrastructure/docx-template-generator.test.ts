@@ -58,8 +58,62 @@ describe("DocxTemplateGenerator", () => {
     assert.match(documentXml, /Công nghệ thông tin/);
     assert.match(documentXml, /Nam/);
     assert.match(documentXml, /ngày 10 tháng 08 năm 2026/);
+    assert.match(
+      documentXml,
+      /<w:sz w:val="20"\/><w:szCs w:val="20"\/><\/w:rPr><w:t[^>]*>Nguyễn Văn A<\/w:t>/,
+    );
+    assert.match(
+      documentXml,
+      /Công việc\/ Đơn vị công tác: <\/w:t><\/w:r><w:r>[\s\S]{0,180}<\/w:r><w:r><w:tab\/><\/w:r>/,
+    );
+    assert.match(
+      documentXml,
+      /Nguyễn Văn A<\/w:t><\/w:r><w:r><w:tab\/><\/w:r>/,
+    );
+    assert.match(
+      documentXml,
+      /student@example\.com<\/w:t><\/w:r><\/w:p>/,
+    );
+    assert.match(documentXml, /Đối tượng: từ \(THPT\/TC\/CĐ\/ĐH\)/);
+    assert.doesNotMatch(documentXml, /w14:paraId="7FA5A099"/);
+    assert.doesNotMatch(documentXml, /w14:paraId="64A6161A"/);
     assert.doesNotMatch(documentXml, /\{[a-z_]+\}/);
     assert.match(coreXml, /<dc:creator><\/dc:creator>/);
     assert.match(coreXml, /<cp:lastModifiedBy><\/cp:lastModifiedBy>/);
+  });
+
+  it("keeps the sample continuation lines when address fields are empty", () => {
+    const bytes = new DocxTemplateGenerator().generate({
+      ...record,
+      permanentAddress: null,
+      contactAddress: null,
+      dateOfBirth: null,
+      declarationDate: null,
+    });
+    const documentXml = new PizZip(Buffer.from(bytes))
+      .file("word/document.xml")
+      ?.asText();
+
+    assert.ok(documentXml);
+    assert.match(documentXml, /w14:paraId="7FA5A099"/);
+    assert.match(documentXml, /w14:paraId="64A6161A"/);
+    assert.match(documentXml, /\.\.\.\.\.\/\.\.\.\.\.\/\.\.\.\.\./);
+    assert.match(documentXml, /ngày \.\.\.\.\.\. tháng \.\.\.\.\.\. năm \.\.\.\.\.\.\.\./);
+  });
+
+  it("keeps the sample font size while fitting long values into fixed fields", () => {
+    const fullName = "W".repeat(50);
+    const bytes = new DocxTemplateGenerator().generate({ ...record, fullName });
+    const documentXml = new PizZip(Buffer.from(bytes))
+      .file("word/document.xml")
+      ?.asText();
+
+    assert.ok(documentXml);
+    assert.match(
+      documentXml,
+      new RegExp(
+        `<w:sz w:val="20"/><w:szCs w:val="20"/><w:w w:val="56"/></w:rPr><w:t[^>]*>${fullName}</w:t>`,
+      ),
+    );
   });
 });
