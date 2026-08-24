@@ -80,12 +80,12 @@ test("catalog services use inclusive dates, reject overlapping open periods, and
 
 test("registration context resolves only usable links, supports fallback, and never returns the token", async () => {
   const context = await getRegistrationContext.execute(TEST_TOKENS.active);
-  assert.equal(context.admissionPeriod.code, "OPEN-TEST");
+  assert.equal("admissionPeriod" in context, false);
   assert.equal(context.hasApplication, false);
   assert.equal(JSON.stringify(context).includes(TEST_TOKENS.active), false);
 
   const fallback = await getRegistrationContext.execute(TEST_TOKENS.fallback);
-  assert.equal(fallback.admissionPeriod.code, "OPEN-TEST");
+  assert.equal("admissionPeriod" in fallback, false);
 
   for (const token of [
     TEST_TOKENS.expired,

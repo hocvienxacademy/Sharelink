@@ -67,15 +67,6 @@ function applicationRoute(token: string, applicationId: string): string {
   return `/dang-ky/${encodeURIComponent(token)}/ho-so/${encodeURIComponent(applicationId)}`;
 }
 
-function displayDate(value: string | null): string {
-  if (value === null) {
-    return "Không giới hạn";
-  }
-
-  const [year, month, day] = value.split("-");
-  return `${day}/${month}/${year}`;
-}
-
 function LoadingState() {
   return (
     <Card aria-busy="true" className="rounded-[2rem]">
@@ -126,16 +117,13 @@ function RegistrationContextHeader({
     <Card className="rounded-[2rem] bg-primary text-primary-foreground">
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">{context.admissionPeriod.code}</Badge>
           <Badge variant="secondary">Liên kết đang hoạt động</Badge>
         </div>
         <CardTitle className="text-xl">
-          {context.admissionPeriod.name}
+          Đăng ký hồ sơ tuyển sinh
         </CardTitle>
         <CardDescription className="text-primary-foreground/65">
-          Thời gian tiếp nhận: {displayDate(context.admissionPeriod.startDate)}
-          {" – "}
-          {displayDate(context.admissionPeriod.endDate)}
+          Hoàn thiện thông tin theo liên kết được cấp. Liên kết còn hiệu lực cho đến thời điểm hết hạn do đơn vị tuyển sinh thiết lập.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
@@ -156,51 +144,6 @@ function RegistrationContextHeader({
   );
 }
 
-function PaymentAccountCard({ context }: { readonly context: RegistrationContext }) {
-  const account = context.bankAccount;
-  if (account === null) {
-    return (
-      <Card className="rounded-[2rem]">
-        <CardHeader>
-          <CardTitle>Chưa có tài khoản nhận thanh toán</CardTitle>
-          <CardDescription>
-          Nhà trường chưa cấu hình tài khoản nhận tiền mặc định. Vui lòng liên hệ đơn vị tuyển sinh trước khi chuyển khoản.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-  return (
-    <Card className="rounded-[2rem]">
-      <CardHeader>
-        <CardTitle>Thông tin tài khoản nhận thanh toán</CardTitle>
-        <CardDescription>Chỉ sử dụng thông tin hiển thị trực tiếp từ hệ thống tại thời điểm chuyển khoản.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
-        <div><p className="text-muted-foreground">Ngân hàng</p><p className="font-medium">{account.bankCode} — {account.bankName}</p></div>
-        <div><p className="text-muted-foreground">Số tài khoản</p><p className="font-mono text-base font-semibold">{account.accountNumber}</p></div>
-        <div><p className="text-muted-foreground">Chủ tài khoản</p><p className="font-medium">{account.accountName}</p></div>
-        <div><p className="text-muted-foreground">Chi nhánh</p><p className="font-medium">{account.branchName ?? "—"}</p></div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PaymentInstructionsCard({ context }: { readonly context: RegistrationContext }) {
-  if (context.paymentInstructions === null) return null;
-  return (
-    <Card className="rounded-[2rem]">
-      <CardHeader>
-        <CardTitle>Hướng dẫn thanh toán</CardTitle>
-        <CardDescription>Nội dung hướng dẫn chính thức từ đơn vị tuyển sinh.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="whitespace-pre-line text-sm leading-6">{context.paymentInstructions}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function RegistrationFormShellView({
   applicationId,
   queryClient = defaultQueryClient,
@@ -214,6 +157,7 @@ export function RegistrationFormShellView({
 }) {
   const tokenIsValid = registrationTokenSchema.safeParse(token).success;
   const [reloadCounter, setReloadCounter] = useState(0);
+  const [submittedDownloadCode, setSubmittedDownloadCode] = useState<string | null>(null);
   const [state, setState] = useState<ShellState>(
     tokenIsValid ? { kind: "loading" } : { kind: "invalid-token" },
   );
@@ -373,14 +317,12 @@ export function RegistrationFormShellView({
     return (
       <div className="flex flex-col gap-5">
         <RegistrationContextHeader context={state.context} />
-        <PaymentAccountCard context={state.context} />
-        <PaymentInstructionsCard context={state.context} />
         <StateAlert
           icon={CheckCircle2Icon}
           title="Hồ sơ không còn ở trạng thái bản nháp"
           description="Hồ sơ đã được nộp hoặc đang được xử lý. Giao diện chỉnh sửa đã được khóa."
         />
-        <StudentWordDownload token={token} />
+        <StudentWordDownload token={token} initialCode={submittedDownloadCode} />
       </div>
     );
   }
@@ -388,8 +330,6 @@ export function RegistrationFormShellView({
   return (
     <div className="flex flex-col gap-6">
       <RegistrationContextHeader context={state.context} />
-      <PaymentAccountCard context={state.context} />
-      <PaymentInstructionsCard context={state.context} />
       <ApplicationForm
         token={token}
         context={state.context}
@@ -398,6 +338,7 @@ export function RegistrationFormShellView({
           replaceRoute(applicationRoute(token, id))
         }
         onReload={() => setReloadCounter((value) => value + 1)}
+        onSubmitted={(result) => setSubmittedDownloadCode(result.downloadCode)}
       />
     </div>
   );

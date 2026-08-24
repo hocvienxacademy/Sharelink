@@ -3,7 +3,7 @@ import { ValidationError } from "@/shared/errors";
 import { getSystemSettingDefinition } from "../../domain/system-setting-definition-registry";
 import { assertSystemSettingAuthorized, SystemSettingAuthorizationPolicy } from "../authorization/system-setting-authorization";
 import type { SystemSettingRepository } from "../ports/system-setting-repository";
-import { parseUpdatePaymentInstructions } from "../validation/system-setting-schemas";
+import { parseUpdateApplicationFee, parseUpdatePaymentInstructions } from "../validation/system-setting-schemas";
 
 function unsupportedKey(): ValidationError {
   return new ValidationError([{
@@ -25,10 +25,10 @@ export class ListSystemSettings {
     return records.map((record) => {
       const definition = getSystemSettingDefinition(record.key);
       if (definition === null) throw unsupportedKey();
-      if (record.key === "payment.instructions") {
+      if (record.key === "payment.instructions" || record.key === "payment.application_fee") {
         return { ...record, visibility: definition.visibility, editable: definition.editable } as const;
       }
-      const { message: _message, ...metadata } = record;
+      const { message: _message, amount: _amount, ...metadata } = record;
       return { ...metadata, visibility: definition.visibility, editable: definition.editable } as const;
     });
   }
@@ -36,8 +36,12 @@ export class ListSystemSettings {
 
 export class GetPublicSystemSettings {
   constructor(private readonly repository: SystemSettingRepository) {}
-  async execute(): Promise<{ readonly paymentInstructions: string | null }> {
-    return { paymentInstructions: await this.repository.getPublicPaymentInstructions() };
+  async execute(): Promise<{ readonly applicationFeeAmount: number | null; readonly paymentInstructions: string | null }> {
+    const [applicationFeeAmount, paymentInstructions] = await Promise.all([
+      this.repository.getPublicApplicationFee(),
+      this.repository.getPublicPaymentInstructions(),
+    ]);
+    return { applicationFeeAmount, paymentInstructions };
   }
 }
 
@@ -55,14 +59,26 @@ export class UpdateSystemSetting {
   ) {
     assertSystemSettingAuthorized(this.policy, "systemSetting.update", actor);
     const definition = getSystemSettingDefinition(key);
-    if (definition === null || !definition.editable || key !== "payment.instructions") throw unsupportedKey();
-    const values = parseUpdatePaymentInstructions(input);
-    return this.repository.updatePaymentInstructions({
-      actor,
-      correlationId: context.correlationId,
-      expectedUpdatedAt: values.expectedUpdatedAt,
-      message: values.message,
-    });
+    if (definition === null || !definition.editable) throw unsupportedKey();
+    if (key === "payment.instructions") {
+      const values = parseUpdatePaymentInstructions(input);
+      return this.repository.updatePaymentInstructions({
+        actor,
+        correlationId: context.correlationId,
+        expectedUpdatedAt: values.expectedUpdatedAt,
+        message: values.message,
+      });
+    }
+    if (key === "payment.application_fee") {
+      const values = parseUpdateApplicationFee(input);
+      return this.repository.updateApplicationFee({
+        actor,
+        amount: values.amount,
+        correlationId: context.correlationId,
+        expectedUpdatedAt: values.expectedUpdatedAt,
+      });
+    }
+    throw unsupportedKey();
   }
 }
 

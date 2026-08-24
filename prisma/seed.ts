@@ -80,6 +80,15 @@ if (existing.length === 1) {
 }
 
 await prisma.app_sessions.deleteMany({ where: { expire: { lte: now } } });
+await prisma.system_settings.upsert({
+  where: { setting_key: "payment.application_fee" },
+  create: {
+    setting_key: "payment.application_fee",
+    setting_value: { amount: 260000 },
+    description: "Phí nộp hồ sơ toàn hệ thống (VND).",
+  },
+  update: {},
+});
 await prisma.$disconnect();
 
 console.log("Local ADMIN account is ready.");

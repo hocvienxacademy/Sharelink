@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BanknoteIcon,
-  BookOpenIcon,
   Building2Icon,
   ClipboardListIcon,
   FileTextIcon,
@@ -40,7 +39,6 @@ const navigationItems: readonly NavigationItem[] = [
   { href: "/quan-tri/ho-so", label: "Hồ sơ", icon: FileTextIcon },
   { href: "/quan-tri/thanh-toan", label: "Thanh toán", icon: BanknoteIcon },
   { href: "/quan-tri/nhan-su", label: "Nhân sự", icon: UsersIcon },
-  { href: "/quan-tri/ky-tuyen-sinh", label: "Kỳ tuyển sinh", icon: BookOpenIcon },
   { href: "/quan-tri/nganh-hoc", label: "Ngành học", icon: GraduationCapIcon },
   { href: "/quan-tri/tai-khoan-ngan-hang", label: "Ngân hàng", icon: Building2Icon },
   { href: "/quan-tri/cai-dat", label: "Cài đặt", icon: SettingsIcon },
@@ -61,7 +59,6 @@ function NavigationLinks({ onNavigate, role }: { readonly onNavigate?: () => voi
         "/quan-tri/lien-ket",
         "/quan-tri/ho-so",
         "/quan-tri/thanh-toan",
-        "/quan-tri/ky-tuyen-sinh",
         "/quan-tri/nganh-hoc",
         "/quan-tri/tai-khoan-ngan-hang",
         ...(role === "MANAGER" ? ["/quan-tri/nhan-su"] : []),

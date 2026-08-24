@@ -16,12 +16,6 @@ const applicationId = "22222222-2222-4222-8222-222222222222";
 
 const context: RegistrationContext = {
   status: "ACTIVE",
-  admissionPeriod: {
-    code: "2026",
-    name: "Tuyển sinh 2026",
-    startDate: "2026-07-01",
-    endDate: "2026-08-31",
-  },
   majors: [
     {
       id: "33333333-3333-4333-8333-333333333333",
@@ -33,8 +27,6 @@ const context: RegistrationContext = {
   entryQualification: null,
   hasApplication: false,
   application: null,
-  bankAccount: null,
-  paymentInstructions: null,
 };
 
 function editable(version: number): EditableApplication {
@@ -160,6 +152,7 @@ describe("student application form", () => {
   it("submits once with optional workplace, major and relatives left empty", async () => {
     const user = userEvent.setup();
     let submitCalls = 0;
+    let reloadCalls = 0;
     const mutationClient: ApplicationMutationClient = {
       createDraft: async () => ({
         id: applicationId,
@@ -185,6 +178,9 @@ describe("student application form", () => {
         token={token}
         context={context}
         mutationClient={mutationClient}
+        onReload={() => {
+          reloadCalls += 1;
+        }}
       />,
     );
 
@@ -194,6 +190,7 @@ describe("student application form", () => {
 
     await screen.findByText("Hồ sơ đã được nộp thành công");
     assert.equal(submitCalls, 1);
+    assert.equal(reloadCalls, 1);
     assert.equal(screen.queryByLabelText(/Họ và tên/), null);
   });
 

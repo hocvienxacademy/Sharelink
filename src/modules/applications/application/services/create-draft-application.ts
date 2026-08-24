@@ -22,8 +22,7 @@ export class CreateDraftApplication {
     input: unknown,
   ): Promise<DraftApplicationDto> {
     const values = parseCreateDraftApplicationInput(input);
-    const { link, admissionPeriod } =
-      await this.validateRegistrationLink.execute(tokenInput);
+    const { link } = await this.validateRegistrationLink.execute(tokenInput);
 
     if (
       link.applicationId !== null ||
@@ -47,7 +46,7 @@ export class CreateDraftApplication {
     const application = await this.applicationRepository.createDraft({
       registrationLinkId: link.id,
       saleId: link.saleId,
-      admissionPeriodId: admissionPeriod.id,
+      admissionPeriodId: link.admissionPeriodId,
       majorId,
       entryQualification,
       studentNameHint: link.studentNameHint,

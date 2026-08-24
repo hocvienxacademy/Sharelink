@@ -5,12 +5,14 @@ import type {
   SystemSettingHistoryItem,
   SystemSettingMetadata,
   SystemSettingRepository,
+  UpdateApplicationFeeCommand,
   UpdatePaymentInstructionsCommand,
 } from "../application/ports/system-setting-repository";
-import { paymentInstructionsMessageSchema } from "../application/validation/system-setting-schemas";
+import { applicationFeeAmountSchema, paymentInstructionsMessageSchema } from "../application/validation/system-setting-schemas";
 import type { AllowedSystemSettingKey } from "../domain/system-setting-definition-registry";
 
 const PAYMENT_INSTRUCTIONS_KEY = "payment.instructions" as const;
+const APPLICATION_FEE_KEY = "payment.application_fee" as const;
 
 interface MetadataRow {
   readonly key: AllowedSystemSettingKey;
@@ -18,6 +20,7 @@ interface MetadataRow {
   readonly updated_at: Date;
   readonly updater_name: string | null;
   readonly message: string | null;
+  readonly amount: string | null;
 }
 
 interface LockedRow {
@@ -42,14 +45,22 @@ export class PrismaSystemSettingRepository implements SystemSettingRepository {
                 AND jsonb_typeof(s.setting_value->'message') = 'string'
                THEN s.setting_value->>'message'
                ELSE NULL
-             END AS message
+             END AS message,
+             CASE
+               WHEN s.setting_key = 'payment.application_fee'
+                AND jsonb_typeof(s.setting_value) = 'object'
+                AND jsonb_typeof(s.setting_value->'amount') = 'number'
+               THEN s.setting_value->>'amount'
+               ELSE NULL
+             END AS amount
       FROM system_settings AS s
       LEFT JOIN users AS u ON u.id = s.updated_by
-      WHERE s.setting_key IN ('payment.instructions', 'payment.transfer_content', 'registration.link_policy')
+      WHERE s.setting_key IN ('payment.application_fee', 'payment.instructions', 'payment.transfer_content', 'registration.link_policy')
       ORDER BY s.setting_key ASC
     `);
     return rows.map((row) => {
       const parsedMessage = paymentInstructionsMessageSchema.safeParse(row.message);
+      const parsedAmount = applicationFeeAmountSchema.safeParse(Number(row.amount));
       return {
         key: row.key,
         description: row.description,
@@ -57,6 +68,8 @@ export class PrismaSystemSettingRepository implements SystemSettingRepository {
         updaterName: row.updater_name,
         ...(row.key === PAYMENT_INSTRUCTIONS_KEY
           ? { message: parsedMessage.success ? parsedMessage.data : null }
+          : row.key === APPLICATION_FEE_KEY
+            ? { amount: row.amount !== null && parsedAmount.success ? parsedAmount.data : null }
           : {}),
       };
     });
@@ -69,6 +82,16 @@ export class PrismaSystemSettingRepository implements SystemSettingRepository {
     }));
     if (record === null || !isJsonObject(record.setting_value)) return null;
     const parsed = paymentInstructionsMessageSchema.safeParse(record.setting_value.message);
+    return parsed.success ? parsed.data : null;
+  }
+
+  async getPublicApplicationFee(): Promise<number | null> {
+    const record = await executePrismaOperation(() => prisma.system_settings.findUnique({
+      where: { setting_key: APPLICATION_FEE_KEY },
+      select: { setting_value: true },
+    }));
+    if (record === null || !isJsonObject(record.setting_value)) return null;
+    const parsed = applicationFeeAmountSchema.safeParse(record.setting_value.amount);
     return parsed.success ? parsed.data : null;
   }
 
@@ -123,6 +146,59 @@ export class PrismaSystemSettingRepository implements SystemSettingRepository {
     }));
   }
 
+  async updateApplicationFee(command: UpdateApplicationFeeCommand): Promise<SystemSettingMetadata> {
+    return executePrismaOperation(() => prisma.$transaction(async (transaction) => {
+      const rows = await transaction.$queryRaw<LockedRow[]>`
+        SELECT setting_value, updated_at
+        FROM system_settings
+        WHERE setting_key = ${APPLICATION_FEE_KEY}
+        FOR UPDATE
+      `;
+      const current = rows[0];
+      if (current === undefined) throw new NotFoundError("System setting");
+      if (current.updated_at.getTime() !== new Date(command.expectedUpdatedAt).getTime()) {
+        throw new ConflictError("Dữ liệu đã thay đổi. Vui lòng tải lại trang.");
+      }
+      if (!isJsonObject(current.setting_value)) throw new ConflictError("Cấu hình hiện tại không hợp lệ.");
+      const currentAmount = applicationFeeAmountSchema.safeParse(current.setting_value.amount);
+      if (!currentAmount.success) throw new ConflictError("Cấu hình hiện tại không hợp lệ.");
+      if (currentAmount.data === command.amount) throw new ConflictError("Mức phí nộp hồ sơ không thay đổi.");
+
+      const updatedAt = nextTimestamp(current.updated_at);
+      await transaction.$executeRaw`
+        UPDATE system_settings
+        SET setting_value = jsonb_set(setting_value, '{amount}', to_jsonb(${command.amount}::bigint), true),
+            updated_by = ${command.actor.userId}::uuid,
+            updated_at = ${updatedAt}
+        WHERE setting_key = ${APPLICATION_FEE_KEY}
+      `;
+      await transaction.audit_logs.create({ data: {
+        actor_id: command.actor.userId,
+        action: "SYSTEM_SETTING_UPDATED",
+        entity_type: "system_settings",
+        entity_id: null,
+        metadata: {
+          correlationId: command.correlationId,
+          changedKeys: ["payment.application_fee.amount"],
+        },
+      } });
+      const [record, updater] = await Promise.all([
+        transaction.system_settings.findUniqueOrThrow({
+          where: { setting_key: APPLICATION_FEE_KEY },
+          select: { description: true, updated_at: true },
+        }),
+        transaction.users.findUnique({ where: { id: command.actor.userId }, select: { full_name: true } }),
+      ]);
+      return {
+        key: APPLICATION_FEE_KEY,
+        amount: command.amount,
+        description: record.description,
+        updatedAt: record.updated_at,
+        updaterName: updater?.full_name ?? null,
+      };
+    }));
+  }
+
   async listHistory(): Promise<readonly SystemSettingHistoryItem[]> {
     const rows = await executePrismaOperation(() => prisma.audit_logs.findMany({
       where: { entity_type: "system_settings", action: "SYSTEM_SETTING_UPDATED" },
@@ -132,10 +208,9 @@ export class PrismaSystemSettingRepository implements SystemSettingRepository {
     }));
     return rows.map((row) => {
       const metadata = row.metadata;
-      const changedKeys = isJsonObject(metadata)
-        && Array.isArray(metadata.changedKeys)
-        && metadata.changedKeys.includes("payment.instructions.message")
-        ? ["payment.instructions.message"]
+      const changedKeys = isJsonObject(metadata) && Array.isArray(metadata.changedKeys)
+        ? metadata.changedKeys.filter((key): key is string =>
+            key === "payment.instructions.message" || key === "payment.application_fee.amount")
         : [];
       return {
         id: row.id,

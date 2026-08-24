@@ -11,8 +11,8 @@ export default async function AdmissionPeriodsPage() {
   const periods = await queryManagedCatalogs.listAdmissionPeriods(toAuthenticatedActor(identity));
   return (
     <div className="flex flex-col gap-8">
-      <AdminPageHeader title="Kỳ tuyển sinh" description="Danh mục kỳ tiếp nhận được liên kết với hồ sơ và registration link." />
-      <AdmissionPeriodManagementPanel canManage={identity.role === "ADMIN"} initialItems={periods.map((item) => ({ ...item, startDate: item.startDate?.toISOString() ?? null, endDate: item.endDate?.toISOString() ?? null, updatedAt: item.updatedAt.toISOString() }))} />
+      <AdminPageHeader title="Kỳ tuyển sinh (lịch sử)" description="Dữ liệu cũ được giữ ở chế độ chỉ đọc để tra cứu hồ sơ đã phát sinh; luồng đăng ký mới không còn sử dụng kỳ tuyển sinh." />
+      <AdmissionPeriodManagementPanel canManage={false} initialItems={periods.map((item) => ({ ...item, startDate: item.startDate?.toISOString() ?? null, endDate: item.endDate?.toISOString() ?? null, updatedAt: item.updatedAt.toISOString() }))} />
     </div>
   );
 }

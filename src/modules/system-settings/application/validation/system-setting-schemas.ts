@@ -18,6 +18,20 @@ export const updatePaymentInstructionsSchema = z.object({
   expectedUpdatedAt: z.iso.datetime({ offset: true }),
 }).strict();
 
+export const applicationFeeAmountSchema = z.number()
+  .int("Phí nộp hồ sơ phải là số nguyên VND.")
+  .min(1, "Phí nộp hồ sơ phải lớn hơn 0.")
+  .max(999_999_999_999, "Phí nộp hồ sơ vượt quá giới hạn được hỗ trợ.");
+
+export const updateApplicationFeeSchema = z.object({
+  amount: applicationFeeAmountSchema,
+  expectedUpdatedAt: z.iso.datetime({ offset: true }),
+}).strict();
+
 export type UpdatePaymentInstructionsInput = z.infer<typeof updatePaymentInstructionsSchema>;
 export const parseUpdatePaymentInstructions = (input: unknown): UpdatePaymentInstructionsInput =>
   parseWithSchema(updatePaymentInstructionsSchema, input);
+
+export type UpdateApplicationFeeInput = z.infer<typeof updateApplicationFeeSchema>;
+export const parseUpdateApplicationFee = (input: unknown): UpdateApplicationFeeInput =>
+  parseWithSchema(updateApplicationFeeSchema, input);

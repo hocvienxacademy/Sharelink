@@ -18,6 +18,25 @@ const validStagingEnvironment: Readonly<Record<string, string | undefined>> = {
   LOG_LEVEL: "info",
 };
 
+const validProductionEnvironment: Readonly<
+  Record<string, string | undefined>
+> = {
+  APP_ENV: "production",
+  NODE_ENV: "production",
+  DATABASE_URL:
+    "postgresql://production_app:secret@dpg-render-internal/sharelinkstudent",
+  PRODUCTION_DATABASE_ALLOWED_HOSTS: "dpg-render-internal",
+  PRODUCTION_DATABASE_ALLOWED_NAMES: "sharelinkstudent",
+  RATE_LIMIT_REDIS_REST_URL: "https://redis-production.example.invalid",
+  RATE_LIMIT_REDIS_REST_TOKEN: "secret",
+  RATE_LIMIT_KEY_SECRET: "a-random-secret-with-at-least-32-characters",
+  PRODUCTION_REDIS_ALLOWED_HOSTS: "redis-production.example.invalid",
+  RENDER_EXTERNAL_URL: "https://sharelinkstudent.onrender.com",
+  RENDER_GIT_COMMIT: "048e9757315388ae5b7bb292a27a14b99b117bf9",
+  REQUEST_BODY_MAX_BYTES: "65536",
+  LOG_LEVEL: "info",
+};
+
 const validDevelopmentEnvironment: Readonly<
   Record<string, string | undefined>
 > = {
@@ -165,6 +184,69 @@ test("staging rejects database or Redis hosts outside explicit allowlists", () =
         RATE_LIMIT_REDIS_REST_URL: "https://redis-other.example.invalid",
       }),
     /Redis host/,
+  );
+});
+
+test("production accepts Render metadata and an allowlisted internal database", () => {
+  assert.doesNotThrow(() =>
+    validateRuntimeEnvironment(validProductionEnvironment),
+  );
+});
+
+test("production rejects database targets outside the exact allowlists", () => {
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validProductionEnvironment,
+        DATABASE_URL:
+          "postgresql://production_app:secret@attacker.invalid/sharelinkstudent",
+      }),
+    /production database host/i,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validProductionEnvironment,
+        DATABASE_URL:
+          "postgresql://production_app:secret@dpg-render-internal/sharelinkstudent_test",
+      }),
+    /production database name/i,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validProductionEnvironment,
+        DATABASE_URL:
+          "postgresql://production_app:secret@dpg-render-internal/sharelinkstudent?host=attacker.invalid",
+      }),
+    /target override/i,
+  );
+});
+
+test("production requires HTTPS metadata, release identity, and Redis allowlisting", () => {
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validProductionEnvironment,
+        RENDER_EXTERNAL_URL: "http://sharelinkstudent.onrender.com",
+      }),
+    /HTTPS/i,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validProductionEnvironment,
+        RENDER_GIT_COMMIT: undefined,
+      }),
+    /RELEASE_SHA or RENDER_GIT_COMMIT/,
+  );
+  assert.throws(
+    () =>
+      validateRuntimeEnvironment({
+        ...validProductionEnvironment,
+        RATE_LIMIT_REDIS_REST_URL: "https://redis-other.example.invalid",
+      }),
+    /production Redis host/i,
   );
 });
 

@@ -25,12 +25,6 @@ const errorEnvelopeSchema = z.object({
 
 const registrationContextSchema = z.object({
   status: z.enum(REGISTRATION_LINK_STATUSES),
-  admissionPeriod: z.object({
-    code: z.string(),
-    name: z.string(),
-    startDate: z.string().nullable(),
-    endDate: z.string().nullable(),
-  }),
   majors: z.array(
     z.object({
       id: z.uuid(),
@@ -47,14 +41,6 @@ const registrationContextSchema = z.object({
       status: z.string(),
     })
     .nullable(),
-  bankAccount: z.object({
-    bankCode: z.string(),
-    bankName: z.string(),
-    branchName: z.string().nullable(),
-    accountNumber: z.string(),
-    accountName: z.string(),
-  }).nullable(),
-  paymentInstructions: z.string().nullable(),
 });
 
 const draftApplicationSchema = z.object({

@@ -9,23 +9,15 @@ const nullableText = (maximum: number) =>
 const nullableUuid = z.union([z.uuid(), z.literal(""), z.null()])
   .transform((value) => value === "" ? null : value);
 
-const nullableMoney = z.union([
-  z.null(),
-  z.literal(""),
-  z.string().trim().regex(/^\d{1,12}(?:\.\d{1,2})?$/, "Học phí không hợp lệ."),
-]).transform((value) => value === "" ? null : value);
-
 const nullableExpiry = z.union([z.iso.datetime({ offset: true }), z.literal(""), z.null()])
   .transform((value) => value === "" ? null : value);
 
 export const adminRegistrationLinkFieldsSchema = z.object({
   saleId: z.uuid("SALE không hợp lệ.").optional(),
-  admissionPeriodId: nullableUuid,
   majorId: nullableUuid,
   studentNameHint: nullableText(150),
   entryQualification: z.union([z.enum(ADMISSION_QUALIFICATIONS), z.literal(""), z.null()])
     .transform((value) => value === "" ? null : value),
-  tuitionAmount: nullableMoney,
   paymentRound: nullableText(50),
   internalNote: nullableText(2_000),
   expiresAt: nullableExpiry,

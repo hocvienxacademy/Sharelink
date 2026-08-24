@@ -32,6 +32,24 @@ function parseUrl(value: string, name: string): URL {
   }
 }
 
+function allowlist(
+  environment: Readonly<Record<string, string | undefined>>,
+  name: string,
+): ReadonlySet<string> {
+  return new Set(
+    required(environment, name)
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+function containsTargetOverride(url: URL): boolean {
+  return DATABASE_TARGET_OVERRIDE_PARAMETERS.some((name) =>
+    url.searchParams.has(name),
+  );
+}
+
 export function validateDevelopmentEnvironment(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): void {
@@ -63,11 +81,7 @@ export function validateDevelopmentEnvironment(
   if (!LOCAL_DEVELOPMENT_DATABASE_HOSTS.has(databaseUrl.hostname.toLowerCase())) {
     throw new Error("Local DATABASE_URL must use a loopback host.");
   }
-  if (
-    DATABASE_TARGET_OVERRIDE_PARAMETERS.some((name) =>
-      databaseUrl.searchParams.has(name),
-    )
-  ) {
+  if (containsTargetOverride(databaseUrl)) {
     throw new Error("Local DATABASE_URL must not contain a target override.");
   }
   if (
@@ -126,6 +140,49 @@ export function validateStagingDatabaseTarget(
   return databaseUrl;
 }
 
+export function validateProductionDatabaseTarget(
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+): URL {
+  const databaseUrl = parseUrl(
+    required(environment, "DATABASE_URL"),
+    "DATABASE_URL",
+  );
+  const allowedHosts = allowlist(
+    environment,
+    "PRODUCTION_DATABASE_ALLOWED_HOSTS",
+  );
+  const allowedNames = allowlist(
+    environment,
+    "PRODUCTION_DATABASE_ALLOWED_NAMES",
+  );
+  const hostname = databaseUrl.hostname.toLowerCase();
+  const databaseName = decodeURIComponent(
+    databaseUrl.pathname.replace(/^\/+/, ""),
+  ).toLowerCase();
+
+  if (!["postgres:", "postgresql:"].includes(databaseUrl.protocol)) {
+    throw new Error("Production DATABASE_URL must use PostgreSQL.");
+  }
+  if (
+    LOCAL_DEVELOPMENT_DATABASE_HOSTS.has(hostname) ||
+    !allowedHosts.has(hostname)
+  ) {
+    throw new Error(
+      "Production database host is not in the production allowlist.",
+    );
+  }
+  if (!databaseName || !allowedNames.has(databaseName)) {
+    throw new Error(
+      "Production database name is not in the production allowlist.",
+    );
+  }
+  if (containsTargetOverride(databaseUrl)) {
+    throw new Error("Production DATABASE_URL must not contain a target override.");
+  }
+
+  return databaseUrl;
+}
+
 export function validateRuntimeEnvironment(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): void {
@@ -151,39 +208,59 @@ export function validateRuntimeEnvironment(
       "APP_ENV must explicitly identify development, staging, or production.",
     );
   }
-  if (environment.APP_ENV === "production") {
-    throw new Error(
-      "Production runtime is intentionally disabled for this staging candidate.",
-    );
+  if (environment.APP_ENV === "staging") {
+    validateStagingDatabaseTarget(environment);
+  } else {
+    validateProductionDatabaseTarget(environment);
   }
-
-  validateStagingDatabaseTarget(environment);
   const redisUrl = parseUrl(
     required(environment, "RATE_LIMIT_REDIS_REST_URL"),
     "RATE_LIMIT_REDIS_REST_URL",
   );
-  const appBaseUrl = parseUrl(required(environment, "APP_BASE_URL"), "APP_BASE_URL");
+  const appBaseUrlValue =
+    environment.APP_BASE_URL?.trim() || environment.RENDER_EXTERNAL_URL?.trim();
+  if (!appBaseUrlValue) {
+    throw new Error(
+      "Missing required environment variable: APP_BASE_URL or RENDER_EXTERNAL_URL",
+    );
+  }
+  const appBaseUrl = parseUrl(
+    appBaseUrlValue,
+    "APP_BASE_URL or RENDER_EXTERNAL_URL",
+  );
   const keySecret = required(environment, "RATE_LIMIT_KEY_SECRET");
-  const redisHosts = new Set(
-    required(environment, "STAGING_REDIS_ALLOWED_HOSTS")
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean),
+  const redisHosts = allowlist(
+    environment,
+    environment.APP_ENV === "staging"
+      ? "STAGING_REDIS_ALLOWED_HOSTS"
+      : "PRODUCTION_REDIS_ALLOWED_HOSTS",
   );
   required(environment, "RATE_LIMIT_REDIS_REST_TOKEN");
-  required(environment, "RELEASE_SHA");
+  if (
+    !environment.RELEASE_SHA?.trim() &&
+    !environment.RENDER_GIT_COMMIT?.trim()
+  ) {
+    throw new Error(
+      "Missing required environment variable: RELEASE_SHA or RENDER_GIT_COMMIT",
+    );
+  }
 
   if (environment.NODE_ENV !== "production") {
     throw new Error("Staging and production require NODE_ENV=production.");
   }
   if (
     !redisHosts.has(redisUrl.hostname.toLowerCase()) ||
-    redisUrl.hostname.toLowerCase().includes("prod")
+    (environment.APP_ENV === "staging" &&
+      redisUrl.hostname.toLowerCase().includes("prod"))
   ) {
-    throw new Error("Redis host is not in the staging allowlist.");
+    throw new Error(
+      environment.APP_ENV === "staging"
+        ? "Redis host is not in the staging allowlist."
+        : "Production Redis host is not in the production allowlist.",
+    );
   }
   if (redisUrl.protocol !== "https:" || appBaseUrl.protocol !== "https:") {
-    throw new Error("Staging service URLs must use HTTPS.");
+    throw new Error("Deployment service URLs must use HTTPS.");
   }
   if (
     environment.APP_ENV === "staging" &&

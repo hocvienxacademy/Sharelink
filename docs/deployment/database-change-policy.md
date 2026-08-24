@@ -2,8 +2,15 @@
 
 Prisma schema, reviewed PostgreSQL extension SQL, executable tests, and live
 catalog verification are the evidence for the current database contract. The
-repository has no deployable migration baseline, so staging provisioning is
-blocked until a DBA-generated schema-only export is reviewed and checksummed.
+deployable baseline is `prisma/migrations/20260731150000_baseline`, followed
+by timestamped forward migrations. Provision new environments only with
+`prisma migrate deploy` after the SQL and recorded fingerprint are reviewed.
+
+For an existing populated database, do not execute baseline DDL over existing
+tables. Compare its catalog with the reviewed checkpoint, take a verified
+backup, then use `prisma migrate resolve --applied <migration_name>` only for
+each migration whose complete SQL effect is already present. Never mark a
+pending or partially applied migration as applied merely to bypass a failure.
 
 1. An engineer may propose a schema change in a reviewed change request.
 2. A database owner reviews SQL effects; a security reviewer reviews PII,
@@ -24,10 +31,10 @@ blocked until a DBA-generated schema-only export is reviewed and checksummed.
 9. Run `npm run prisma:validate`, `npm run prisma:generate`, and
    `npm run staging:schema:verify` afterward. The verifier compares a
    reviewed SHA-256 fingerprint covering columns, types, nullability, defaults,
-   constraints and definitions, indexes, and enum order.
+   constraints and definitions, indexes, enum order, and database comments.
 10. Record commit SHA, migration/baseline checksum, deployed timestamp,
     database environment, operator, and verification result in the release
     record.
 
-The schema-only export must contain no rows, owners, credentials, or
-environment-specific grants. Seed data is a separate, fake-only artifact.
+The baseline contains no rows, owners, credentials, or environment-specific
+grants. Seed data remains a separate, fake-only artifact.

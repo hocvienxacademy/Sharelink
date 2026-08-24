@@ -16,15 +16,15 @@ unapproved or production-looking host, and the same target as the development
 database. It also verifies `current_database()` after connecting.
 
 `test:db:prepare` creates only the named test database when absent, drops only
-its `public` schema, generates disposable base DDL from the checked-in Prisma
-schema, applies the verified PostgreSQL objects in
-`tests/fixtures/database/schema-extensions.sql`, and inserts deterministic
-fake fixtures. No Prisma migration is fabricated or applied.
+its `public` schema, applies the checked-in baseline and migrations with
+`prisma migrate deploy`, and inserts deterministic fake fixtures. This is the
+same migration path used for production deployment; `prisma db push` is not
+part of test database preparation.
 
-The extension SQL was compared with read-only `pg_catalog` metadata from the
-local schema source on 2026-07-31. Re-run
+The baseline PostgreSQL objects were compared with read-only `pg_catalog`
+metadata from the local schema source on 2026-07-31. Re-run
 `npx tsx scripts/database/inspect-schema-metadata.ts` after an approved
-database change and review differences before editing the snapshot.
+database change and review constraints, indexes, enums, and comments.
 
 Never point `TEST_DATABASE_URL` at development, staging, or production. Never
 run `prisma migrate reset` or `prisma db push --accept-data-loss`.

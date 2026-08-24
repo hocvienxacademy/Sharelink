@@ -5,6 +5,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.production.example
 !.env.staging.example
 !.env.test.example
 src/generated/

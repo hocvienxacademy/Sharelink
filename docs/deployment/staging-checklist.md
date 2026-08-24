@@ -20,9 +20,8 @@ This checklist prepares staging only. It is not production approval.
 
 - Provision an isolated staging PostgreSQL database with backups and tested
   restore access.
-- The repository has no deployable migration history. Do not use `db push` or
-  `migrate dev`; database changes require reviewed schema-only SQL or an
-  approved baseline/migration plan before staging.
+- Review the checked-in baseline and every subsequent migration, then use
+  `prisma migrate deploy`. Do not use `db push` or `migrate dev` on staging.
 - Inspect CHECK constraints, expression/partial indexes, comments, owners,
   grants, enums, FKs, and unique indexes after provisioning.
 - Run `npm run staging:schema:verify` with the same `DATABASE_URL` used by

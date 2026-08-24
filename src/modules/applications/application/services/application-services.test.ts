@@ -268,6 +268,7 @@ function submittableApplication(
   overrides: Partial<Application> = {},
 ): Application {
   return application({
+    majorId: major.id,
     fullName: "Nguyễn Văn A",
     dateOfBirth: "2005-01-02",
     gender: "MALE",
@@ -295,12 +296,10 @@ function submittableApplication(
 
 function dependencies(
   link: RegistrationLink | null = registrationLink(),
-  period: AdmissionPeriod = admissionPeriod,
 ) {
-  const catalogs = new FakeCatalogRepository(period);
+  const catalogs = new FakeCatalogRepository();
   const validateLink = new ValidateRegistrationLink(
     new FakeLinkRepository(link),
-    catalogs,
     clock,
   );
 
@@ -327,22 +326,20 @@ describe("CreateDraftApplication", () => {
     assert.equal(repository.current?.registrationLinkId, "link-1");
   });
 
-  it("rejects creation when the admission period is closed", async () => {
-    const closedPeriod = {
-      ...admissionPeriod,
-      endDate: "2026-07-30" as const,
-    };
+  it("creates a draft without requiring an admission period", async () => {
     const { catalogs, validateLink } = dependencies(
-      registrationLink(),
-      closedPeriod,
+      registrationLink({ admissionPeriodId: null }),
     );
+    const repository = new FakeApplicationRepository();
     const service = new CreateDraftApplication(
       validateLink,
       catalogs,
-      new FakeApplicationRepository(),
+      repository,
     );
 
-    await assert.rejects(service.execute(token, {}), NotFoundError);
+    await service.execute(token, {});
+
+    assert.equal(repository.current?.admissionPeriodId, null);
   });
 
   it("rejects creation with an invalid registration link", async () => {
@@ -625,14 +622,9 @@ describe("SubmitApplication", () => {
     assert.equal(repository.submitCalls, 0);
   });
 
-  it("rejects submission while the admission period is closed", async () => {
-    const closedPeriod = {
-      ...admissionPeriod,
-      endDate: "2026-07-30" as const,
-    };
+  it("submits without requiring an open admission period", async () => {
     const { catalogs, validateLink } = dependencies(
-      registrationLink(),
-      closedPeriod,
+      registrationLink({ admissionPeriodId: null }),
     );
     const repository = new FakeApplicationRepository(
       submittableApplication(),
@@ -645,11 +637,9 @@ describe("SubmitApplication", () => {
       clock,
     );
 
-    await assert.rejects(
-      service.execute(token, applicationId, { expectedVersion: 1 }),
-      NotFoundError,
-    );
-    assert.equal(repository.submitCalls, 0);
+    await service.execute(token, applicationId, { expectedVersion: 1 });
+
+    assert.equal(repository.submitCalls, 1);
   });
 
   it("keeps optimistic-concurrency conflict behavior", async () => {

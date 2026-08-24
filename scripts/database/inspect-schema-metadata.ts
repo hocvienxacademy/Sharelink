@@ -59,6 +59,36 @@ try {
       WHERE namespace.nspname = 'public'
       ORDER BY enum_name, sort_order
     `);
+  const comments = await client.query<{
+      object_type: "table" | "column";
+      table_name: string;
+      column_name: string | null;
+      comment: string;
+    }>(`
+      SELECT 'table' AS object_type,
+             class.relname AS table_name,
+             NULL::text AS column_name,
+             obj_description(class.oid, 'pg_class') AS comment
+      FROM pg_class AS class
+      JOIN pg_namespace AS namespace ON namespace.oid = class.relnamespace
+      WHERE namespace.nspname = 'public'
+        AND class.relkind IN ('r', 'p')
+        AND obj_description(class.oid, 'pg_class') IS NOT NULL
+      UNION ALL
+      SELECT 'column' AS object_type,
+             class.relname AS table_name,
+             attribute.attname AS column_name,
+             col_description(class.oid, attribute.attnum) AS comment
+      FROM pg_class AS class
+      JOIN pg_namespace AS namespace ON namespace.oid = class.relnamespace
+      JOIN pg_attribute AS attribute ON attribute.attrelid = class.oid
+      WHERE namespace.nspname = 'public'
+        AND class.relkind IN ('r', 'p')
+        AND attribute.attnum > 0
+        AND NOT attribute.attisdropped
+        AND col_description(class.oid, attribute.attnum) IS NOT NULL
+      ORDER BY table_name, object_type DESC, column_name
+    `);
 
   console.log(
     JSON.stringify(
@@ -66,6 +96,7 @@ try {
         constraints: constraints.rows,
         indexes: indexes.rows,
         enums: enums.rows,
+        comments: comments.rows,
       },
       null,
       2,

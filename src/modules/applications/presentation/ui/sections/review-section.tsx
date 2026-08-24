@@ -103,7 +103,6 @@ export function ReviewSection({
     {
       label: "Ngành đăng ký",
       value: major === null ? null : `${major.code} — ${major.name}`,
-      optional: true,
     },
     {
       label: "Đối tượng đầu vào",
@@ -111,7 +110,6 @@ export function ReviewSection({
         values.entryQualification === null
           ? null
           : qualificationLabels[values.entryQualification],
-      optional: true,
     },
     {
       label: "Bằng dùng để đăng ký xét tuyển",

@@ -60,21 +60,23 @@ describe("DocxTemplateGenerator", () => {
     assert.match(documentXml, /ngày 10 tháng 08 năm 2026/);
     assert.match(
       documentXml,
-      /<w:sz w:val="20"\/><w:szCs w:val="20"\/><\/w:rPr><w:t[^>]*>Nguyễn Văn A<\/w:t>/,
+      /<w:sz w:val="26"\/><w:szCs w:val="26"\/><\/w:rPr><w:t[^>]*>Nguyễn Văn A<\/w:t>/,
     );
+    assert.doesNotMatch(documentXml, /<w:sz(?:Cs)? w:val="20"\/>/);
     assert.match(
       documentXml,
       /Công việc\/ Đơn vị công tác: <\/w:t><\/w:r><w:r>[\s\S]{0,180}<\/w:r><w:r><w:tab\/><\/w:r>/,
     );
     assert.match(
       documentXml,
-      /Nguyễn Văn A<\/w:t><\/w:r><w:r><w:tab\/><\/w:r>/,
+      /w14:paraId="4CBB0D89"[\s\S]*?<w:tab w:val="left" w:leader="none" w:pos="6000"\/>[\s\S]*?<w:tab w:val="left" w:leader="none" w:pos="9072"\/>/,
     );
     assert.match(
       documentXml,
-      /student@example\.com<\/w:t><\/w:r><\/w:p>/,
+      /w14:paraId="2E8A9302"[\s\S]*?<w:tab w:val="left" w:leader="none" w:pos="9072"\/>/,
     );
-    assert.match(documentXml, /Đối tượng: từ \(THPT\/TC\/CĐ\/ĐH\)/);
+    assert.match(documentXml, /Đối tượng: từ \(THPT\) học lên Đại học/);
+    assert.doesNotMatch(documentXml, /\(THPT\)\.{3,}/);
     assert.doesNotMatch(documentXml, /w14:paraId="7FA5A099"/);
     assert.doesNotMatch(documentXml, /w14:paraId="64A6161A"/);
     assert.doesNotMatch(documentXml, /\{[a-z_]+\}/);
@@ -89,6 +91,8 @@ describe("DocxTemplateGenerator", () => {
       contactAddress: null,
       dateOfBirth: null,
       declarationDate: null,
+      entryQualification: null,
+      majorName: null,
     });
     const documentXml = new PizZip(Buffer.from(bytes))
       .file("word/document.xml")
@@ -99,9 +103,15 @@ describe("DocxTemplateGenerator", () => {
     assert.match(documentXml, /w14:paraId="64A6161A"/);
     assert.match(documentXml, /\.\.\.\.\.\/\.\.\.\.\.\/\.\.\.\.\./);
     assert.match(documentXml, /ngày \.\.\.\.\.\. tháng \.\.\.\.\.\. năm \.\.\.\.\.\.\.\./);
+    assert.match(documentXml, /Đối tượng: từ \(THPT\/TC\/CĐ\/ĐH\)\.{21}học lên Đại học/);
+    assert.match(documentXml, /\.{40}/);
+    assert.match(
+      documentXml,
+      /w14:paraId="100F1AFA"[\s\S]*?<w:tab w:val="left" w:leader="dot" w:pos="9072"\/>/,
+    );
   });
 
-  it("keeps the sample font size while fitting long values into fixed fields", () => {
+  it("uses 13 pt while fitting long values into fixed fields", () => {
     const fullName = "W".repeat(50);
     const bytes = new DocxTemplateGenerator().generate({ ...record, fullName });
     const documentXml = new PizZip(Buffer.from(bytes))
@@ -112,7 +122,7 @@ describe("DocxTemplateGenerator", () => {
     assert.match(
       documentXml,
       new RegExp(
-        `<w:sz w:val="20"/><w:szCs w:val="20"/><w:w w:val="56"/></w:rPr><w:t[^>]*>${fullName}</w:t>`,
+        `<w:sz w:val="26"/><w:szCs w:val="26"/><w:w w:val="56"/></w:rPr><w:t[^>]*>${fullName}</w:t>`,
       ),
     );
   });

@@ -10,7 +10,7 @@ function completeApplication(
     id: "application-1",
     registrationLinkId: "link-1",
     status: "DRAFT",
-    majorId: null,
+    majorId: "major-1",
     admissionPeriodId: "period-1",
     entryQualification: "THPT",
     fullName: "Nguyễn Văn A",
@@ -50,7 +50,7 @@ function issuePaths(application: Application, policy = new DefaultSubmissionPoli
 }
 
 describe("DefaultSubmissionPolicy personal information", () => {
-  it("allows a complete application with default optional major and relatives", () => {
+  it("allows a complete application with the required admission selections", () => {
     assert.deepEqual(
       new DefaultSubmissionPolicy().validate(completeApplication()),
       [],
@@ -176,21 +176,18 @@ describe("DefaultSubmissionPolicy personal information", () => {
   });
 });
 
-describe("DefaultSubmissionPolicy configurable major and relatives", () => {
-  it("requires a major only when configured", () => {
-    const policy = new DefaultSubmissionPolicy({ requireMajor: true });
-
+describe("DefaultSubmissionPolicy admission selections and relatives", () => {
+  it("requires a registered major", () => {
     assert.ok(
-      issuePaths(completeApplication(), policy).includes("majorId"),
+      issuePaths(completeApplication({ majorId: null })).includes("majorId"),
     );
   });
 
-  it("allows a missing major by default", () => {
-    assert.equal(
-      new DefaultSubmissionPolicy()
-        .validate(completeApplication({ majorId: null }))
-        .some((issue) => issue.path[0] === "majorId"),
-      false,
+  it("requires an entry qualification", () => {
+    assert.ok(
+      issuePaths(
+        completeApplication({ entryQualification: null }),
+      ).includes("entryQualification"),
     );
   });
 

@@ -1,6 +1,6 @@
--- LOCAL/ISOLATED DATABASE CHANGE-SET ONLY.
--- Do not deploy this file to staging or production: this repository has no
--- deployable migration baseline and the database policy blocks that rollout.
+-- LEGACY LOCAL COPY ONLY.
+-- The canonical deployable SQL is now
+-- prisma/migrations/20260803150000_add_usernames/migration.sql.
 -- Email remains contact data; its local-part is used only for legacy backfill.
 BEGIN;
 SET LOCAL lock_timeout = '5s';

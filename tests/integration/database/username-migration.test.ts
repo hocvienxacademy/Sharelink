@@ -6,7 +6,7 @@ import { withTestClient } from "../../helpers/test-database";
 
 test("username change-set backfills legacy users and enforces case-insensitive uniqueness", async () => {
   const sql = await readFile(
-    path.resolve("prisma/change-sql/local/20260803150000_add_usernames.sql"),
+    path.resolve("prisma/migrations/20260803150000_add_usernames/migration.sql"),
     "utf8",
   );
 
@@ -50,7 +50,7 @@ test("username change-set backfills legacy users and enforces case-insensitive u
 
 test("username change-set aborts before DDL when legacy local-parts collide", async () => {
   const sql = await readFile(
-    path.resolve("prisma/change-sql/local/20260803150000_add_usernames.sql"),
+    path.resolve("prisma/migrations/20260803150000_add_usernames/migration.sql"),
     "utf8",
   );
 

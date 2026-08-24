@@ -1,13 +1,30 @@
 import { z } from "zod";
+import type { Prisma } from "@/generated/prisma/client";
 import type { AuthenticatedActor } from "@/shared/authorization";
 import { ConflictError, ForbiddenError, NotFoundError } from "@/shared/errors";
 import { executePrismaOperation, prisma } from "@/shared/infrastructure/database/prisma";
 import { maskSensitiveValue } from "@/shared/security/mask-sensitive-value";
+import { applicationFeeAmountSchema } from "@/modules/system-settings";
 import type { PaymentAuthorizationResource } from "../application/authorization/payment-authorization";
 import type { PaymentHistory, PaymentMutationResult, StaffPaymentDetail, StaffPaymentListItem } from "../application/dto/payment-dto";
 import type { CancelPaymentCommand, ConfirmPaymentCommand, PaymentMutationRepository, PaymentQueryRepository, PaymentQueryScope } from "../application/ports/payment-repositories";
 
 const uuidSchema = z.uuid();
+const APPLICATION_FEE_KEY = "payment.application_fee";
+
+function parseApplicationFee(value: unknown): number | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value) || !("amount" in value)) return null;
+  const parsed = applicationFeeAmountSchema.safeParse(value.amount);
+  return parsed.success ? parsed.data : null;
+}
+
+async function getApplicationFee(): Promise<number | null> {
+  const record = await prisma.system_settings.findUnique({
+    where: { setting_key: APPLICATION_FEE_KEY },
+    select: { setting_value: true },
+  });
+  return record === null ? null : parseApplicationFee(record.setting_value);
+}
 
 function applicationScope(scope: PaymentQueryScope) {
   if (scope.kind === "all") return {};
@@ -23,14 +40,13 @@ const detailSelect = {
   users_payment_confirmations_cancelled_byTousers: { select: { full_name: true } },
   applications: { select: {
     id: true, application_code: true, full_name: true, status: true,
-    registration_links: { select: { tuition_amount: true } },
   } },
 } as const;
 
 type DetailRecord = NonNullable<Awaited<ReturnType<typeof findDetailRecord>>>;
 
-function mapDetail(record: DetailRecord): StaffPaymentDetail {
-  const tuition = record.applications.registration_links.tuition_amount;
+function mapDetail(record: DetailRecord, applicationFee: number | null): StaffPaymentDetail {
+  const applicationFeeAmount = applicationFee?.toString() ?? null;
   return {
     id: record.id,
     applicationId: record.application_id,
@@ -39,8 +55,8 @@ function mapDetail(record: DetailRecord): StaffPaymentDetail {
     studentName: record.applications.full_name,
     status: record.status,
     amount: record.amount?.toString() ?? null,
-    tuitionAmount: tuition?.toString() ?? null,
-    amountMatchesTuition: record.amount !== null && tuition !== null && record.amount.equals(tuition),
+    applicationFeeAmount,
+    amountMatchesApplicationFee: record.amount !== null && applicationFee !== null && record.amount.equals(applicationFee),
     bankName: record.bank_name,
     maskedAccountNumber: maskSensitiveValue(record.account_number),
     accountName: record.account_name,
@@ -69,7 +85,7 @@ async function findDetailRecord(paymentId: string | undefined, applicationId: st
 
 export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentMutationRepository {
   async list(scope: PaymentQueryScope): Promise<readonly StaffPaymentListItem[]> {
-    const records = await executePrismaOperation(() => prisma.payment_confirmations.findMany({
+    const [records, applicationFee] = await executePrismaOperation(() => Promise.all([prisma.payment_confirmations.findMany({
       where: { applications: applicationScope(scope) },
       orderBy: { created_at: "desc" },
       take: 100,
@@ -77,10 +93,9 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
         id: true, status: true, amount: true, bank_name: true, created_at: true,
         applications: { select: {
           id: true, application_code: true, full_name: true, status: true,
-          registration_links: { select: { tuition_amount: true } },
         } },
       },
-    }));
+    }), getApplicationFee()]));
     return records.map((record) => ({
       id: record.id,
       status: record.status,
@@ -91,7 +106,7 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
       applicationCode: record.applications.application_code,
       applicationStatus: record.applications.status,
       studentName: record.applications.full_name,
-      tuitionAmount: record.applications.registration_links.tuition_amount?.toString() ?? null,
+      applicationFeeAmount: applicationFee?.toString() ?? null,
     }));
   }
 
@@ -107,14 +122,18 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
 
   async findDetailByApplicationId(applicationId: string, scope: PaymentQueryScope): Promise<StaffPaymentDetail | null> {
     if (!uuidSchema.safeParse(applicationId).success) return null;
-    const record = await executePrismaOperation(() => findDetailRecord(undefined, applicationId, scope));
-    return record === null ? null : mapDetail(record);
+    const [record, applicationFee] = await executePrismaOperation(() => Promise.all([
+      findDetailRecord(undefined, applicationId, scope), getApplicationFee(),
+    ]));
+    return record === null ? null : mapDetail(record, applicationFee);
   }
 
   async findDetailByPaymentId(paymentId: string, scope: PaymentQueryScope): Promise<StaffPaymentDetail | null> {
     if (!uuidSchema.safeParse(paymentId).success) return null;
-    const record = await executePrismaOperation(() => findDetailRecord(paymentId, undefined, scope));
-    return record === null ? null : mapDetail(record);
+    const [record, applicationFee] = await executePrismaOperation(() => Promise.all([
+      findDetailRecord(paymentId, undefined, scope), getApplicationFee(),
+    ]));
+    return record === null ? null : mapDetail(record, applicationFee);
   }
 
   async findHistoryByApplicationId(applicationId: string, scope: PaymentQueryScope): Promise<PaymentHistory | null> {
@@ -170,7 +189,6 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
           id: true, application_id: true, status: true, amount: true, updated_at: true,
           applications: { select: {
             status: true, sale_id: true,
-            registration_links: { select: { tuition_amount: true } },
             users_applications_sale_idTousers: { select: { manager_id: true } },
           } },
         },
@@ -182,21 +200,28 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
         throw new ConflictError("Thanh toán đã được thay đổi. Vui lòng tải lại dữ liệu.");
       }
       if (action === "confirm") {
-        const tuition = current.applications.registration_links.tuition_amount;
-        if (current.amount === null || tuition === null || !current.amount.equals(tuition)) {
-          throw new ConflictError("Số tiền thanh toán chưa được cấu hình hoặc không khớp học phí.");
-        }
+        const settingRows = await transaction.$queryRaw<Array<{ setting_value: unknown }>>`
+          SELECT setting_value
+          FROM system_settings
+          WHERE setting_key = ${APPLICATION_FEE_KEY}
+          FOR SHARE
+        `;
+        const applicationFee = parseApplicationFee(settingRows[0]?.setting_value);
+        if (applicationFee === null) throw new ConflictError("Phí nộp hồ sơ chưa được cấu hình hoặc không hợp lệ.");
+        const confirmCommand = command as ConfirmPaymentCommand;
+        const updated = await transaction.payment_confirmations.update({
+          where: { id: current.id },
+          data: {
+            amount: applicationFee,
+            status: "CONFIRMED", confirmed_by: command.actor.userId, confirmed_at: command.occurredAt,
+            confirmation_note: confirmCommand.confirmationNote, updated_at: command.occurredAt,
+          },
+          select: { status: true, updated_at: true },
+        });
+        await this.auditMutation(transaction, action, command, current, updated);
+        return { id: current.id, applicationId: current.application_id, status: updated.status, updatedAt: updated.updated_at };
       }
-      const updated = action === "confirm"
-        ? await transaction.payment_confirmations.update({
-            where: { id: current.id },
-            data: {
-              status: "CONFIRMED", confirmed_by: command.actor.userId, confirmed_at: command.occurredAt,
-              confirmation_note: (command as ConfirmPaymentCommand).confirmationNote, updated_at: command.occurredAt,
-            },
-            select: { status: true, updated_at: true },
-          })
-        : await transaction.payment_confirmations.update({
+      const updated = await transaction.payment_confirmations.update({
             where: { id: current.id },
             data: {
               status: "CANCELLED", cancelled_by: command.actor.userId, cancelled_at: command.occurredAt,
@@ -204,6 +229,18 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
             },
             select: { status: true, updated_at: true },
           });
+      await this.auditMutation(transaction, action, command, current, updated);
+      return { id: current.id, applicationId: current.application_id, status: updated.status, updatedAt: updated.updated_at };
+    }));
+  }
+
+  private async auditMutation(
+    transaction: Prisma.TransactionClient,
+    action: "confirm" | "cancel",
+    command: ConfirmPaymentCommand | CancelPaymentCommand,
+    current: { readonly id: string; readonly application_id: string; readonly status: string },
+    updated: { readonly status: string; readonly updated_at: Date },
+  ): Promise<void> {
       await transaction.audit_logs.create({ data: {
         actor_id: command.actor.userId,
         action: action === "confirm" ? "PAYMENT_CONFIRMED" : "PAYMENT_CONFIRMATION_CANCELLED",
@@ -215,14 +252,12 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
           actorRole: command.actor.role,
           applicationId: current.application_id,
           changedFields: action === "confirm"
-            ? ["status", "confirmedBy", "confirmedAt", "confirmationNote"]
+            ? ["amount", "status", "confirmedBy", "confirmedAt", "confirmationNote"]
             : ["status", "cancelledBy", "cancelledAt", "cancellationReason"],
           requestId: command.requestId,
           transition: `${current.status}->${updated.status}`,
         },
       } });
-      return { id: current.id, applicationId: current.application_id, status: updated.status, updatedAt: updated.updated_at };
-    }));
   }
 
   private assertMutationScope(actor: AuthenticatedActor, ownerId: string, ownerManagerId: string | null): void {
@@ -230,4 +265,3 @@ export class PrismaPaymentRepository implements PaymentQueryRepository, PaymentM
     throw new ForbiddenError();
   }
 }
-

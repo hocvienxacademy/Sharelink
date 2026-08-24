@@ -26,11 +26,10 @@ export class PrismaAdminRegistrationLinkQueryRepository implements AdminRegistra
       orderBy: { created_at: "desc" },
       take: 100,
       select: {
-        id: true, status: true, student_name_hint: true, tuition_amount: true,
+        id: true, status: true, student_name_hint: true,
         expires_at: true, created_at: true,
         users_registration_links_sale_idTousers: { select: { full_name: true } },
         majors: { select: { code: true, name: true } },
-        admission_periods: { select: { code: true, name: true } },
         applications: { select: { status: true } },
       },
     });
@@ -38,12 +37,10 @@ export class PrismaAdminRegistrationLinkQueryRepository implements AdminRegistra
       id: record.id,
       status: record.status,
       studentNameHint: record.student_name_hint,
-      tuitionAmount: record.tuition_amount?.toString() ?? null,
       expiresAt: record.expires_at,
       createdAt: record.created_at,
       saleName: record.users_registration_links_sale_idTousers.full_name,
       major: record.majors,
-      admissionPeriod: record.admission_periods,
       applicationStatus: record.applications?.status ?? null,
     }));
   }
@@ -70,7 +67,7 @@ export class PrismaAdminRegistrationLinkQueryRepository implements AdminRegistra
     const record = await prisma.registration_links.findFirst({
       where: { id, ...scopeWhere(scope) },
       select: {
-        id: true, status: true, student_name_hint: true, tuition_amount: true,
+        id: true, status: true, student_name_hint: true,
         payment_round: true, expires_at: true, access_count: true, created_at: true, updated_at: true,
         sale_id: true, admission_period_id: true, major_id: true, entry_qualification: true,
         internal_note: true,
@@ -92,7 +89,6 @@ export class PrismaAdminRegistrationLinkQueryRepository implements AdminRegistra
       id: record.id,
       status: record.status,
       studentNameHint: record.student_name_hint,
-      tuitionAmount: record.tuition_amount?.toString() ?? null,
       paymentRound: record.payment_round,
       saleId: record.sale_id,
       admissionPeriodId: record.admission_period_id,

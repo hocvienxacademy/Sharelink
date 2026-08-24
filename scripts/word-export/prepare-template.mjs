@@ -16,7 +16,7 @@ function escapeXml(value) {
     .replaceAll(">", "&gt;");
 }
 
-function run(text, { bold = false, color = "0000FF", italic = false, size = 20, underline = false } = {}) {
+function run(text, { bold = false, color = "0000FF", italic = false, size = 26, underline = false } = {}) {
   const properties = [
     bold ? "<w:b/>" : "",
     italic ? "<w:i/>" : "",
@@ -28,11 +28,11 @@ function run(text, { bold = false, color = "0000FF", italic = false, size = 20, 
 }
 
 function blueLabel(text) {
-  return run(text, { size: 20 });
+  return run(text, { size: 26 });
 }
 
 function blueValue(tag) {
-  return run(`{${tag}}`, { size: 20 });
+  return run(`{${tag}}`, { size: 26 });
 }
 
 function tab() {
@@ -66,14 +66,14 @@ function replaceParagraph(paraId, content, tabPositions = null) {
 
 replaceParagraph(
   "6594E461",
-  run("Ngành: ", { color: "FF0000", size: 28 }) +
-    run("{major_name}", { color: "FF0000", size: 20 }),
+  run("Ngành: ", { color: "FF0000", size: 26 }) +
+    run("{major_name}", { color: "FF0000", size: 26 }),
 );
 replaceParagraph(
   "51934D8C",
-    run("Đối tượng: từ (THPT/TC/CĐ/ĐH).....................học lên Đại học", {
+    run("{entry_qualification_line}", {
       color: "FF0000",
-      size: 20,
+      size: 26,
     }),
 );
 replaceParagraph(
@@ -183,13 +183,16 @@ replaceParagraph(
 );
 replaceParagraph(
   "33239D24",
-  run("          ", { size: 20 }) +
+  run("          ", { size: 26 }) +
     run("{declaration_place}, ngày {declaration_day} tháng {declaration_month} năm {declaration_year}", {
       italic: true,
-      size: 20,
+      size: 26,
     }),
 );
 
+xml = xml
+  .replaceAll('<w:sz w:val="20"/>', '<w:sz w:val="26"/>')
+  .replaceAll('<w:szCs w:val="20"/>', '<w:szCs w:val="26"/>');
 xml = xml.replace(/\s+w:rsid(?:R|RPr|RDefault|P|Del|Sect)="[^"]*"/g, "");
 zip.file("word/document.xml", xml);
 

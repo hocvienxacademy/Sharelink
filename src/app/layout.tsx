@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
-import "@fontsource-variable/dm-sans";
+import "@fontsource/be-vietnam-pro/400.css";
+import "@fontsource/be-vietnam-pro/500.css";
+import "@fontsource/be-vietnam-pro/600.css";
+import "@fontsource/be-vietnam-pro/700.css";
 import "./globals.css";
 
 export const metadata = {
   title: {
-    default: "ShareLinkStudent",
-    template: "%s | ShareLinkStudent",
+    default: "Đại học Trà Vinh",
+    template: "%s | Đại học Trà Vinh",
   },
   description: "Hệ thống đăng ký thông tin sinh viên",
 };

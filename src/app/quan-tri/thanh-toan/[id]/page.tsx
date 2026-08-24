@@ -36,9 +36,9 @@ export default async function PaymentDetailPage({ params }: { readonly params: P
         items={[
           { label: "Trạng thái", value: <AdminStatusBadge status={item.status} /> },
           { label: "Sinh viên", value: item.studentName },
-          { label: "Số tiền", value: formatMoney(item.amount) },
-          { label: "Học phí cấu hình", value: formatMoney(item.tuitionAmount) },
-          { label: "Đối soát học phí", value: item.amountMatchesTuition ? "Khớp chính xác" : "Chưa khớp hoặc chưa cấu hình" },
+          { label: "Phí đã xác nhận", value: formatMoney(item.amount) },
+          { label: "Phí nộp hồ sơ hiện hành", value: formatMoney(item.applicationFeeAmount) },
+          { label: "Đối soát mức phí", value: item.status === "PENDING" ? "Sẽ ghi nhận khi xác nhận" : item.amountMatchesApplicationFee ? "Khớp mức hiện hành" : "Snapshot khác mức hiện hành" },
           { label: "Trạng thái hồ sơ", value: <AdminStatusBadge status={item.applicationStatus} /> },
           { label: "Ngân hàng", value: item.bankName },
           { label: "Số tài khoản", value: item.maskedAccountNumber },
@@ -54,7 +54,7 @@ export default async function PaymentDetailPage({ params }: { readonly params: P
         ]}
       />
       <PaymentActions
-        amountMatchesTuition={item.amountMatchesTuition}
+        applicationFeeConfigured={item.applicationFeeAmount !== null}
         applicationId={item.applicationId}
         applicationStatus={item.applicationStatus}
         role={identity.role}

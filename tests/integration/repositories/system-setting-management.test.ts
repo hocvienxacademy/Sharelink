@@ -60,11 +60,12 @@ after(async () => {
 describe("system setting PostgreSQL workflow", () => {
   it("returns allowlisted metadata and only the public message value", async () => {
     const items = await list.execute(admin);
-    assert.equal(items.every((item) => ["payment.instructions", "payment.transfer_content", "registration.link_policy"].includes(item.key)), true);
+    assert.equal(items.every((item) => ["payment.application_fee", "payment.instructions", "payment.transfer_content", "registration.link_policy"].includes(item.key)), true);
     for (const item of items) {
       if (item.key !== key) assert.equal("message" in item, false);
     }
     assert.equal(typeof (await publicSettings.execute()).paymentInstructions, "string");
+    assert.equal((await publicSettings.execute()).applicationFeeAmount, 260000);
   });
 
   it("serializes concurrent updates, preserves server-owned fields and emits a safe audit", async () => {

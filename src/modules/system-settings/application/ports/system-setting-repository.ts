@@ -7,6 +7,7 @@ export interface SystemSettingMetadata {
   readonly updatedAt: Date;
   readonly updaterName: string | null;
   readonly message?: string | null;
+  readonly amount?: number | null;
 }
 
 export interface SystemSettingHistoryItem {
@@ -24,9 +25,18 @@ export interface UpdatePaymentInstructionsCommand {
   readonly message: string;
 }
 
+export interface UpdateApplicationFeeCommand {
+  readonly actor: AuthenticatedActor;
+  readonly amount: number;
+  readonly correlationId: string;
+  readonly expectedUpdatedAt: string;
+}
+
 export interface SystemSettingRepository {
   listMetadata(): Promise<readonly SystemSettingMetadata[]>;
   getPublicPaymentInstructions(): Promise<string | null>;
+  getPublicApplicationFee(): Promise<number | null>;
   updatePaymentInstructions(command: UpdatePaymentInstructionsCommand): Promise<SystemSettingMetadata>;
+  updateApplicationFee(command: UpdateApplicationFeeCommand): Promise<SystemSettingMetadata>;
   listHistory(): Promise<readonly SystemSettingHistoryItem[]>;
 }

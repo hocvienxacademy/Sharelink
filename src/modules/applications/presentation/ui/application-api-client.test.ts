@@ -14,25 +14,18 @@ describe("application API client", () => {
         success: true,
         data: {
           status: "ACTIVE",
-          admissionPeriod: {
-            code: "2026",
-            name: "Tuyển sinh 2026",
-            startDate: "2026-07-01",
-            endDate: "2026-08-31",
-          },
           majors: [],
           studentNameHint: null,
           entryQualification: null,
           hasApplication: false,
           application: null,
-          bankAccount: null,
-          paymentInstructions: null,
         },
       }),
     );
 
-    assert.equal(result.admissionPeriod.code, "2026");
+    assert.equal("admissionPeriod" in result, false);
     assert.equal(result.application, null);
+    assert.equal("payment" in result, false);
   });
 
   it("preserves every validation issue returned by the API", async () => {

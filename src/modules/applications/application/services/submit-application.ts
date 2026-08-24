@@ -43,8 +43,7 @@ export class SubmitApplication {
   ): Promise<SubmittedApplicationResultDto> {
     const applicationId = parseApplicationIdentifier(applicationIdInput);
     const values = parseSubmitApplicationInput(input);
-    const { link, admissionPeriod } =
-      await this.validateRegistrationLink.execute(tokenInput);
+    const { link } = await this.validateRegistrationLink.execute(tokenInput);
     const application =
       await this.applicationRepository.findByRegistrationContext(
         link.id,
@@ -62,12 +61,6 @@ export class SubmitApplication {
     if (application.version !== values.expectedVersion) {
       throw new ConflictError(
         "The application was changed by another request.",
-      );
-    }
-
-    if (application.admissionPeriodId !== admissionPeriod.id) {
-      throw new ConflictError(
-        "The application does not belong to the active admission period.",
       );
     }
 

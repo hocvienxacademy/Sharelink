@@ -6,7 +6,7 @@ import { toAuthenticatedActor } from "@/shared/authorization";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
-import { formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
+import { formatDateTime } from "@/modules/dashboard/presentation/format-admin-value";
 import { registrationLinkQueries } from "@/composition/registration-links";
 
 const relatedLabel = (value: { readonly code: string; readonly name: string } | null) =>
@@ -39,8 +39,7 @@ export default async function RegistrationLinksPage({ searchParams }: { readonly
           { key: "student", label: "Sinh viên" },
           { key: "status", label: "Trạng thái" },
           { key: "sale", label: "Phụ trách" },
-          { key: "period", label: "Kỳ / ngành" },
-          { key: "tuition", label: "Học phí" },
+          { key: "major", label: "Ngành" },
           { key: "created", label: "Ngày tạo" },
           { key: "action", label: "" },
         ]}
@@ -50,8 +49,7 @@ export default async function RegistrationLinksPage({ searchParams }: { readonly
           student: item.studentNameHint ?? "Chưa nhập gợi ý",
           status: <AdminStatusBadge status={item.status} />,
           sale: item.saleName,
-          period: <span className="block max-w-64 whitespace-normal">{relatedLabel(item.admissionPeriod)}<br />{relatedLabel(item.major)}</span>,
-          tuition: formatMoney(item.tuitionAmount),
+          major: <span className="block max-w-64 whitespace-normal">{relatedLabel(item.major)}</span>,
           created: formatDateTime(item.createdAt),
           action: (
             <Button nativeButton={false} size="sm" variant="ghost" render={<Link href={`/quan-tri/lien-ket/${item.id}`} />}>

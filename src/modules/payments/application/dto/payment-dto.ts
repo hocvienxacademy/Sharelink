@@ -11,12 +11,12 @@ export interface StaffPaymentListItem {
   readonly id: string;
   readonly status: PaymentStatus;
   readonly studentName: string | null;
-  readonly tuitionAmount: string | null;
+  readonly applicationFeeAmount: string | null;
 }
 
 export interface StaffPaymentDetail extends StaffPaymentListItem {
   readonly accountName: string;
-  readonly amountMatchesTuition: boolean;
+  readonly amountMatchesApplicationFee: boolean;
   readonly cancellationReason: string | null;
   readonly cancelledAt: Date | null;
   readonly cancellerName: string | null;
@@ -45,4 +45,3 @@ export interface PaymentMutationResult {
   readonly status: PaymentStatus;
   readonly updatedAt: Date;
 }
-

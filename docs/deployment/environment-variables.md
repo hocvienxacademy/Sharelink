@@ -32,8 +32,9 @@ for 15 minutes by default; `ADMIN_LOGIN_MAX_ATTEMPTS` and
 `ADMIN_LOGIN_LOCK_SECONDS` can override that policy.
 
 Interactive development assumes the local database already has the reviewed
-schema and fake development data. This repository still has no deployable
-schema baseline, so do not initialize it with `prisma db push`. For a
+schema and fake development data. Initialize a new disposable environment with
+the reviewed baseline and migrations via `prisma migrate deploy`; never replace
+the production migration path with `prisma db push`. For a
 reproducible full workflow test, create the ignored `.env.test.local` from
 `.env.test.example` with disposable PostgreSQL credentials, then run
 `npm run test:integration` and `npm run test:e2e`; those scripts guard, create,

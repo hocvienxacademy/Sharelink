@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ArrowLeftIcon, ShieldCheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BrandLogo } from "@/components/brand-logo";
 import { getAdminIdentityBySessionToken } from "@/composition/auth";
 import { ADMIN_SESSION_COOKIE } from "@/modules/auth";
 import { AdminLoginForm } from "@/modules/auth/presentation/ui/admin-login-form";
@@ -23,8 +24,8 @@ export default async function LoginPage() {
     <main className="min-h-dvh bg-surface px-4 py-6 sm:px-8 sm:py-10">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <nav className="flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            ShareLink<span className="text-brand-coral-text">Student</span>
+          <Link href="/">
+            <BrandLogo imageClassName="size-11" textClassName="hidden sm:inline" />
           </Link>
           <Button nativeButton={false} variant="ghost" render={<Link href="/" />}>
             <ArrowLeftIcon data-icon="inline-start" />
@@ -42,7 +43,7 @@ export default async function LoginPage() {
             </div>
             <div className="relative max-w-xl">
               <p className="mb-5 text-sm font-medium text-primary-foreground/70">
-                SHARELINKSTUDENT CONTROL CENTER
+                ĐẠI HỌC TRÀ VINH · CONTROL CENTER
               </p>
               <h1 className="font-heading text-5xl font-semibold leading-[1.05] tracking-[-0.04em]">
                 Quản lý tuyển sinh trong một không gian tập trung.

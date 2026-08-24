@@ -22,7 +22,7 @@ test.beforeAll(async () => {
     await client.query(
       `INSERT INTO payment_confirmations
        (id, application_id, bank_name, account_number, account_name, amount, transfer_content, status)
-       VALUES ($1,$2,'E2E Bank','0123456789','E2E ACCOUNT','2500000.00','PAYMENT E2E','PENDING')`,
+       VALUES ($1,$2,'E2E Bank','0123456789','E2E ACCOUNT',NULL,'PAYMENT E2E','PENDING')`,
       [PAYMENT_ID, APPLICATION_ID],
     );
   });
@@ -77,12 +77,12 @@ test("SALE reads while MANAGER confirms and ADMIN terminally cancels payment", a
   const databaseState = await withTestClient(async (client) => ({
     applicationStatus: (await client.query("SELECT status FROM applications WHERE id=$1", [APPLICATION_ID])).rows[0].status,
     auditActions: (await client.query("SELECT action FROM audit_logs WHERE entity_id=$1 ORDER BY created_at", [PAYMENT_ID])).rows.map((row) => row.action),
-    payment: (await client.query("SELECT status, confirmed_by, confirmation_note, cancelled_by, cancellation_reason FROM payment_confirmations WHERE id=$1", [PAYMENT_ID])).rows[0],
+    payment: (await client.query("SELECT status, amount, confirmed_by, confirmation_note, cancelled_by, cancellation_reason FROM payment_confirmations WHERE id=$1", [PAYMENT_ID])).rows[0],
   }));
   expect(databaseState.applicationStatus).toBe("VALID");
   expect(databaseState.auditActions).toEqual(["PAYMENT_CONFIRMED", "PAYMENT_CONFIRMATION_CANCELLED"]);
   expect(databaseState.payment).toMatchObject({
-    status: "CANCELLED", confirmed_by: TEST_IDS.manager, confirmation_note: "Đã đối soát tại quầy",
+    status: "CANCELLED", amount: "260000.00", confirmed_by: TEST_IDS.manager, confirmation_note: "Đã đối soát tại quầy",
     cancelled_by: TEST_IDS.admin, cancellation_reason: "Giao dịch ngân hàng bị hoàn",
   });
 });

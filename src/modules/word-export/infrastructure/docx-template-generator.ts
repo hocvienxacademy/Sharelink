@@ -53,12 +53,23 @@ function genderLabel(gender: ApplicationWordExportRecord["gender"]): string {
   return "";
 }
 
+function qualificationLabel(
+  qualification: ApplicationWordExportRecord["entryQualification"],
+): string {
+  if (qualification === "CD") return "CĐ";
+  if (qualification === "DH") return "ĐH";
+  return qualification ?? "";
+}
+
 function templateData(record: ApplicationWordExportRecord) {
   const relative1 = relativeAt(record.relatives, 1);
   const relative2 = relativeAt(record.relatives, 2);
+  const entryQualification = qualificationLabel(record.entryQualification);
   return {
     major_name: value(record.majorName, "........................................"),
-    entry_qualification: value(record.entryQualification),
+    entry_qualification_line: entryQualification === ""
+      ? "Đối tượng: từ (THPT/TC/CĐ/ĐH).....................học lên Đại học"
+      : `Đối tượng: từ (${entryQualification}) học lên Đại học`,
     full_name: value(record.fullName),
     gender: genderLabel(record.gender),
     date_of_birth: formatDate(record.dateOfBirth, "...../...../....."),
@@ -169,40 +180,55 @@ function fitLongValues(zip: PizZip, data: Record<string, string>): void {
   zip.file("word/document.xml", xml);
 }
 
-const TRAILING_DOT_FIELDS = [
-  "gender",
-  "place_of_birth",
-  "nationality",
-  "citizen_id_issued_place",
-  "permanent_address",
-  "workplace",
-  "email",
-  "contact_address",
-  "admission_diploma",
-  "graduation_year",
-  "high_school_name",
-  "high_school_province",
-  "relative_1_relationship",
-  "relative_1_phone",
-  "relative_1_address",
-  "relative_2_relationship",
-  "relative_2_phone",
-  "relative_2_address",
+const FIELD_TAB_STOPS = [
+  { paragraphId: "4CBB0D89", fields: [["full_name", 6000], ["gender", 9072]] },
+  { paragraphId: "3F030D80", fields: [["date_of_birth", 3600], ["place_of_birth", 9072]] },
+  { paragraphId: "7329B1FA", fields: [["ethnicity", 3000], ["religion", 6200], ["nationality", 9072]] },
+  { paragraphId: "219DB2CB", fields: [["citizen_id", 3200], ["citizen_id_issued_date", 6200], ["citizen_id_issued_place", 9072]] },
+  { paragraphId: "39E0C9AC", fields: [["permanent_address", 9072]] },
+  { paragraphId: "100F1AFA", fields: [["workplace", 9072]] },
+  { paragraphId: "2E8A9302", fields: [["phone", 3600], ["email", 9072]] },
+  { paragraphId: "15367152", fields: [["contact_address", 9072]] },
+  { paragraphId: "52AACFF1", fields: [["admission_diploma", 9072]] },
+  { paragraphId: "7DF82AFC", fields: [["graduate_major", 5800], ["graduation_year", 9072]] },
+  { paragraphId: "34960EF7", fields: [["high_school_name", 9072]] },
+  { paragraphId: "7BC8F8A9", fields: [["high_school_ward", 5200], ["high_school_province", 9072]] },
+  { paragraphId: "4110B539", fields: [["relative_1_full_name", 5670], ["relative_1_relationship", 9072]] },
+  { paragraphId: "39051AFB", fields: [["relative_1_occupation", 5103], ["relative_1_phone", 9072]] },
+  { paragraphId: "13E8EFC5", fields: [["relative_1_address", 9072]] },
+  { paragraphId: "6A431136", fields: [["relative_2_full_name", 5670], ["relative_2_relationship", 9072]] },
+  { paragraphId: "29F82ABF", fields: [["relative_2_occupation", 5103], ["relative_2_phone", 9072]] },
+  { paragraphId: "308CAAF8", fields: [["relative_2_address", 9072]] },
 ] as const;
 
-function keepTrailingDotsOnlyForEmptyValues(
+function hasInformation(value: string): boolean {
+  return /[\p{L}\p{N}]/u.test(value);
+}
+
+function updateFieldDotLeaders(
   zip: PizZip,
   data: Record<string, string>,
 ): void {
   const file = zip.file("word/document.xml");
   if (file === null) return;
   let xml = file.asText();
-  for (const tag of TRAILING_DOT_FIELDS) {
-    if ((data[tag] ?? "") === "") continue;
-    const runAndTabPattern = new RegExp(
-      `(<w:r\\b(?:(?!<\\/w:r>)[\\s\\S])*?<w:t[^>]*>\\{${tag}\\}<\\/w:t>(?:(?!<\\/w:r>)[\\s\\S])*?<\\/w:r>)<w:r><w:tab\\/><\\/w:r>`,
+  for (const { paragraphId, fields } of FIELD_TAB_STOPS) {
+    const paragraphPattern = new RegExp(
+      `<w:p\\b[^>]*w14:paraId="${paragraphId}"[^>]*>[\\s\\S]*?<\\/w:p>`,
     );
-    xml = xml.replace(runAndTabPattern, "$1");
+    xml = xml.replace(paragraphPattern, (paragraph) => {
+      let updatedParagraph = paragraph;
+      for (const [tag, position] of fields) {
+        const leader = hasInformation(data[tag] ?? "") ? "none" : "dot";
+        const tabStopPattern = new RegExp(
+          `<w:tab\\b(?=[^>]*w:pos="${position}")[^>]*/>`,
+        );
+        updatedParagraph = updatedParagraph.replace(tabStopPattern, (tabStop) =>
+          tabStop.replace(/w:leader="[^"]*"/, `w:leader="${leader}"`),
+        );
+      }
+      return updatedParagraph;
+    });
   }
   zip.file("word/document.xml", xml);
 }
@@ -245,7 +271,7 @@ function compactOnlyExceptionallyDenseRecords(
     "word/document.xml",
     file.asText().replace(
       /<w:spacing w:before="40" w:after="40" w:line="288" w:lineRule="auto"\/>/g,
-      '<w:spacing w:line="240" w:lineRule="exact"/>',
+      '<w:spacing w:line="190" w:lineRule="exact"/>',
     ),
   );
 }
@@ -257,7 +283,7 @@ export class DocxTemplateGenerator implements WordDocumentGenerator {
     const zip = new PizZip(fs.readFileSync(this.templatePath));
     const data = templateData(record);
     fitLongValues(zip, data);
-    keepTrailingDotsOnlyForEmptyValues(zip, data);
+    updateFieldDotLeaders(zip, data);
     useReservedContinuationLines(zip, data);
     compactOnlyExceptionallyDenseRecords(zip, data);
     const document = new Docxtemplater(zip, {

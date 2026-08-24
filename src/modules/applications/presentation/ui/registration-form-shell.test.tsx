@@ -18,19 +18,11 @@ function context(
 ): RegistrationContext {
   return {
     status: "ACTIVE",
-    admissionPeriod: {
-      code: "2026",
-      name: "Tuyển sinh 2026",
-      startDate: "2026-07-01",
-      endDate: "2026-08-31",
-    },
     majors: [],
     studentNameHint: null,
     entryQualification: null,
     hasApplication: false,
     application: null,
-    bankAccount: null,
-    paymentInstructions: null,
     ...overrides,
   };
 }
@@ -128,16 +120,20 @@ describe("registration form shell", () => {
     );
 
     assert.ok(await screen.findByLabelText(/Họ và tên/));
+    assert.equal(screen.queryByText("Thông tin thanh toán"), null);
   });
 
-  it("renders public payment instructions as text", async () => {
+  it("does not render payment information after submission", async () => {
     const queryClient: RegistrationQueryClient = {
-      getContext: async () => context({ paymentInstructions: "Chuyển khoản và giữ lại biên nhận." }),
+      getContext: async () => context({
+        hasApplication: true,
+        application: { id: applicationId, status: "SUBMITTED" },
+      }),
       getApplication: async () => editable(),
     };
-    render(<RegistrationFormShellView token={token} queryClient={queryClient} replaceRoute={() => undefined} />);
-    const instructions = await screen.findByText("Chuyển khoản và giữ lại biên nhận.");
-    assert.equal(instructions.tagName, "P");
+    render(<RegistrationFormShellView token={token} applicationId={applicationId} queryClient={queryClient} replaceRoute={() => undefined} />);
+    await screen.findByText("Hồ sơ không còn ở trạng thái bản nháp");
+    assert.equal(screen.queryByText(/thanh toán/i), null);
   });
 
   it("routes to the existing application URL", async () => {

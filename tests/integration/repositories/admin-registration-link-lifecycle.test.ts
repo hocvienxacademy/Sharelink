@@ -14,11 +14,9 @@ const managerActor = { userId: TEST_IDS.manager, username: "manager-test", role:
 const createdIds: string[] = [];
 const fields = {
   saleId: TEST_IDS.sale,
-  admissionPeriodId: TEST_IDS.openPeriod,
   majorId: TEST_IDS.majorOne,
   studentNameHint: "Lifecycle Test",
   entryQualification: "THPT",
-  tuitionAmount: "1250000.00",
   paymentRound: "D1",
   internalNote: "not copied to audit",
   expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
@@ -43,6 +41,11 @@ describe("registration link lifecycle PostgreSQL repository", () => {
     createdIds.push(created.id);
     assert.equal(created.status, "DRAFT");
     assert.equal(created.publicUrl, undefined);
+    const createdPeriod = await withTestClient((client) => client.query<{ admission_period_id: string | null }>(
+      "SELECT admission_period_id::text FROM registration_links WHERE id = $1",
+      [created.id],
+    ));
+    assert.equal(createdPeriod.rows[0]?.admission_period_id, null);
 
     const { saleId: _saleId, ...editableFields } = fields;
     const updated = await service.updateDetails(actor, created.id, {
@@ -80,6 +83,7 @@ describe("registration link lifecycle PostgreSQL repository", () => {
     ));
     assert.deepEqual(rolledBack.rows[0], { status: "DRAFT", histories: "1", audits: "2" });
     await withTestClient((client) => client.query("UPDATE majors SET is_active = true WHERE id = $1", [TEST_IDS.majorOne]));
+    await withTestClient((client) => client.query("UPDATE registration_links SET admission_period_id = $2 WHERE id = $1", [created.id, TEST_IDS.closedPeriod]));
 
     const concurrent = await Promise.allSettled([
       service.transition(actor, created.id, "activate", draftVersion, context),

@@ -24,11 +24,9 @@ const manager: AuthenticatedActor = {
 };
 const context = { requestId: "request-1" };
 const fields = {
-  admissionPeriodId: null,
   majorId: null,
   studentNameHint: null,
   entryQualification: null,
-  tuitionAmount: null,
   paymentRound: null,
   internalNote: null,
   expiresAt: null,

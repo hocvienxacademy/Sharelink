@@ -6,6 +6,12 @@ export const SYSTEM_SETTING_DEFINITIONS = [
     editableFields: ["message"],
   },
   {
+    key: "payment.application_fee",
+    visibility: "PUBLIC",
+    editable: true,
+    editableFields: ["amount"],
+  },
+  {
     key: "payment.transfer_content",
     visibility: "INTERNAL",
     editable: false,

@@ -3,7 +3,7 @@ import { validateStagingDatabaseTarget } from "../../src/shared/config/runtime-e
 import { readSchemaFingerprint } from "./schema-fingerprint";
 
 const EXPECTED_SCHEMA_SHA256 =
-  "1b5d16b6e4354f96cdb0044a9e5f6e313d3b2f370ea98929832f43c844f22b46";
+  "70939ac63c126d0f05d10ad94f8d7373988fdf7592bbfe4e34aa563cd662c682";
 
 const EXPECTED_TABLES = [
   "admission_periods",

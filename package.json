@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "tsx scripts/build.ts",
+    "build:render": "npm run prisma:generate && npm run build",
     "start": "next start",
     "prisma:pull": "prisma db pull",
     "prisma:generate": "prisma generate",
@@ -27,13 +28,16 @@
     "test:staging-smoke": "playwright test --config=playwright.staging.config.ts",
     "staging:schema:verify": "tsx scripts/database/verify-staging-schema.ts",
     "schema:fingerprint": "tsx scripts/database/print-schema-fingerprint.ts",
+    "migration:verify": "tsx scripts/database/verify-migration-chain.ts",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:bootstrap:production-admin": "tsx scripts/bootstrap-production-admin.ts",
     "audit:policy": "tsx scripts/audit-policy.ts",
     "artifact:package": "tsx scripts/package-artifact.ts",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource/be-vietnam-pro": "^5.3.0",
     "@hookform/resolvers": "^5.5.7",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",

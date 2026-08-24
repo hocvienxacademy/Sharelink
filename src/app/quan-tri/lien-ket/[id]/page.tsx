@@ -7,9 +7,9 @@ import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detai
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
-import { formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
+import { formatDateTime } from "@/modules/dashboard/presentation/format-admin-value";
 import { registrationLinkQueries } from "@/composition/registration-links";
-import { listAdminAdmissionPeriods, listAdminMajors } from "@/modules/catalogs";
+import { listAdminMajors } from "@/modules/catalogs";
 import { listActiveSaleOptions } from "@/modules/users";
 import { RegistrationLinkActions } from "@/modules/registration-links/presentation/ui/registration-link-actions";
 import { RegistrationLinkForm } from "@/modules/registration-links/presentation/ui/registration-link-form";
@@ -30,7 +30,6 @@ export default async function RegistrationLinkDetailPage({ params }: { readonly 
         identity.role === "ADMIN"
           ? listActiveSaleOptions()
           : Promise.resolve([{ id: identity.id, fullName: identity.fullName, username: identity.username }]),
-        listAdminAdmissionPeriods(),
         listAdminMajors(),
       ])
     : null;
@@ -51,9 +50,8 @@ export default async function RegistrationLinkDetailPage({ params }: { readonly 
         items={[
           { label: "Trạng thái", value: <AdminStatusBadge status={item.status} /> },
           { label: "SALE phụ trách", value: item.saleName },
-          { label: "Kỳ tuyển sinh", value: relatedLabel(item.admissionPeriod) },
+          ...(item.admissionPeriod === null ? [] : [{ label: "Kỳ lịch sử", value: relatedLabel(item.admissionPeriod) }]),
           { label: "Ngành", value: relatedLabel(item.major) },
-          { label: "Học phí", value: formatMoney(item.tuitionAmount) },
           { label: "Đợt thanh toán", value: item.paymentRound },
           { label: "Ngày tạo", value: formatDateTime(item.createdAt) },
           { label: "Hết hạn", value: formatDateTime(item.expiresAt) },
@@ -66,8 +64,7 @@ export default async function RegistrationLinkDetailPage({ params }: { readonly 
           linkId={item.id}
           initial={item}
           sales={editOptions[0].map((value) => ({ id: value.id, label: `${value.fullName} (${value.username})` }))}
-          periods={editOptions[1].filter((value) => value.isActive).map((value) => ({ id: value.id, label: `${value.code} — ${value.name}` }))}
-          majors={editOptions[2].filter((value) => value.isActive).map((value) => ({ id: value.id, label: `${value.code} — ${value.name}` }))}
+          majors={editOptions[1].filter((value) => value.isActive).map((value) => ({ id: value.id, label: `${value.code} — ${value.name}` }))}
         />
       )}
       <AdminResourceTable

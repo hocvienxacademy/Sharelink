@@ -1,3 +1,6 @@
-import { catalogAdministration } from "@/composition/catalogs";
 import { createCatalogMutationHandler } from "@/modules/catalogs/presentation/http/admin-catalog-handlers";
-export const POST = createCatalogMutationHandler((actor, id, input, context) => catalogAdministration.transitionAdmissionPeriod(actor, id, true, input, context), "admin-admission-period-activate");
+import { ConflictError } from "@/shared/errors";
+
+export const POST = createCatalogMutationHandler(async () => {
+  throw new ConflictError("Kỳ tuyển sinh đã chuyển sang chế độ lịch sử chỉ đọc.");
+}, "admin-admission-period-activate");

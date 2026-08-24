@@ -10,7 +10,7 @@ import type {
 export interface CreateDraftPersistenceInput {
   readonly registrationLinkId: string;
   readonly saleId: string;
-  readonly admissionPeriodId: string;
+  readonly admissionPeriodId: string | null;
   readonly majorId: string | null;
   readonly entryQualification: AdmissionQualification | null;
   readonly studentNameHint: string | null;

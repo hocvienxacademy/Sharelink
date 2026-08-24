@@ -6,7 +6,6 @@ export interface CatalogReferenceDto {
 }
 
 export interface AdminRegistrationLinkListItem {
-  readonly admissionPeriod: CatalogReferenceDto | null;
   readonly applicationStatus: string | null;
   readonly createdAt: Date;
   readonly expiresAt: Date | null;
@@ -15,7 +14,6 @@ export interface AdminRegistrationLinkListItem {
   readonly saleName: string;
   readonly status: RegistrationLinkStatus;
   readonly studentNameHint: string | null;
-  readonly tuitionAmount: string | null;
 }
 
 export interface AdminRegistrationLinkHistoryItem {
@@ -28,6 +26,7 @@ export interface AdminRegistrationLinkHistoryItem {
 
 export interface AdminRegistrationLinkDetail extends AdminRegistrationLinkListItem {
   readonly accessCount: number;
+  readonly admissionPeriod: CatalogReferenceDto | null;
   readonly admissionPeriodId: string | null;
   readonly applicationId: string | null;
   readonly entryQualification: string | null;

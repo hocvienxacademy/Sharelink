@@ -80,7 +80,6 @@ class FakeCatalogRepository implements CatalogRepository {
 function validator(value: RegistrationLink | null) {
   return new ValidateRegistrationLink(
     new FakeLinkRepository(value),
-    new FakeCatalogRepository(),
     clock,
   );
 }
@@ -110,20 +109,24 @@ describe("ValidateRegistrationLink", () => {
     const result = await validator(link()).execute(token);
 
     assert.equal(result.link.id, "link-1");
-    assert.equal(result.admissionPeriod.id, admissionPeriod.id);
+  });
+
+  it("accepts an active link without an admission period", async () => {
+    const result = await validator(link({ admissionPeriodId: null })).execute(token);
+
+    assert.equal(result.link.admissionPeriodId, null);
   });
 });
 
 describe("GetRegistrationContext", () => {
-  it("returns only the active default payment account public DTO", async () => {
-    const service = new GetRegistrationContext(
-      validator(link()),
+  it("never exposes payment data in the public registration context", async () => {
+    const result = await new GetRegistrationContext(
+      validator(link({ applicationId: "22222222-2222-4222-8222-222222222222", applicationStatus: "SUBMITTED" })),
       new FakeCatalogRepository(),
-      { findPublicDefault: async () => ({ bankCode: "VCB", bankName: "Vietcombank", branchName: null, accountNumber: "001234", accountName: "TRUONG A" }) },
-    );
-    const result = await service.execute(token);
-    assert.deepEqual(result.bankAccount, { bankCode: "VCB", bankName: "Vietcombank", branchName: null, accountNumber: "001234", accountName: "TRUONG A" });
-    assert.equal("id" in result.bankAccount!, false);
+    ).execute(token);
+
+    assert.equal("payment" in result, false);
+    assert.equal(JSON.stringify(result).includes("accountNumber"), false);
   });
 
   it("does not return the token or internal link identifier", async () => {

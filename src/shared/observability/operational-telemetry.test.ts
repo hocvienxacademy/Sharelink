@@ -44,3 +44,19 @@ test("test telemetry is silent", () => {
   }
   assert.deepEqual(messages, []);
 });
+
+test("production telemetry uses the Render commit identity", () => {
+  const messages: string[] = [];
+  const originalInfo = console.info;
+  console.info = (value?: unknown) => messages.push(String(value));
+  try {
+    getOperationalTelemetry({
+      APP_ENV: "production",
+      RENDER_GIT_COMMIT: "render-commit",
+    }).record("request_count");
+  } finally {
+    console.info = originalInfo;
+  }
+
+  assert.equal(JSON.parse(messages[0]!).releaseSha, "render-commit");
+});

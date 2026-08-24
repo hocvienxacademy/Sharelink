@@ -1,0 +1,27 @@
+{
+  "advisoryId": "GHSA-ggr8-5vv4-36mx",
+  "package": "deepmerge-ts",
+  "severity": "high",
+  "dependencyPaths": ["node_modules/deepmerge-ts"],
+  "affectedRange": "<8.0.0",
+  "reasonUpgradeUnavailable": "Prisma 7.9.1 is the current project version and resolves @prisma/config to deepmerge-ts 7.1.5. No compatible Prisma release using deepmerge-ts 8.0.0 or newer is currently available for this project to adopt.",
+  "exploitability": "The vulnerable package is reached through Prisma configuration loading. This project uses a static prisma.config.ts and does not pass request data or other untrusted recursive/self-referential object graphs into that configuration path. Exploitation is therefore not known to be reachable in the deployed application, but the vulnerable transitive package remains installed.",
+  "compensatingControls": [
+    "Keep prisma, @prisma/client, and @prisma/adapter-pg on the same reviewed release line.",
+    "Do not pass request-controlled or otherwise untrusted objects into Prisma configuration merging.",
+    "Run npm run audit:policy for every promotion and review any advisory range, severity, or dependency-path change.",
+    "Recheck Prisma releases for adoption of deepmerge-ts 8.0.0 or newer before this waiver expires."
+  ],
+  "owner": "UNASSIGNED",
+  "approvedBy": "UNAPPROVED",
+  "approvedAt": "2026-08-19",
+  "expiresAt": "2026-11-17",
+  "revocationConditions": [
+    "A compatible Prisma release resolves deepmerge-ts to version 8.0.0 or newer.",
+    "Untrusted or recursive object graphs become reachable by the Prisma configuration path.",
+    "The advisory severity, affected range, or installed dependency path changes.",
+    "New evidence invalidates the exploitability assessment or compensating controls."
+  ],
+  "upstreamReference": "https://github.com/prisma/prisma/issues/29511",
+  "recheckVersion": "prisma@7.9.1"
+}

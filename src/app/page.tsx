@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  ArrowRightIcon,
   FileCheck2Icon,
   Link2Icon,
   ShieldCheckIcon,
@@ -9,19 +8,16 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default function HomePage() {
   return (
     <main className="min-h-dvh bg-background">
       <header className="border-b">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-8">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            ShareLink<span className="text-brand-coral-text">Student</span>
+          <Link href="/">
+            <BrandLogo imageClassName="size-12" />
           </Link>
-          <Button nativeButton={false} variant="outline" render={<Link href="/dang-nhap" />}>
-            Đăng nhập quản trị
-            <ArrowRightIcon data-icon="inline-end" />
-          </Button>
         </div>
       </header>
 
@@ -33,13 +29,9 @@ export default function HomePage() {
             <br />Một hành trình hồ sơ liền mạch.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            ShareLinkStudent giúp đơn vị tuyển sinh gửi đúng biểu mẫu, tiếp nhận thông tin có cấu trúc và theo dõi tiến độ trong một hệ thống thống nhất.
+            Đại học Trà Vinh giúp đơn vị tuyển sinh gửi đúng biểu mẫu, tiếp nhận thông tin có cấu trúc và theo dõi tiến độ trong một hệ thống thống nhất.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button nativeButton={false} size="lg" render={<Link href="/dang-nhap" />}>
-              Vào khu vực quản trị
-              <ArrowRightIcon data-icon="inline-end" />
-            </Button>
             <Button
               nativeButton={false}
               size="lg"
@@ -112,7 +104,7 @@ export default function HomePage() {
 
       <footer className="bg-primary px-4 py-10 text-primary-foreground sm:px-8">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <p className="font-semibold">ShareLinkStudent</p>
+          <BrandLogo imageClassName="size-11" />
           <p className="text-sm text-primary-foreground/60">Hệ thống đăng ký và quản lý hồ sơ sinh viên.</p>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ShieldCheckIcon } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import type { StaffIdentity } from "@/modules/auth";
 import { LogoutButton } from "@/modules/auth/presentation/ui/logout-button";
 import { AdminDesktopNavigation, AdminMobileNavigation } from "./admin-navigation";
@@ -17,14 +17,9 @@ export function AdminShell({
       <header className="border-b bg-background">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link href="/quan-tri" className="flex items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <ShieldCheckIcon aria-hidden="true" />
-            </span>
             <span>
-              <span className="block font-semibold tracking-tight">
-                ShareLink<span className="text-brand-coral-text">Student</span>
-              </span>
-              <span className="block text-xs text-muted-foreground">Control Center</span>
+              <BrandLogo imageClassName="size-11" textClassName="hidden sm:inline" />
+              <span className="hidden text-xs text-muted-foreground sm:block">Control Center</span>
             </span>
           </Link>
           <div className="flex items-center gap-3">

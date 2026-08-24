@@ -29,6 +29,26 @@ export async function readSchemaFingerprint(client: Client): Promise<string> {
     JOIN pg_enum e ON e.enumtypid = t.oid
     JOIN pg_namespace n ON n.oid = t.typnamespace
     WHERE n.nspname = 'public'
+    UNION ALL
+    SELECT 'table_comment',
+           concat_ws('|', c.relname, obj_description(c.oid, 'pg_class'))
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public'
+      AND c.relkind IN ('r', 'p')
+      AND obj_description(c.oid, 'pg_class') IS NOT NULL
+    UNION ALL
+    SELECT 'column_comment',
+           concat_ws('|', c.relname, a.attname,
+             col_description(c.oid, a.attnum))
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid
+    WHERE n.nspname = 'public'
+      AND c.relkind IN ('r', 'p')
+      AND a.attnum > 0
+      AND NOT a.attisdropped
+      AND col_description(c.oid, a.attnum) IS NOT NULL
     ORDER BY kind, definition
     `,
   );

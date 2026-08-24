@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
-import { listAdminAdmissionPeriods, listAdminMajors } from "@/modules/catalogs";
+import { listAdminMajors } from "@/modules/catalogs";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { listActiveSaleOptions } from "@/modules/users";
 import { RegistrationLinkForm } from "@/modules/registration-links/presentation/ui/registration-link-form";
@@ -10,8 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function CreateRegistrationLinkPage() {
   const identity = await requireStaffPage();
   if (identity.role === "MANAGER") redirect("/quan-tri/lien-ket");
-  const [periods, majors, sales] = await Promise.all([
-    listAdminAdmissionPeriods(),
+  const [majors, sales] = await Promise.all([
     listAdminMajors(),
     identity.role === "ADMIN"
       ? listActiveSaleOptions()
@@ -27,7 +26,6 @@ export default async function CreateRegistrationLinkPage() {
       <RegistrationLinkForm
         sales={sales.map((item) => ({ id: item.id, label: `${item.fullName} (${item.username})` }))}
         lockSaleSelection={identity.role === "SALE"}
-        periods={periods.filter((item) => item.isActive).map((item) => ({ id: item.id, label: `${item.code} — ${item.name}` }))}
         majors={majors.filter((item) => item.isActive).map((item) => ({ id: item.id, label: `${item.code} — ${item.name}` }))}
       />
     </div>

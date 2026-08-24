@@ -63,9 +63,7 @@ test("SALE creates self-owned links but cannot assign them to another user", asy
   await expect(page.getByRole("link", { name: "Nhân sự" })).toHaveCount(0);
   await page.getByRole("button", { name: "Tạo liên kết" }).click();
   await expect(page.getByLabel("SALE phụ trách *")).toBeDisabled();
-  const periodValue = await page.getByLabel("Kỳ tuyển sinh").locator("option", { hasText: "OPEN-TEST" }).getAttribute("value");
   const majorValue = await page.getByLabel("Ngành học").locator("option", { hasText: "TEST-01" }).getAttribute("value");
-  await page.getByLabel("Kỳ tuyển sinh").selectOption(periodValue ?? "");
   await page.getByLabel("Ngành học").selectOption(majorValue ?? "");
   await page.getByRole("button", { name: "Tạo liên kết" }).click();
   await expect(page).toHaveURL(/\/quan-tri\/lien-ket\/[0-9a-f-]{36}$/);
@@ -83,11 +81,9 @@ test("SALE creates self-owned links but cannot assign them to another user", asy
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       saleId: "10000000-0000-4000-8000-000000000002",
-      admissionPeriodId: null,
       majorId: null,
       studentNameHint: null,
       entryQualification: null,
-      tuitionAmount: null,
       paymentRound: null,
       internalNote: null,
       expiresAt: null,
@@ -162,9 +158,7 @@ test("ADMIN creates and activates a registration link through the UI", async ({ 
   await page.goto("/quan-tri/lien-ket/tao-moi");
   const saleValue = await page.getByLabel("SALE phụ trách *").locator("option", { hasText: "Test Sale" }).getAttribute("value");
   await page.getByLabel("SALE phụ trách *").selectOption(saleValue ?? "");
-  const periodValue = await page.getByLabel("Kỳ tuyển sinh").locator("option", { hasText: "OPEN-TEST" }).getAttribute("value");
   const majorValue = await page.getByLabel("Ngành học").locator("option", { hasText: "TEST-01" }).getAttribute("value");
-  await page.getByLabel("Kỳ tuyển sinh").selectOption(periodValue ?? "");
   await page.getByLabel("Ngành học").selectOption(majorValue ?? "");
   await page.getByLabel("Gợi ý tên sinh viên").fill("E2E Lifecycle");
   await page.getByRole("button", { name: "Tạo liên kết" }).click();

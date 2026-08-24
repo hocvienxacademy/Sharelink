@@ -7,7 +7,7 @@ import {
   getSystemSettingDefinition,
 } from "../domain/system-setting-definition-registry";
 import { SystemSettingAuthorizationPolicy } from "./authorization/system-setting-authorization";
-import { parseUpdatePaymentInstructions } from "./validation/system-setting-schemas";
+import { parseUpdateApplicationFee, parseUpdatePaymentInstructions } from "./validation/system-setting-schemas";
 
 const actor = (role: AuthenticatedActor["role"]): AuthenticatedActor => ({
   userId: "11111111-1111-4111-8111-111111111111",
@@ -16,9 +16,10 @@ const actor = (role: AuthenticatedActor["role"]): AuthenticatedActor => ({
 });
 
 describe("system setting registry and authorization", () => {
-  it("defines exactly the confirmed keys and only one editable public field", () => {
+  it("defines exactly the confirmed keys and two editable public fields", () => {
     assert.deepEqual(SYSTEM_SETTING_DEFINITIONS.map((item) => item.key), [
       "payment.instructions",
+      "payment.application_fee",
       "payment.transfer_content",
       "registration.link_policy",
     ]);
@@ -27,6 +28,12 @@ describe("system setting registry and authorization", () => {
       visibility: "PUBLIC",
       editable: true,
       editableFields: ["message"],
+    });
+    assert.deepEqual(getSystemSettingDefinition("payment.application_fee"), {
+      key: "payment.application_fee",
+      visibility: "PUBLIC",
+      editable: true,
+      editableFields: ["amount"],
     });
     assert.equal(getSystemSettingDefinition("payment.transfer_content")?.editable, false);
     assert.equal(getSystemSettingDefinition("registration.link_policy")?.visibility, "INTERNAL");
@@ -69,5 +76,16 @@ describe("payment instructions validation", () => {
       { message: "Hợp lệ", expectedUpdatedAt: "2026-08-05T00:00:00.000Z", updatedBy: "client" },
     ];
     for (const input of invalid) assert.throws(() => parseUpdatePaymentInstructions(input), ValidationError);
+  });
+});
+
+describe("application fee validation", () => {
+  it("accepts a positive integer VND amount and rejects client-owned or fractional values", () => {
+    const expectedUpdatedAt = "2026-08-05T00:00:00.000Z";
+    assert.deepEqual(parseUpdateApplicationFee({ amount: 260000, expectedUpdatedAt }), { amount: 260000, expectedUpdatedAt });
+    for (const amount of [0, -1, 260000.5, Number.NaN]) {
+      assert.throws(() => parseUpdateApplicationFee({ amount, expectedUpdatedAt }), ValidationError);
+    }
+    assert.throws(() => parseUpdateApplicationFee({ amount: 260000, expectedUpdatedAt, key: "other" }), ValidationError);
   });
 });

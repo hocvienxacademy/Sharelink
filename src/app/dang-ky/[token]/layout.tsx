@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { ArrowLeftIcon, ShieldCheckIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ShieldCheckIcon } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const metadata: Metadata = {
   title: "Đăng ký thông tin sinh viên",
@@ -23,9 +22,7 @@ export default function RegistrationLayout({
     <main className="min-h-dvh bg-surface">
       <header className="border-b bg-background">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <Link href="/" className="font-semibold tracking-tight">
-            ShareLink<span className="text-brand-coral-text">Student</span>
-          </Link>
+          <BrandLogo imageClassName="size-11" textClassName="hidden sm:inline" />
           <div className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
             <ShieldCheckIcon aria-hidden="true" />
             Kết nối bảo mật
@@ -35,15 +32,6 @@ export default function RegistrationLayout({
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-7 px-4 py-8 sm:px-6 sm:py-12">
         <header className="flex flex-col gap-4">
-          <Button
-            nativeButton={false}
-            variant="ghost"
-            className="self-start"
-            render={<Link href="/" />}
-          >
-            <ArrowLeftIcon data-icon="inline-start" />
-            Trang chủ
-          </Button>
           <div className="max-w-3xl">
             <p className="text-sm font-semibold text-foreground">HỒ SƠ TUYỂN SINH</p>
             <h1 className="mt-3 font-heading text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">

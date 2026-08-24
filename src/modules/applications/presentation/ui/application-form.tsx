@@ -85,6 +85,7 @@ interface ApplicationFormProps {
   readonly mutationClient?: ApplicationMutationClient;
   readonly onApplicationCreated?: (applicationId: string) => void;
   readonly onReload?: () => void;
+  readonly onSubmitted?: (result: SubmittedApplication) => void;
   readonly token: string;
 }
 
@@ -99,6 +100,7 @@ export function ApplicationForm({
   mutationClient = defaultMutationClient,
   onApplicationCreated,
   onReload,
+  onSubmitted,
   token,
 }: ApplicationFormProps) {
   const form = useForm<ApplicationFormValues>({
@@ -320,6 +322,8 @@ export function ApplicationForm({
       setSavedMessage(null);
       setGeneralMessage(null);
       setSummaryItems([]);
+      onSubmitted?.(result);
+      onReload?.();
     });
 
   const invalidForm = () => {

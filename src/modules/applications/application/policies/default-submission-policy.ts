@@ -20,7 +20,6 @@ export type RelativeCompletenessField =
   (typeof RELATIVE_COMPLETENESS_FIELDS)[number];
 
 export interface DefaultSubmissionPolicyConfig {
-  readonly requireMajor: boolean;
   readonly minimumRelatives: number;
   readonly maximumRelatives: number;
   readonly requiredRelativePositions: readonly number[];
@@ -28,7 +27,6 @@ export interface DefaultSubmissionPolicyConfig {
 }
 
 export const DEFAULT_SUBMISSION_POLICY_CONFIG: DefaultSubmissionPolicyConfig = {
-  requireMajor: false,
   minimumRelatives: 0,
   maximumRelatives: 2,
   requiredRelativePositions: [],
@@ -123,7 +121,7 @@ export class DefaultSubmissionPolicy implements SubmissionPolicy {
     const issues: ValidationIssue[] = [];
 
     this.validatePersonalInformation(application, issues);
-    this.validateMajor(application, issues);
+    this.validateAdmissionSelections(application, issues);
     this.validateRelatives(application.relatives, issues);
 
     return issues;
@@ -263,12 +261,21 @@ export class DefaultSubmissionPolicy implements SubmissionPolicy {
     }
   }
 
-  private validateMajor(
+  private validateAdmissionSelections(
     application: Application,
     issues: ValidationIssue[],
   ): void {
-    if (this.config.requireMajor && application.majorId === null) {
-      issues.push(requiredIssue(["majorId"], "Vui lòng chọn ngành học."));
+    if (application.majorId === null) {
+      issues.push(requiredIssue(["majorId"], "Vui lòng chọn ngành đăng ký."));
+    }
+
+    if (application.entryQualification === null) {
+      issues.push(
+        requiredIssue(
+          ["entryQualification"],
+          "Vui lòng chọn đối tượng đầu vào.",
+        ),
+      );
     }
   }
 

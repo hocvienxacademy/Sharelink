@@ -30,14 +30,14 @@ export function EducationSection({
       <FieldSet>
         <FieldLegend>Học vấn và đăng ký xét tuyển</FieldLegend>
         <FieldDescription>
-          Ngành đăng ký và đối tượng đầu vào không bắt buộc theo chính sách
-          nộp hồ sơ hiện tại.
+          Ngành đăng ký và đối tượng đầu vào là thông tin bắt buộc khi nộp hồ
+          sơ.
         </FieldDescription>
         <FieldGroup className="grid gap-5 md:grid-cols-2">
           <ApplicationSelectField
             name="majorId"
             label="Ngành đăng ký"
-            optional
+            required
             options={context.majors.map((major) => ({
               value: major.id,
               label: `${major.code} — ${major.name}`,
@@ -46,7 +46,7 @@ export function EducationSection({
           <ApplicationSelectField
             name="entryQualification"
             label="Đối tượng đầu vào"
-            optional
+            required
             options={qualificationOptions}
           />
           <ApplicationSelectField

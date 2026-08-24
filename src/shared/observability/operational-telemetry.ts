@@ -61,6 +61,8 @@ export function getOperationalTelemetry(
   }
   return new JsonOperationalTelemetry(
     environment.APP_ENV,
-    environment.RELEASE_SHA ?? "missing-release",
+    environment.RELEASE_SHA ??
+      environment.RENDER_GIT_COMMIT ??
+      "missing-release",
   );
 }

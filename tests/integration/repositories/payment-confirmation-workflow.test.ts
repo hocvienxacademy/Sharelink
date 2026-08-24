@@ -54,7 +54,7 @@ after(async () => {
 });
 
 describe("payment confirmation PostgreSQL workflow", () => {
-  it("requires exact configured tuition, permits one concurrent confirmation, and keeps audit safe", async () => {
+  it("snapshots the global application fee, permits one concurrent confirmation, and keeps audit safe", async () => {
     const repository = new PrismaPaymentRepository();
     const fixture = await seedPayment("2500000.00", "2400000.00");
     const initialUpdatedAt = await currentUpdatedAt(repository, fixture.applicationId);
@@ -68,45 +68,45 @@ describe("payment confirmation PostgreSQL workflow", () => {
       requestId: "payment-confirm-race",
     };
 
-    await assert.rejects(repository.confirm(base), ConflictError);
-    await withTestClient(async (client) => {
-      await client.query("UPDATE payment_confirmations SET amount='2500000.00' WHERE application_id=$1", [fixture.applicationId]);
-    });
-    const refreshedUpdatedAt = await currentUpdatedAt(repository, fixture.applicationId);
-    const currentBase = { ...base, expectedUpdatedAt: refreshedUpdatedAt };
-
-    const results = await Promise.allSettled([repository.confirm(currentBase), repository.confirm(currentBase)]);
+    const results = await Promise.allSettled([repository.confirm(base), repository.confirm(base)]);
     assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
     assert.equal(results.filter((result) => result.status === "rejected" && result.reason instanceof ConflictError).length, 1);
 
     await withTestClient(async (client) => {
-      const payment = await client.query("SELECT status, confirmed_by, confirmed_at, confirmation_note FROM payment_confirmations WHERE application_id=$1", [fixture.applicationId]);
+      const payment = await client.query("SELECT status, amount, confirmed_by, confirmed_at, confirmation_note FROM payment_confirmations WHERE application_id=$1", [fixture.applicationId]);
       const application = await client.query("SELECT status FROM applications WHERE id=$1", [fixture.applicationId]);
       const audit = await client.query("SELECT action, metadata::text AS metadata, old_values::text AS old_values, new_values::text AS new_values FROM audit_logs WHERE entity_id=$1", [fixture.paymentId]);
       assert.equal(payment.rows[0].status, "CONFIRMED");
       assert.equal(payment.rows[0].confirmed_by, TEST_IDS.admin);
       assert.equal(payment.rows[0].confirmation_note, "Internal payment note");
+      assert.equal(payment.rows[0].amount, "260000.00");
       assert.equal(application.rows[0].status, "VALID");
       assert.equal(audit.rowCount, 1);
       assert.equal(audit.rows[0].action, "PAYMENT_CONFIRMED");
       const serializedAudit = JSON.stringify(audit.rows[0]);
       assert.equal(serializedAudit.includes("Internal payment note"), false);
-      assert.equal(serializedAudit.includes("2500000"), false);
+      assert.equal(serializedAudit.includes("260000"), false);
       assert.equal(serializedAudit.includes("0123456789"), false);
     });
   });
 
-  it("rejects missing tuition and makes CANCELLED terminal while retaining confirmation evidence", async () => {
+  it("rejects a missing global fee and makes CANCELLED terminal while retaining confirmation evidence", async () => {
     const repository = new PrismaPaymentRepository();
-    const missingTuition = await seedPayment(null, "2500000.00");
-    const missingTuitionUpdatedAt = await currentUpdatedAt(repository, missingTuition.applicationId);
-    await assert.rejects(repository.confirm({
-      actor: admin, applicationId: missingTuition.applicationId, confirmationNote: null,
-      expectedStatus: "PENDING", expectedUpdatedAt: missingTuitionUpdatedAt,
-      occurredAt: new Date("2026-08-04T09:00:00.000Z"), requestId: "missing-tuition",
-    }), ConflictError);
+    const missingFee = await seedPayment(null, "2500000.00");
+    const missingFeeUpdatedAt = await currentUpdatedAt(repository, missingFee.applicationId);
+    await withTestClient((client) => client.query("DELETE FROM system_settings WHERE setting_key='payment.application_fee'").then(() => undefined));
+    try {
+      await assert.rejects(repository.confirm({
+        actor: admin, applicationId: missingFee.applicationId, confirmationNote: null,
+        expectedStatus: "PENDING", expectedUpdatedAt: missingFeeUpdatedAt,
+        occurredAt: new Date("2026-08-04T09:00:00.000Z"), requestId: "missing-application-fee",
+      }), ConflictError);
+    } finally {
+      await withTestClient((client) => client.query(`INSERT INTO system_settings (setting_key, setting_value, description)
+        VALUES ('payment.application_fee', '{"amount":260000}'::jsonb, 'Application submission fee')`).then(() => undefined));
+    }
 
-    const fixture = await seedPayment("2500000.00", "2500000.00");
+    const fixture = await seedPayment("2500000.00", null);
     const fixtureUpdatedAt = await currentUpdatedAt(repository, fixture.applicationId);
     const confirmed = await repository.confirm({
       actor: admin, applicationId: fixture.applicationId, confirmationNote: "confirmed once",

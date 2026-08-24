@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: "DM Sans Variable", "DM Sans", Inter, Arial, sans-serif;
-    --font-sans: "DM Sans Variable", "DM Sans", Inter, Arial, sans-serif;
+    --font-heading: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
+    --font-sans: "Be Vietnam Pro", "Segoe UI", Arial, sans-serif;
     --color-surface: var(--surface);
     --color-brand-coral: var(--brand-coral);
     --color-brand-coral-text: var(--brand-coral-text);

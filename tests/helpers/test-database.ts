@@ -1,5 +1,4 @@
 import { spawnSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { Client } from "pg";
@@ -137,48 +136,36 @@ export async function createTestDatabase(): Promise<void> {
   }
 }
 
-function generateBaseSchema(): string {
+function deployMigrations(databaseUrl: string): void {
   const prismaCli = path.resolve("node_modules/prisma/build/index.js");
   const result = spawnSync(
     process.execPath,
-    [
-      prismaCli,
-      "migrate",
-      "diff",
-      "--from-empty",
-      "--to-schema",
-      "prisma/schema.prisma",
-      "--script",
-    ],
+    [prismaCli, "migrate", "deploy"],
     {
       cwd: process.cwd(),
       encoding: "utf8",
+      env: { ...process.env, DATABASE_URL: databaseUrl },
     },
   );
 
-  if (result.status !== 0 || result.stdout.trim().length === 0) {
+  if (result.status !== 0) {
     throw new Error(
-      `Unable to generate disposable test schema: ${result.stderr.trim()}`,
+      `Unable to deploy migrations to disposable test database: ${result.stderr.trim()}`,
     );
   }
-
-  return result.stdout;
 }
 
 export async function resetTestDatabase(): Promise<void> {
+  const target = requireSafeTestDatabase();
   const client = await verifiedClient();
 
   try {
     await client.query("DROP SCHEMA IF EXISTS public CASCADE");
-    await client.query(generateBaseSchema());
-    const extensions = await readFile(
-      path.resolve("tests/fixtures/database/schema-extensions.sql"),
-      "utf8",
-    );
-    await client.query(extensions);
   } finally {
     await client.end();
   }
+
+  deployMigrations(target.url);
 }
 
 export async function seedTestDatabase(): Promise<void> {
@@ -214,6 +201,13 @@ export async function seedTestDatabase(): Promise<void> {
          ($2, 'TEST-02', 'Test Major Beta', true, 2),
          ($3, 'TEST-99', 'Test Major Inactive', false, 99)`,
       [TEST_IDS.majorOne, TEST_IDS.majorTwo, TEST_IDS.inactiveMajor],
+    );
+    await client.query(
+      `INSERT INTO system_settings (setting_key, setting_value, description)
+       VALUES ('payment.application_fee', '{"amount":260000}'::jsonb, 'Application submission fee')
+       ON CONFLICT (setting_key) DO UPDATE
+       SET setting_value = EXCLUDED.setting_value,
+           description = EXCLUDED.description`,
     );
     await client.query(
       `INSERT INTO registration_links

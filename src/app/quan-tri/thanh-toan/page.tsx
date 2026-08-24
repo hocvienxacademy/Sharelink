@@ -23,7 +23,7 @@ export default async function PaymentsPage() {
           { key: "student", label: "Sinh viên" },
           { key: "status", label: "Trạng thái" },
           { key: "bank", label: "Ngân hàng" },
-          { key: "amount", label: "Số tiền" },
+          { key: "amount", label: "Phí đã xác nhận" },
           { key: "created", label: "Ngày tạo" },
           { key: "action", label: "" },
         ]}

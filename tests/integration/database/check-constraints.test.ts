@@ -31,6 +31,8 @@ async function expectCheckViolation(
 test("all required PostgreSQL CHECK definitions are present", async () => {
   const expected = [
     "chk_admission_period_dates",
+    "chk_application_export_credentials_failed_attempts",
+    "chk_application_export_credentials_secret_hash",
     "chk_application_relatives_phone",
     "chk_application_relatives_position",
     "chk_applications_citizen_id",
@@ -38,9 +40,17 @@ test("all required PostgreSQL CHECK definitions are present", async () => {
     "chk_applications_phone",
     "chk_applications_version",
     "chk_majors_display_order",
+    "chk_payment_cancelled_fields",
+    "chk_payment_confirmations_amount",
+    "chk_payment_confirmed_fields",
     "chk_registration_links_access_count",
     "chk_registration_links_expiry",
     "chk_registration_links_tuition",
+    "chk_users_failed_login_attempts",
+    "chk_users_not_own_manager",
+    "chk_users_phone",
+    "chk_users_username_canonical",
+    "chk_users_username_not_blank",
   ];
   const actual = await withTestClient(async (client) => {
     const result = await client.query<{ constraint_name: string }>(

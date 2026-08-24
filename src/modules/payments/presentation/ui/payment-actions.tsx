@@ -13,14 +13,14 @@ import type { PaymentStatus } from "../../domain/payment";
 type Action = "confirm" | "cancel";
 
 export function PaymentActions({
-  amountMatchesTuition,
+  applicationFeeConfigured,
   applicationId,
   applicationStatus,
   role,
   status,
   updatedAtIso,
 }: {
-  readonly amountMatchesTuition: boolean;
+  readonly applicationFeeConfigured: boolean;
   readonly applicationId: string;
   readonly applicationStatus: ApplicationStatus;
   readonly role: UserRole;
@@ -35,7 +35,7 @@ export function PaymentActions({
   const [message, setMessage] = useState<string | null>(null);
 
   const canMutate = role === "ADMIN" || role === "MANAGER";
-  const canConfirm = canMutate && applicationStatus === "VALID" && status === "PENDING" && amountMatchesTuition;
+  const canConfirm = canMutate && applicationStatus === "VALID" && status === "PENDING" && applicationFeeConfigured;
   const canCancel = canMutate && applicationStatus === "VALID" && status === "CONFIRMED";
 
   async function mutate(action: Action) {
@@ -84,7 +84,7 @@ export function PaymentActions({
     <section className="flex flex-col gap-4 rounded-2xl border bg-background p-5" aria-label="Thao tác thanh toán">
       {!canMutate ? <p className="text-sm text-muted-foreground">Tài khoản SALE chỉ được xem thông tin thanh toán trong phạm vi phụ trách.</p> : null}
       {canMutate && applicationStatus !== "VALID" ? <p className="text-sm text-muted-foreground">Chỉ hồ sơ ở trạng thái VALID mới được xác nhận hoặc hủy xác nhận thanh toán.</p> : null}
-      {canMutate && status === "PENDING" && !amountMatchesTuition ? <Alert variant="destructive"><AlertTitle>Chưa thể xác nhận</AlertTitle><AlertDescription>Số tiền thanh toán phải khớp chính xác học phí đã cấu hình trên liên kết đăng ký.</AlertDescription></Alert> : null}
+      {canMutate && status === "PENDING" && !applicationFeeConfigured ? <Alert variant="destructive"><AlertTitle>Chưa thể xác nhận</AlertTitle><AlertDescription>Phí nộp hồ sơ toàn hệ thống chưa được cấu hình hoặc không hợp lệ.</AlertDescription></Alert> : null}
       {canConfirm ? (
         <div className="flex flex-col gap-3">
           <label htmlFor="confirmation-note" className="font-medium">Ghi chú xác nhận (không bắt buộc)</label>

@@ -22,11 +22,9 @@ const identity: StaffIdentity = {
 };
 const validPayload = {
   saleId: "20000000-0000-4000-8000-000000000001",
-  admissionPeriodId: null,
   majorId: null,
   studentNameHint: null,
   entryQualification: null,
-  tuitionAmount: null,
   paymentRound: "D1",
   internalNote: null,
   expiresAt: null,
@@ -80,7 +78,7 @@ describe("admin registration link HTTP handlers", () => {
   });
 
   it("rejects client-controlled role and public token fields with 422", async () => {
-    for (const injected of [{ role: "ADMIN" }, { publicToken: "client-token" }]) {
+    for (const injected of [{ role: "ADMIN" }, { publicToken: "client-token" }, { admissionPeriodId: "30000000-0000-4000-8000-000000000001" }]) {
       const response = await createRegistrationLinkCreateHandler(service, async () => identity)(request("/api/admin/registration-links", { ...validPayload, ...injected }));
       assert.equal(response.status, 422);
     }
@@ -115,7 +113,6 @@ describe("admin registration link HTTP handlers", () => {
       saleName: "Test Sale",
       status: "DRAFT" as const,
       studentNameHint: null,
-      tuitionAmount: null,
     };
     const history = [{
       actorName: identity.fullName,
