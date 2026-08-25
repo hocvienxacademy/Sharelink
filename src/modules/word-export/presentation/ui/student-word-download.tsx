@@ -95,37 +95,55 @@ export function StudentWordDownload({
                 tuyển sinh trước khi thanh toán.
               </p>
             ) : (
-              <dl className="grid gap-2 sm:grid-cols-2">
-                <div>
-                  <dt className="font-medium text-foreground">Ngân hàng</dt>
-                  <dd>
-                    {payment.account.bankName} ({payment.account.bankCode})
-                    {payment.account.branchName === null
-                      ? ""
-                      : " — " + payment.account.branchName}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-foreground">Số tài khoản</dt>
-                  <dd className="font-semibold text-foreground">
-                    {payment.account.accountNumber}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-foreground">Chủ tài khoản</dt>
-                  <dd className="font-semibold text-foreground">
-                    {payment.account.accountName}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-medium text-foreground">Phí nộp hồ sơ</dt>
-                  <dd className="font-semibold text-foreground">
-                    {payment.applicationFeeAmount === null
-                      ? "Chưa được cấu hình"
-                      : formatMoney(payment.applicationFeeAmount)}
-                  </dd>
-                </div>
-              </dl>
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-start">
+                <dl className="grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <dt className="font-medium text-foreground">Ngân hàng</dt>
+                    <dd>
+                      {payment.account.bankName} ({payment.account.bankCode})
+                      {payment.account.branchName === null
+                        ? ""
+                        : " — " + payment.account.branchName}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-foreground">Số tài khoản</dt>
+                    <dd className="font-semibold text-foreground">
+                      {payment.account.accountNumber}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-foreground">Chủ tài khoản</dt>
+                    <dd className="font-semibold text-foreground">
+                      {payment.account.accountName}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium text-foreground">Phí nộp hồ sơ</dt>
+                    <dd className="font-semibold text-foreground">
+                      {payment.applicationFeeAmount === null
+                        ? "Chưa được cấu hình"
+                        : formatMoney(payment.applicationFeeAmount)}
+                    </dd>
+                  </div>
+                </dl>
+                <figure className="flex flex-col items-center gap-2">
+                  {/* The QR must stay lossless so banking apps can scan the original PNG. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/QR.png"
+                    alt="Mã QR chuyển khoản"
+                    width={2276}
+                    height={2560}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-auto w-full max-w-64 rounded-lg border bg-white"
+                  />
+                  <figcaption className="text-center text-xs text-muted-foreground">
+                    Quét mã QR để nhập nhanh thông tin chuyển khoản.
+                  </figcaption>
+                </figure>
+              </div>
             )}
             {payment.instructions === null ? null : (
               <p className="mt-3 whitespace-pre-wrap">

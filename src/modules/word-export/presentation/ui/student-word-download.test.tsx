@@ -41,6 +41,10 @@ describe("StudentWordDownload", () => {
     );
 
     assert.ok(screen.getByText("Thông tin chuyển khoản"));
+    const qrCode = screen.getByRole("img", {
+      name: "Mã QR chuyển khoản",
+    });
+    assert.equal(qrCode.getAttribute("src")?.includes("/images/QR.png"), true);
     assert.ok(screen.getByText("0123456789"));
     assert.ok(screen.getByText(/260\.000/));
     const download = screen.getByRole("button", { name: /Tải file Word/ });
