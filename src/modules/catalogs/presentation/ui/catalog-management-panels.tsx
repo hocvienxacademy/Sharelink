@@ -58,10 +58,11 @@ export function AdmissionPeriodManagementPanel({ initialItems, canManage }: { re
   const apply = (item: AdmissionPeriodView) => setItems((current) => current.map((value) => value.id === item.id ? item : value));
   const submitCreate = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setPending(true); setFeedback(null);
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       const item = await requestCatalog<AdmissionPeriodView>("/api/admin/admission-periods", "POST", { code: form.get("code"), name: form.get("name"), startDate: form.get("startDate"), endDate: form.get("endDate") });
-      setItems((current) => [item, ...current]); event.currentTarget.reset(); setFeedback({ message: "Đã tạo kỳ tuyển sinh ở trạng thái tạm dừng.", error: false });
+      setItems((current) => [item, ...current]); formElement.reset(); setFeedback({ message: "Đã tạo kỳ tuyển sinh ở trạng thái tạm dừng.", error: false });
     } catch (error) { setFeedback({ message: error instanceof Error ? error.message : "Không thể tạo kỳ tuyển sinh.", error: true }); }
     finally { setPending(false); }
   };
@@ -117,8 +118,8 @@ export function MajorManagementPanel({ initialItems, canManage }: { readonly ini
   const [pending, setPending] = useState(false); const [feedback, setFeedback] = useState<{ message: string; error: boolean } | null>(null);
   const sorted = (values: MajorView[]) => [...values].sort((a, b) => a.displayOrder - b.displayOrder || a.code.localeCompare(b.code));
   const apply = (item: MajorView) => setItems((current) => sorted(current.map((value) => value.id === item.id ? item : value)));
-  const submitCreate = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setPending(true); setFeedback(null); const form = new FormData(event.currentTarget);
-    try { const item = await requestCatalog<MajorView>("/api/admin/majors", "POST", { code: form.get("code"), name: form.get("name"), displayOrder: Number(form.get("displayOrder")) }); setItems((current) => sorted([...current, item])); event.currentTarget.reset(); setFeedback({ message: "Đã tạo ngành ở trạng thái tạm dừng.", error: false }); }
+  const submitCreate = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setPending(true); setFeedback(null); const formElement = event.currentTarget; const form = new FormData(formElement);
+    try { const item = await requestCatalog<MajorView>("/api/admin/majors", "POST", { code: form.get("code"), name: form.get("name"), displayOrder: Number(form.get("displayOrder")) }); setItems((current) => sorted([...current, item])); formElement.reset(); setFeedback({ message: "Đã tạo ngành ở trạng thái tạm dừng.", error: false }); }
     catch (error) { setFeedback({ message: error instanceof Error ? error.message : "Không thể tạo ngành.", error: true }); } finally { setPending(false); }
   };
   const submitEdit = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (editing === null) return; setPending(true); setFeedback(null); const form = new FormData(event.currentTarget);

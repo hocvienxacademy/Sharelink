@@ -20,6 +20,10 @@ Object.defineProperties(globalThis, {
     configurable: true,
     value: dom.window.MutationObserver,
   },
+  FormData: {
+    configurable: true,
+    value: dom.window.FormData,
+  },
   getComputedStyle: {
     configurable: true,
     value: dom.window.getComputedStyle.bind(dom.window),
