@@ -172,6 +172,7 @@ export function ApplicationSelectField({
             />
           </FieldLabel>
           <Select
+            items={options}
             value={typeof field.value === "string" ? field.value : null}
             onValueChange={(value) => field.onChange(value ?? null)}
           >

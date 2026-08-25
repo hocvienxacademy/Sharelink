@@ -6,19 +6,13 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
+import { ADMISSION_QUALIFICATION_OPTIONS } from "@/shared/presentation/student-option-labels";
 import type { RegistrationContext } from "../application-api-client";
 import {
   ApplicationCheckboxField,
   ApplicationSelectField,
   ApplicationTextField,
 } from "../components/application-field";
-
-const qualificationOptions = [
-  { value: "THPT", label: "Trung học phổ thông" },
-  { value: "TC", label: "Trung cấp" },
-  { value: "CD", label: "Cao đẳng" },
-  { value: "DH", label: "Đại học" },
-] as const;
 
 export function EducationSection({
   context,
@@ -47,12 +41,12 @@ export function EducationSection({
             name="entryQualification"
             label="Đối tượng đầu vào"
             required
-            options={qualificationOptions}
+            options={ADMISSION_QUALIFICATION_OPTIONS}
           />
           <ApplicationSelectField
             name="admissionDiploma"
             label="Bằng dùng để đăng ký xét tuyển"
-            options={qualificationOptions}
+            options={ADMISSION_QUALIFICATION_OPTIONS}
             required
           />
           <ApplicationTextField

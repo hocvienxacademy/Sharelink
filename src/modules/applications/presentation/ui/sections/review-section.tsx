@@ -1,20 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  formatAdmissionQualification,
+  formatGender,
+} from "@/shared/presentation/student-option-labels";
 import type { RegistrationContext } from "../application-api-client";
 import type { ApplicationFormValues } from "../application-form.types";
-
-const qualificationLabels: Readonly<Record<string, string>> = {
-  THPT: "Trung học phổ thông",
-  TC: "Trung cấp",
-  CD: "Cao đẳng",
-  DH: "Đại học",
-};
-
-const genderLabels: Readonly<Record<string, string>> = {
-  MALE: "Nam",
-  FEMALE: "Nữ",
-  OTHER: "Khác",
-};
 
 interface ReviewItem {
   readonly label: string;
@@ -79,7 +70,7 @@ export function ReviewSection({
     { label: "Ngày sinh", value: values.dateOfBirth },
     {
       label: "Giới tính",
-      value: values.gender === null ? null : genderLabels[values.gender],
+      value: formatGender(values.gender),
     },
     { label: "Nơi sinh", value: values.placeOfBirth },
     { label: "Dân tộc", value: values.ethnicity },
@@ -106,17 +97,11 @@ export function ReviewSection({
     },
     {
       label: "Đối tượng đầu vào",
-      value:
-        values.entryQualification === null
-          ? null
-          : qualificationLabels[values.entryQualification],
+      value: formatAdmissionQualification(values.entryQualification),
     },
     {
       label: "Bằng dùng để đăng ký xét tuyển",
-      value:
-        values.admissionDiploma === null
-          ? null
-          : qualificationLabels[values.admissionDiploma],
+      value: formatAdmissionQualification(values.admissionDiploma),
     },
     { label: "Ngành tốt nghiệp", value: values.graduateMajor },
     { label: "Năm tốt nghiệp", value: values.graduationYear },

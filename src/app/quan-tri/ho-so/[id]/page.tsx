@@ -11,6 +11,10 @@ import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-re
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
 import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
 import { StaffApplicationActions } from "@/modules/applications/presentation/ui/staff-application-actions";
+import {
+  formatAdmissionQualification,
+  formatGender,
+} from "@/shared/presentation/student-option-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +52,7 @@ export default async function ApplicationDetailPage({ params }: { readonly param
         items={[
           { label: "Họ và tên", value: item.fullName },
           { label: "Ngày sinh", value: formatDate(item.dateOfBirth) },
-          { label: "Giới tính", value: item.gender },
+          { label: "Giới tính", value: formatGender(item.gender) },
           { label: "CCCD", value: item.maskedCitizenId },
           { label: "Điện thoại", value: item.phone },
           { label: "Email", value: item.email },
@@ -61,8 +65,8 @@ export default async function ApplicationDetailPage({ params }: { readonly param
         items={[
           { label: "Kỳ tuyển sinh", value: item.admissionPeriod },
           { label: "Ngành", value: item.major },
-          { label: "Đối tượng đầu vào", value: item.entryQualification },
-          { label: "Bằng xét tuyển", value: item.admissionDiploma },
+          { label: "Đối tượng đầu vào", value: formatAdmissionQualification(item.entryQualification) },
+          { label: "Bằng xét tuyển", value: formatAdmissionQualification(item.admissionDiploma) },
           { label: "Ngành tốt nghiệp", value: item.graduateMajor },
           { label: "Năm tốt nghiệp", value: item.graduationYear },
           { label: "Trường THPT", value: item.highSchoolName },

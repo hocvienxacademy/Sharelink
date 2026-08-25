@@ -6,16 +6,11 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
+import { GENDER_OPTIONS } from "@/shared/presentation/student-option-labels";
 import {
   ApplicationSelectField,
   ApplicationTextField,
 } from "../components/application-field";
-
-const genderOptions = [
-  { value: "MALE", label: "Nam" },
-  { value: "FEMALE", label: "Nữ" },
-  { value: "OTHER", label: "Khác" },
-] as const;
 
 export function PersonalInformationSection() {
   return (
@@ -36,7 +31,7 @@ export function PersonalInformationSection() {
         <ApplicationSelectField
           name="gender"
           label="Giới tính"
-          options={genderOptions}
+          options={GENDER_OPTIONS}
           required
         />
         <ApplicationTextField name="nationality" label="Quốc tịch" required />
