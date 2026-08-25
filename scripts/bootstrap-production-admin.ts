@@ -2,13 +2,34 @@ import { validateRuntimeEnvironment } from "../src/shared/config/runtime-environ
 import { hashPassword } from "../src/modules/auth/infrastructure/security/password";
 import { parseCreateUserInput } from "../src/modules/users/application/validation/create-user-schema";
 
+const BOOTSTRAP_VARIABLES = [
+  "BOOTSTRAP_ADMIN_FULL_NAME",
+  "BOOTSTRAP_ADMIN_USERNAME",
+  "BOOTSTRAP_ADMIN_EMAIL",
+  "BOOTSTRAP_ADMIN_PASSWORD",
+] as const;
+
 function required(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  const value = process.env[name];
+  if (!value?.trim()) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
   return value;
 }
 
 async function bootstrapProductionAdmin(): Promise<void> {
+  const configuredVariables = BOOTSTRAP_VARIABLES.filter((name) =>
+    process.env[name]?.trim(),
+  );
+  if (configuredVariables.length === 0) {
+    console.log("Production ADMIN bootstrap is not configured; skipping.");
+    return;
+  }
+  if (configuredVariables.length !== BOOTSTRAP_VARIABLES.length) {
+    throw new Error(
+      "Production ADMIN bootstrap variables must be configured together.",
+    );
+  }
   if (process.env.RENDER !== "true") {
     throw new Error("Production ADMIN bootstrap is restricted to Render.");
   }
@@ -28,8 +49,9 @@ async function bootstrapProductionAdmin(): Promise<void> {
     "../src/shared/infrastructure/database/prisma/prisma-client"
   );
 
+  let created = false;
   try {
-    await prisma.$transaction(async (transaction) => {
+    created = await prisma.$transaction(async (transaction) => {
       await transaction.$queryRaw`
         SELECT pg_advisory_xact_lock(
           hashtext('users:bootstrap-production-admin')
@@ -39,7 +61,7 @@ async function bootstrapProductionAdmin(): Promise<void> {
         where: { role: "ADMIN" },
       });
       if (adminCount > 0) {
-        throw new Error("A production ADMIN account already exists.");
+        return false;
       }
       const conflictingIdentity = await transaction.users.findFirst({
         where: {
@@ -80,12 +102,17 @@ async function bootstrapProductionAdmin(): Promise<void> {
           metadata: { source: "render-production-bootstrap" },
         },
       });
+      return true;
     });
   } finally {
     await prisma.$disconnect();
   }
 
-  console.log("Production ADMIN account is ready.");
+  console.log(
+    created
+      ? "Production ADMIN account is ready."
+      : "Production ADMIN account already exists; bootstrap skipped.",
+  );
 }
 
 try {

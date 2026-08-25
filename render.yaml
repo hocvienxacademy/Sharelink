@@ -1,6 +1,6 @@
 databases:
   - name: sharelinkstudent-db
-    plan: basic-256mb
+    plan: free
     region: singapore
     databaseName: sharelinkstudent
     user: sharelinkstudent
@@ -10,11 +10,10 @@ services:
   - type: web
     name: sharelinkstudent-web
     runtime: node
-    plan: starter
+    plan: free
     region: singapore
     buildCommand: npm ci --include=dev && npm run build:render
-    preDeployCommand: npm run db:migrate:deploy
-    startCommand: npm start
+    startCommand: npm run start:render
     healthCheckPath: /api/health
     autoDeployTrigger: checksPass
     envVars:
@@ -52,3 +51,11 @@ services:
         value: info
       - key: ENABLE_HSTS
         value: "false"
+      - key: BOOTSTRAP_ADMIN_FULL_NAME
+        sync: false
+      - key: BOOTSTRAP_ADMIN_USERNAME
+        sync: false
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false

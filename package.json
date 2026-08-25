@@ -10,6 +10,7 @@
     "build": "tsx scripts/build.ts",
     "build:render": "npm run prisma:generate && npm run build",
     "start": "next start",
+    "start:render": "npm run db:migrate:deploy && npm run db:bootstrap:production-admin && npm start",
     "prisma:pull": "prisma db pull",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
