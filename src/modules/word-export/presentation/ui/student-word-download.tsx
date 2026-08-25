@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2Icon, DownloadIcon, LandmarkIcon } from "lucide-react";
+import { CheckCircle2Icon, DownloadIcon, LandmarkIcon, TriangleAlertIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,7 +85,17 @@ export function StudentWordDownload({
   return (
     <div className="grid min-w-0 gap-3 rounded-2xl border bg-card p-4 sm:p-5">
       {payment === undefined ? null : (
-        <Alert>
+        <>
+          {payment.account === null ? null : (
+            <Alert variant="destructive" className="min-w-0">
+              <TriangleAlertIcon aria-hidden="true" />
+              <AlertTitle>Lưu ý quan trọng</AlertTitle>
+              <AlertDescription>
+                <strong>Nội dung chuyển khoản phải điền theo cán bộ tư vấn.</strong>
+              </AlertDescription>
+            </Alert>
+          )}
+          <Alert>
           <LandmarkIcon />
           <AlertTitle>Thông tin chuyển khoản</AlertTitle>
           <AlertDescription>
@@ -100,7 +110,7 @@ export function StudentWordDownload({
                   <div>
                     <dt className="font-medium text-foreground">Ngân hàng</dt>
                     <dd>
-                      {payment.account.bankName} ({payment.account.bankCode})
+                      {payment.account.bankName}
                       {payment.account.branchName === null
                         ? ""
                         : " — " + payment.account.branchName}
@@ -172,7 +182,8 @@ export function StudentWordDownload({
               </p>
             ) : null}
           </AlertDescription>
-        </Alert>
+          </Alert>
+        </>
       )}
       <div>
         <h3 className="font-semibold">Tải phiếu dự tuyển Word</h3>

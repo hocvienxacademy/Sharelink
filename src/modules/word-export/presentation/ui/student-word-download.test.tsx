@@ -46,6 +46,12 @@ describe("StudentWordDownload", () => {
     });
     assert.equal(qrCode.getAttribute("src")?.includes("/images/QR.png"), true);
     assert.ok(screen.getByText("0123456789"));
+    assert.equal(screen.queryByText(/\(VCB\)/), null);
+    assert.ok(
+      screen.getByText(
+        "Nội dung chuyển khoản phải điền theo cán bộ tư vấn.",
+      ),
+    );
     assert.ok(screen.getByText(/260\.000/));
     const download = screen.getByRole("button", { name: /Tải file Word/ });
     assert.equal((download as HTMLButtonElement).disabled, true);
