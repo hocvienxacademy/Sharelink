@@ -37,7 +37,7 @@ export default function RegistrationLayout({
             <h1 className="mt-3 font-heading text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
               Đăng ký thông tin sinh viên
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
+            <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
               Hoàn thành từng bước, lưu bản nháp khi cần và kiểm tra kỹ thông tin trước khi nộp hồ sơ.
             </p>
           </div>
