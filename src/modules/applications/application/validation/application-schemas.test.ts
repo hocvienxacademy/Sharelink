@@ -7,6 +7,26 @@ import {
 } from "./application-schemas";
 
 describe("Word export text capacity validation", () => {
+  it("returns Vietnamese messages for invalid student form values", () => {
+    const result = createDraftApplicationSchema.safeParse({
+      majorId: "invalid",
+      dateOfBirth: "2026-99-99",
+      phone: "abc",
+      email: "bad",
+    });
+
+    assert.equal(result.success, false);
+    if (!result.success) {
+      const messages = result.error.issues.map((issue) => issue.message);
+      assert.deepEqual(messages, [
+        "Ngành đăng ký không hợp lệ.",
+        "Ngày không hợp lệ.",
+        "Số điện thoại phải gồm đúng 10 chữ số.",
+        "Email không đúng định dạng.",
+      ]);
+    }
+  });
+
   it("accepts values at the printable one-page boundary", () => {
     const result = createDraftApplicationSchema.safeParse({
       fullName: "A".repeat(WORD_EXPORT_TEXT_LIMITS.fullName),

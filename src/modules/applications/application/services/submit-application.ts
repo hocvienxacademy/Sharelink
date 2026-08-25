@@ -55,12 +55,12 @@ export class SubmitApplication {
     }
 
     if (!isApplicationSubmittable(application.status)) {
-      throw new ConflictError("The application has already been submitted.");
+      throw new ConflictError("Hồ sơ đã được nộp trước đó.");
     }
 
     if (application.version !== values.expectedVersion) {
       throw new ConflictError(
-        "The application was changed by another request.",
+        "Hồ sơ đã được thay đổi bởi một yêu cầu khác.",
       );
     }
 
@@ -69,7 +69,7 @@ export class SubmitApplication {
       application.majorId !== link.majorId
     ) {
       throw new ConflictError(
-        "The application major does not match the registration link.",
+        "Ngành đăng ký của hồ sơ không khớp với liên kết đăng ký.",
       );
     }
 
@@ -81,7 +81,7 @@ export class SubmitApplication {
         {
           path: ["majorId"],
           code: "invalid_major",
-          message: "The selected major is not available.",
+          message: "Ngành đã chọn không khả dụng.",
         },
       ]);
     }
@@ -132,7 +132,7 @@ export class SubmitApplication {
     if (issues.length > 0) {
       throw new ValidationError(
         issues,
-        "The application is incomplete and cannot be submitted.",
+        "Hồ sơ chưa đầy đủ nên chưa thể nộp.",
       );
     }
 

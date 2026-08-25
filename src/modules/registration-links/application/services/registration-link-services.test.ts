@@ -84,6 +84,17 @@ function validator(value: RegistrationLink | null) {
   );
 }
 
+const noPublicBankAccount = {
+  findPublicDefault: async () => null,
+};
+
+const noPublicPaymentSettings = {
+  execute: async () => ({
+    applicationFeeAmount: null,
+    paymentInstructions: null,
+  }),
+};
+
 describe("ValidateRegistrationLink", () => {
   it("rejects an unknown token", async () => {
     await assert.rejects(validator(null).execute(token), NotFoundError);
@@ -119,20 +130,61 @@ describe("ValidateRegistrationLink", () => {
 });
 
 describe("GetRegistrationContext", () => {
-  it("never exposes payment data in the public registration context", async () => {
+  it("exposes the major identifier when the registration link fixes the major", async () => {
+    const result = await new GetRegistrationContext(
+      validator(link({ majorId: major.id })),
+      new FakeCatalogRepository(),
+      noPublicBankAccount,
+      noPublicPaymentSettings,
+    ).execute(token);
+
+    assert.equal(result.majorId, major.id);
+    assert.deepEqual(result.majors, [
+      { id: major.id, code: major.code, name: major.name },
+    ]);
+  });
+
+  it("exposes only the configured public payment information", async () => {
     const result = await new GetRegistrationContext(
       validator(link({ applicationId: "22222222-2222-4222-8222-222222222222", applicationStatus: "SUBMITTED" })),
       new FakeCatalogRepository(),
+      {
+        findPublicDefault: async () => ({
+          bankCode: "VCB",
+          bankName: "Vietcombank",
+          branchName: "Trà Vinh",
+          accountNumber: "0123456789",
+          accountName: "TRƯỜNG ĐẠI HỌC TRÀ VINH",
+        }),
+      },
+      {
+        execute: async () => ({
+          applicationFeeAmount: 260_000,
+          paymentInstructions: "Ghi rõ họ tên và mã hồ sơ.",
+        }),
+      },
     ).execute(token);
 
-    assert.equal("payment" in result, false);
-    assert.equal(JSON.stringify(result).includes("accountNumber"), false);
+    assert.deepEqual(result.payment, {
+      account: {
+        bankCode: "VCB",
+        bankName: "Vietcombank",
+        branchName: "Trà Vinh",
+        accountNumber: "0123456789",
+        accountName: "TRƯỜNG ĐẠI HỌC TRÀ VINH",
+      },
+      applicationFeeAmount: 260_000,
+      instructions: "Ghi rõ họ tên và mã hồ sơ.",
+    });
+    assert.equal(JSON.stringify(result).includes(token), false);
   });
 
   it("does not return the token or internal link identifier", async () => {
     const service = new GetRegistrationContext(
       validator(link()),
       new FakeCatalogRepository(),
+      noPublicBankAccount,
+      noPublicPaymentSettings,
     );
 
     const result = await service.execute(token);
@@ -155,6 +207,8 @@ describe("GetRegistrationContext", () => {
     const service = new GetRegistrationContext(
       validator(link({ applicationId, applicationStatus: "DRAFT" })),
       new FakeCatalogRepository(),
+      noPublicBankAccount,
+      noPublicPaymentSettings,
     );
 
     const result = await service.execute(token);

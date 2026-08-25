@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type {
   EditableApplication,
   RegistrationContext,
@@ -9,6 +10,7 @@ import {
   RegistrationFormShellView,
   type RegistrationQueryClient,
 } from "./registration-form-shell";
+import type { ApplicationMutationClient } from "./application-form";
 
 const token = "11111111-1111-4111-8111-111111111111";
 const applicationId = "22222222-2222-4222-8222-222222222222";
@@ -18,11 +20,17 @@ function context(
 ): RegistrationContext {
   return {
     status: "ACTIVE",
+    majorId: null,
     majors: [],
     studentNameHint: null,
     entryQualification: null,
     hasApplication: false,
     application: null,
+    payment: {
+      account: null,
+      applicationFeeAmount: null,
+      instructions: null,
+    },
     ...overrides,
   };
 }
@@ -123,7 +131,7 @@ describe("registration form shell", () => {
     assert.equal(screen.queryByText("Thông tin thanh toán"), null);
   });
 
-  it("does not render payment information after submission", async () => {
+  it("shows a safe warning when payment information is not configured", async () => {
     const queryClient: RegistrationQueryClient = {
       getContext: async () => context({
         hasApplication: true,
@@ -133,7 +141,8 @@ describe("registration form shell", () => {
     };
     render(<RegistrationFormShellView token={token} applicationId={applicationId} queryClient={queryClient} replaceRoute={() => undefined} />);
     await screen.findByText("Hồ sơ không còn ở trạng thái bản nháp");
-    assert.equal(screen.queryByText(/thanh toán/i), null);
+    assert.ok(screen.getByText("Thông tin chuyển khoản"));
+    assert.ok(screen.getByText(/Chưa có tài khoản chuyển khoản mặc định/));
   });
 
   it("routes to the existing application URL", async () => {
@@ -160,6 +169,43 @@ describe("registration form shell", () => {
         `/dang-ky/${token}/ho-so/${applicationId}`,
       ]),
     );
+  });
+
+  it("keeps the current step after the first save-and-continue", async () => {
+    const user = userEvent.setup();
+    const routes: string[] = [];
+    const queryClient: RegistrationQueryClient = {
+      getContext: async () => context(),
+      getApplication: async () => editable(),
+    };
+    const mutationClient: ApplicationMutationClient = {
+      createDraft: async () => ({
+        id: applicationId,
+        status: "DRAFT",
+        version: 1,
+      }),
+      updateDraft: async () => editable(),
+      submit: async () => {
+        throw new Error("Không dùng trong test này.");
+      },
+    };
+
+    render(
+      <RegistrationFormShellView
+        token={token}
+        queryClient={queryClient}
+        mutationClient={mutationClient}
+        replaceRoute={(route) => routes.push(route)}
+      />,
+    );
+
+    await screen.findByLabelText(/Họ và tên/);
+    await user.click(screen.getByRole("button", { name: "Bước 2: Học vấn" }));
+    await user.type(screen.getByLabelText(/Ngành tốt nghiệp/), "Công nghệ thông tin");
+    await user.click(screen.getByRole("button", { name: "Lưu và tiếp tục" }));
+
+    await screen.findByText("Bước 3: Người thân");
+    assert.deepEqual(routes, []);
   });
 
   it("detects an inconsistent context that has no application identifier", async () => {

@@ -30,7 +30,7 @@ export class GetEditableApplication {
     }
 
     if (!isApplicationStudentEditable(application.status)) {
-      throw new ConflictError("The application is not editable.");
+      throw new ConflictError("Hồ sơ này không thể chỉnh sửa.");
     }
 
     return toEditableApplicationDto(application);

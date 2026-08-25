@@ -31,6 +31,12 @@ export function EducationSection({
           <ApplicationSelectField
             name="majorId"
             label="Ngành đăng ký"
+            disabled={context.majorId !== null}
+            description={
+              context.majorId === null
+                ? undefined
+                : "Ngành đăng ký đã được cố định theo liên kết."
+            }
             required
             options={context.majors.map((major) => ({
               value: major.id,
@@ -40,6 +46,12 @@ export function EducationSection({
           <ApplicationSelectField
             name="entryQualification"
             label="Đối tượng đầu vào"
+            disabled={context.entryQualification !== null}
+            description={
+              context.entryQualification === null
+                ? undefined
+                : "Đối tượng đầu vào đã được cố định theo liên kết."
+            }
             required
             options={ADMISSION_QUALIFICATION_OPTIONS}
           />

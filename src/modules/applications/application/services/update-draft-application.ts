@@ -41,12 +41,12 @@ export class UpdateDraftApplication {
     }
 
     if (!isApplicationStudentEditable(existing.status)) {
-      throw new ConflictError("The application is not editable.");
+      throw new ConflictError("Hồ sơ này không thể chỉnh sửa.");
     }
 
     if (existing.version !== values.expectedVersion) {
       throw new ConflictError(
-        "The application was changed by another request.",
+        "Hồ sơ đã được thay đổi bởi một yêu cầu khác.",
       );
     }
 

@@ -30,7 +30,7 @@ export class CreateDraftApplication {
         null
     ) {
       throw new ConflictError(
-        "An application already exists for this registration link.",
+        "Đã tồn tại hồ sơ cho liên kết đăng ký này.",
       );
     }
 

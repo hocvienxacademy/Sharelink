@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DownloadIcon } from "lucide-react";
+import { CheckCircle2Icon, DownloadIcon, LandmarkIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,16 +14,44 @@ function fileNameFrom(response: Response): string {
   return disposition.match(/filename="([^"]+)"/i)?.[1] ?? "phieu-du-tuyen.docx";
 }
 
+export interface StudentPaymentInformation {
+  readonly account: {
+    readonly accountName: string;
+    readonly accountNumber: string;
+    readonly bankCode: string;
+    readonly bankName: string;
+    readonly branchName: string | null;
+  } | null;
+  readonly applicationFeeAmount: number | null;
+  readonly instructions: string | null;
+}
+
+function formatMoney(amount: number): string {
+  return new Intl.NumberFormat("vi-VN", {
+    currency: "VND",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(amount);
+}
+
 export function StudentWordDownload({
   initialCode,
+  payment,
   token,
 }: {
   readonly initialCode?: string | null;
+  readonly payment?: StudentPaymentInformation;
   readonly token: string;
 }) {
   const [downloadCode, setDownloadCode] = useState(initialCode ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [paymentAcknowledged, setPaymentAcknowledged] = useState(false);
+  const requiresPaymentAcknowledgement =
+    payment !== undefined &&
+    (payment.account !== null ||
+      payment.applicationFeeAmount !== null ||
+      payment.instructions !== null);
 
   async function download(): Promise<void> {
     if (downloadCode.trim() === "" || busy) return;
@@ -56,6 +84,78 @@ export function StudentWordDownload({
 
   return (
     <div className="grid gap-3 rounded-2xl border bg-card p-5">
+      {payment === undefined ? null : (
+        <Alert>
+          <LandmarkIcon />
+          <AlertTitle>Thông tin chuyển khoản</AlertTitle>
+          <AlertDescription>
+            {payment.account === null ? (
+              <p>
+                Chưa có tài khoản chuyển khoản mặc định. Vui lòng liên hệ đơn vị
+                tuyển sinh trước khi thanh toán.
+              </p>
+            ) : (
+              <dl className="grid gap-2 sm:grid-cols-2">
+                <div>
+                  <dt className="font-medium text-foreground">Ngân hàng</dt>
+                  <dd>
+                    {payment.account.bankName} ({payment.account.bankCode})
+                    {payment.account.branchName === null
+                      ? ""
+                      : " — " + payment.account.branchName}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Số tài khoản</dt>
+                  <dd className="font-semibold text-foreground">
+                    {payment.account.accountNumber}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Chủ tài khoản</dt>
+                  <dd className="font-semibold text-foreground">
+                    {payment.account.accountName}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-foreground">Phí nộp hồ sơ</dt>
+                  <dd className="font-semibold text-foreground">
+                    {payment.applicationFeeAmount === null
+                      ? "Chưa được cấu hình"
+                      : formatMoney(payment.applicationFeeAmount)}
+                  </dd>
+                </div>
+              </dl>
+            )}
+            {payment.instructions === null ? null : (
+              <p className="mt-3 whitespace-pre-wrap">
+                {payment.instructions}
+              </p>
+            )}
+            {requiresPaymentAcknowledgement && !paymentAcknowledged ? (
+              <>
+                <p className="mt-3">
+                  Thao tác dưới đây chỉ xác nhận bạn đã đọc thông tin, không
+                  phải xác nhận đã thanh toán.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-3"
+                  onClick={() => setPaymentAcknowledged(true)}
+                >
+                  Tôi đã đọc và lưu lại thông tin
+                </Button>
+              </>
+            ) : requiresPaymentAcknowledgement ? (
+              <p className="mt-3 flex items-center gap-2 font-medium text-foreground">
+                <CheckCircle2Icon aria-hidden="true" />
+                Đã ghi nhận bạn đã đọc thông tin chuyển khoản
+              </p>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      )}
       <div>
         <h3 className="font-semibold">Tải phiếu dự tuyển Word</h3>
         <p className="text-sm text-muted-foreground">
@@ -80,7 +180,15 @@ export function StudentWordDownload({
           value={downloadCode}
           onChange={(event) => setDownloadCode(event.target.value)}
         />
-        <Button type="button" disabled={busy || downloadCode.trim() === ""} onClick={() => void download()}>
+        <Button
+          type="button"
+          disabled={
+            busy ||
+            downloadCode.trim() === "" ||
+            (requiresPaymentAcknowledgement && !paymentAcknowledged)
+          }
+          onClick={() => void download()}
+        >
           {busy ? <Spinner data-icon="inline-start" /> : <DownloadIcon data-icon="inline-start" />}
           Tải file Word
         </Button>

@@ -83,7 +83,6 @@ interface ApplicationFormProps {
   readonly application?: EditableApplication;
   readonly context: RegistrationContext;
   readonly mutationClient?: ApplicationMutationClient;
-  readonly onApplicationCreated?: (applicationId: string) => void;
   readonly onReload?: () => void;
   readonly onSubmitted?: (result: SubmittedApplication) => void;
   readonly token: string;
@@ -98,7 +97,6 @@ export function ApplicationForm({
   application,
   context,
   mutationClient = defaultMutationClient,
-  onApplicationCreated,
   onReload,
   onSubmitted,
   token,
@@ -244,7 +242,6 @@ export function ApplicationForm({
       setApplicationId(draft.id);
       setVersion(draft.version);
       reset(values);
-      onApplicationCreated?.(draft.id);
 
       return {
         applicationId: draft.id,
@@ -343,7 +340,11 @@ export function ApplicationForm({
             trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
           </AlertDescription>
         </Alert>
-        <StudentWordDownload token={token} initialCode={submitted.downloadCode} />
+        <StudentWordDownload
+          token={token}
+          initialCode={submitted.downloadCode}
+          payment={context.payment}
+        />
       </div>
     );
   }

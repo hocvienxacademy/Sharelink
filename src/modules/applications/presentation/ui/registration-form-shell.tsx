@@ -29,7 +29,10 @@ import {
   type EditableApplication,
   type RegistrationContext,
 } from "./application-api-client";
-import { ApplicationForm } from "./application-form";
+import {
+  ApplicationForm,
+  type ApplicationMutationClient,
+} from "./application-form";
 import { StudentWordDownload } from "@/modules/word-export/presentation/ui/student-word-download";
 
 export interface RegistrationQueryClient {
@@ -146,11 +149,13 @@ function RegistrationContextHeader({
 
 export function RegistrationFormShellView({
   applicationId,
+  mutationClient,
   queryClient = defaultQueryClient,
   replaceRoute,
   token,
 }: {
   readonly applicationId?: string;
+  readonly mutationClient?: ApplicationMutationClient;
   readonly queryClient?: RegistrationQueryClient;
   readonly replaceRoute: (route: string) => void;
   readonly token: string;
@@ -322,7 +327,11 @@ export function RegistrationFormShellView({
           title="Hồ sơ không còn ở trạng thái bản nháp"
           description="Hồ sơ đã được nộp hoặc đang được xử lý. Giao diện chỉnh sửa đã được khóa."
         />
-        <StudentWordDownload token={token} initialCode={submittedDownloadCode} />
+        <StudentWordDownload
+          token={token}
+          initialCode={submittedDownloadCode}
+          payment={state.context.payment}
+        />
       </div>
     );
   }
@@ -334,9 +343,7 @@ export function RegistrationFormShellView({
         token={token}
         context={state.context}
         application={state.application}
-        onApplicationCreated={(id) =>
-          replaceRoute(applicationRoute(token, id))
-        }
+        mutationClient={mutationClient}
         onReload={() => setReloadCounter((value) => value + 1)}
         onSubmitted={(result) => setSubmittedDownloadCode(result.downloadCode)}
       />

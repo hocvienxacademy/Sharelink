@@ -14,18 +14,29 @@ describe("application API client", () => {
         success: true,
         data: {
           status: "ACTIVE",
+          majorId: null,
           majors: [],
           studentNameHint: null,
           entryQualification: null,
           hasApplication: false,
           application: null,
+          payment: {
+            account: null,
+            applicationFeeAmount: null,
+            instructions: null,
+          },
         },
       }),
     );
 
     assert.equal("admissionPeriod" in result, false);
+    assert.equal(result.majorId, null);
     assert.equal(result.application, null);
-    assert.equal("payment" in result, false);
+    assert.deepEqual(result.payment, {
+      account: null,
+      applicationFeeAmount: null,
+      instructions: null,
+    });
   });
 
   it("preserves every validation issue returned by the API", async () => {

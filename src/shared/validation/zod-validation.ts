@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import { ValidationError } from "../errors/index";
+import { toVietnameseValidationMessage } from "./vietnamese-validation-message";
 
 export function parseWithSchema<TSchema extends z.ZodType>(
   schema: TSchema,
@@ -15,7 +16,7 @@ export function parseWithSchema<TSchema extends z.ZodType>(
           typeof segment === "symbol" ? segment.description ?? "symbol" : segment,
         ),
         code: issue.code,
-        message: issue.message,
+        message: toVietnameseValidationMessage(issue.message, issue.code),
       })),
       message,
     );

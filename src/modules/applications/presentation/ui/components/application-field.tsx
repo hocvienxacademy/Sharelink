@@ -147,12 +147,14 @@ export function ApplicationTextField({
 
 export function ApplicationSelectField({
   description,
+  disabled = false,
   label,
   name,
   optional,
   options,
   required,
 }: BaseFieldProps & {
+  readonly disabled?: boolean;
   readonly options: readonly FieldOption[];
 }) {
   const { control } = useFormContext<ApplicationFormValues>();
@@ -172,6 +174,7 @@ export function ApplicationSelectField({
             />
           </FieldLabel>
           <Select
+            disabled={disabled}
             items={options}
             value={typeof field.value === "string" ? field.value : null}
             onValueChange={(value) => field.onChange(value ?? null)}

@@ -1,5 +1,6 @@
 import { NotFoundError } from "../../../../shared/errors/index";
 import {
+  type BankAccountManagementRepository,
   type CatalogRepository,
   toMajorItemDto,
 } from "../../../catalogs/index";
@@ -10,19 +11,33 @@ export class GetRegistrationContext {
   constructor(
     private readonly validateRegistrationLink: ValidateRegistrationLink,
     private readonly catalogRepository: CatalogRepository,
+    private readonly bankAccountRepository: Pick<
+      BankAccountManagementRepository,
+      "findPublicDefault"
+    >,
+    private readonly publicSystemSettings: {
+      execute(): Promise<{
+        readonly applicationFeeAmount: number | null;
+        readonly paymentInstructions: string | null;
+      }>;
+    },
   ) {}
 
   async execute(tokenInput: unknown): Promise<RegistrationContextDto> {
     const { link } = await this.validateRegistrationLink.execute(tokenInput);
 
-    const majors =
+    const [majors, account, settings] = await Promise.all([
       link.majorId === null
-        ? await this.catalogRepository.listActiveMajors()
-        : await this.getFixedMajor(link.majorId);
+        ? this.catalogRepository.listActiveMajors()
+        : this.getFixedMajor(link.majorId),
+      this.bankAccountRepository.findPublicDefault(),
+      this.publicSystemSettings.execute(),
+    ]);
 
     return {
       status: link.status,
       majors: majors.map(toMajorItemDto),
+      majorId: link.majorId,
       studentNameHint: link.studentNameHint,
       entryQualification: link.entryQualification,
       hasApplication: link.applicationId !== null,
@@ -33,6 +48,11 @@ export class GetRegistrationContext {
               id: link.applicationId,
               status: link.applicationStatus,
             },
+      payment: {
+        account,
+        applicationFeeAmount: settings.applicationFeeAmount,
+        instructions: settings.paymentInstructions,
+      },
     };
   }
 

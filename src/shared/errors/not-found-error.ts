@@ -3,6 +3,7 @@ import { ERROR_CODES } from "./error-code";
 
 export class NotFoundError extends ApplicationError {
   constructor(resourceName = "Resource", options: { cause?: unknown } = {}) {
-    super(`${resourceName} was not found.`, ERROR_CODES.NOT_FOUND, 404, options);
+    void resourceName;
+    super("Không tìm thấy dữ liệu yêu cầu.", ERROR_CODES.NOT_FOUND, 404, options);
   }
 }

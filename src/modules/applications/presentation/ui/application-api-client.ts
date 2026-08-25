@@ -32,6 +32,7 @@ const registrationContextSchema = z.object({
       name: z.string(),
     }),
   ),
+  majorId: z.uuid().nullable(),
   studentNameHint: z.string().nullable(),
   entryQualification: z.enum(ADMISSION_QUALIFICATIONS).nullable(),
   hasApplication: z.boolean(),
@@ -41,6 +42,19 @@ const registrationContextSchema = z.object({
       status: z.string(),
     })
     .nullable(),
+  payment: z.object({
+    account: z
+      .object({
+        bankCode: z.string(),
+        bankName: z.string(),
+        branchName: z.string().nullable(),
+        accountNumber: z.string(),
+        accountName: z.string(),
+      })
+      .nullable(),
+    applicationFeeAmount: z.number().int().positive().nullable(),
+    instructions: z.string().nullable(),
+  }),
 });
 
 const draftApplicationSchema = z.object({

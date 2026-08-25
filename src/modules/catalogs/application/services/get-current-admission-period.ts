@@ -26,7 +26,7 @@ export class GetCurrentAdmissionPeriod {
 
     if (currentPeriods.length > 1) {
       throw new ConflictError(
-        "Multiple admission periods are open at the same time.",
+        "Có nhiều kỳ tuyển sinh đang mở cùng lúc.",
       );
     }
 

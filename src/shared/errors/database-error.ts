@@ -4,7 +4,7 @@ import { ERROR_CODES } from "./error-code";
 export class DatabaseError extends ApplicationError {
   constructor(options: { cause?: unknown } = {}) {
     super(
-      "The data operation could not be completed.",
+      "Không thể hoàn tất thao tác dữ liệu.",
       ERROR_CODES.DATABASE_ERROR,
       500,
       options,

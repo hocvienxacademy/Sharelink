@@ -11,13 +11,14 @@ export async function resolveMajorId(
   if (link.majorId !== null) {
     if (
       requestedMajorId !== undefined &&
+      requestedMajorId !== null &&
       requestedMajorId !== link.majorId
     ) {
       throw new ValidationError([
         {
           path: ["majorId"],
           code: "fixed_major",
-          message: "The major is fixed by the registration link.",
+          message: "Ngành đăng ký đã được cố định theo liên kết.",
         },
       ]);
     }
@@ -42,7 +43,7 @@ export async function resolveMajorId(
       {
         path: ["majorId"],
         code: "invalid_major",
-        message: "The selected major is not available.",
+        message: "Ngành đã chọn không khả dụng.",
       },
     ]);
   }
@@ -60,14 +61,14 @@ export function resolveEntryQualification(
 
   if (
     requestedQualification !== undefined &&
+    requestedQualification !== null &&
     requestedQualification !== link.entryQualification
   ) {
     throw new ValidationError([
       {
         path: ["entryQualification"],
         code: "fixed_entry_qualification",
-        message:
-          "The entry qualification is fixed by the registration link.",
+        message: "Đối tượng đầu vào đã được cố định theo liên kết.",
       },
     ]);
   }

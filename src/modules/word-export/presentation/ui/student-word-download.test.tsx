@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { StudentWordDownload } from "./student-word-download";
 
 afterEach(cleanup);
@@ -17,5 +18,39 @@ describe("StudentWordDownload", () => {
     render(<StudentWordDownload token="11111111-1111-4111-8111-111111111111" />);
     assert.equal((screen.getByLabelText("Mã tải phiếu Word") as HTMLInputElement).value, "");
     assert.equal((screen.getByRole("button", { name: /Tải file Word/ }) as HTMLButtonElement).disabled, true);
+  });
+
+  it("requires acknowledgement of transfer details before downloading", async () => {
+    const user = userEvent.setup();
+    render(
+      <StudentWordDownload
+        token="11111111-1111-4111-8111-111111111111"
+        initialCode="ASNFZ4mrze8BI0VniavN7w"
+        payment={{
+          account: {
+            bankCode: "VCB",
+            bankName: "Vietcombank",
+            branchName: "Trà Vinh",
+            accountNumber: "0123456789",
+            accountName: "TRƯỜNG ĐẠI HỌC TRÀ VINH",
+          },
+          applicationFeeAmount: 260_000,
+          instructions: "Ghi rõ họ tên và mã hồ sơ.",
+        }}
+      />,
+    );
+
+    assert.ok(screen.getByText("Thông tin chuyển khoản"));
+    assert.ok(screen.getByText("0123456789"));
+    assert.ok(screen.getByText(/260\.000/));
+    const download = screen.getByRole("button", { name: /Tải file Word/ });
+    assert.equal((download as HTMLButtonElement).disabled, true);
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Tôi đã đọc và lưu lại thông tin",
+      }),
+    );
+    assert.equal((download as HTMLButtonElement).disabled, false);
   });
 });

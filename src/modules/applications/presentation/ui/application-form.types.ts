@@ -63,6 +63,9 @@ export function initialFormValues(
     return {
       ...EMPTY_APPLICATION_FORM,
       ...values,
+      majorId: context.majorId ?? values.majorId,
+      entryQualification:
+        context.entryQualification ?? values.entryQualification,
       relatives: values.relatives.map((relative, index) => ({
         ...relative,
         position: index + 1,
@@ -72,6 +75,7 @@ export function initialFormValues(
 
   return {
     ...EMPTY_APPLICATION_FORM,
+    majorId: context.majorId,
     fullName: context.studentNameHint,
     entryQualification: context.entryQualification,
   };

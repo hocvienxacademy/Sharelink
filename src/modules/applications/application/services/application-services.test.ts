@@ -307,6 +307,29 @@ function dependencies(
 }
 
 describe("CreateDraftApplication", () => {
+  it("applies selections fixed by the link when the form sends null", async () => {
+    const { catalogs, validateLink } = dependencies(
+      registrationLink({
+        majorId: major.id,
+        entryQualification: "THPT",
+      }),
+    );
+    const repository = new FakeApplicationRepository();
+    const service = new CreateDraftApplication(
+      validateLink,
+      catalogs,
+      repository,
+    );
+
+    await service.execute(token, {
+      majorId: null,
+      entryQualification: null,
+    });
+
+    assert.equal(repository.current?.majorId, major.id);
+    assert.equal(repository.current?.entryQualification, "THPT");
+  });
+
   it("creates a draft with server-owned relationship values", async () => {
     const { catalogs, validateLink } = dependencies();
     const repository = new FakeApplicationRepository();

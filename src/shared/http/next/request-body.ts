@@ -26,7 +26,7 @@ export async function readJsonBody(
   }
 
   if (request.body === null) {
-    throw new BadRequestError("The request body must contain valid JSON.");
+    throw new BadRequestError("Nội dung yêu cầu phải là JSON hợp lệ.");
   }
 
   const reader = request.body.getReader();
@@ -54,16 +54,16 @@ export async function readJsonBody(
   try {
     body = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
-    throw new BadRequestError("The request body must contain valid JSON.");
+    throw new BadRequestError("Nội dung yêu cầu phải là JSON hợp lệ.");
   }
 
   if (body.trim().length === 0) {
-    throw new BadRequestError("The request body must contain valid JSON.");
+    throw new BadRequestError("Nội dung yêu cầu phải là JSON hợp lệ.");
   }
 
   try {
     return JSON.parse(body) as unknown;
   } catch {
-    throw new BadRequestError("The request body must contain valid JSON.");
+    throw new BadRequestError("Nội dung yêu cầu phải là JSON hợp lệ.");
   }
 }

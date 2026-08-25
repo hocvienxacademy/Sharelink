@@ -8,6 +8,7 @@ const token = "11111111-1111-4111-8111-111111111111";
 
 const contextDto: RegistrationContextDto = {
   status: "ACTIVE",
+  majorId: "33333333-3333-4333-8333-333333333333",
   majors: [
     {
       id: "33333333-3333-4333-8333-333333333333",
@@ -19,6 +20,11 @@ const contextDto: RegistrationContextDto = {
   entryQualification: "THPT",
   hasApplication: false,
   application: null,
+  payment: {
+    account: null,
+    applicationFeeAmount: null,
+    instructions: null,
+  },
 };
 
 function routeContext(value: string) {
@@ -37,7 +43,8 @@ describe("GET registration context HTTP handler", () => {
     assert.equal(response.status, 200);
     const responseText = await response.text();
     assert.doesNotMatch(responseText, /"admissionPeriod"/);
-    assert.doesNotMatch(responseText, /"payment"/);
+    assert.match(responseText, /"payment"/);
+    assert.doesNotMatch(responseText, new RegExp(token));
   });
 
   it("rejects a malformed token before calling the service", async () => {

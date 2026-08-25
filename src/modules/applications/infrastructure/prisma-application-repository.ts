@@ -347,7 +347,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
 
         if (updateResult.count !== 1) {
           throw new ConflictError(
-            "The application was changed by another request.",
+            "Hồ sơ đã được thay đổi bởi một yêu cầu khác.",
           );
         }
 
@@ -387,7 +387,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
 
         if (updateResult.count !== 1) {
           throw new ConflictError(
-            "The application was changed or already submitted.",
+            "Hồ sơ đã được thay đổi hoặc đã được nộp.",
           );
         }
 
@@ -429,7 +429,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
         where: { id: input.applicationId, status: input.expectedStatus, version: input.expectedVersion, ...scope },
         data: { ...mapEditableData(input.values), major_id: input.majorId, entry_qualification: input.entryQualification, updated_at: now, version: { increment: 1 } },
       });
-      if (result.count !== 1) throw new ConflictError("The application was changed or is outside the allowed scope.");
+      if (result.count !== 1) throw new ConflictError("Hồ sơ đã được thay đổi hoặc nằm ngoài phạm vi cho phép.");
       if (input.values.relatives !== undefined) await synchronizeRelatives(transaction, input.applicationId, input.values.relatives, now);
       await transaction.audit_logs.create({ data: {
         actor_id: input.actorId, action: "APPLICATION_CONTENT_UPDATED", entity_type: "application", entity_id: input.applicationId,
@@ -448,7 +448,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
         where: { id: input.applicationId, status: "SUBMITTED", version: input.expectedVersion, ...scope },
         data: { status: input.newStatus, reviewed_by: input.actorId, reviewed_at: input.reviewedAt, updated_at: input.reviewedAt, version: { increment: 1 } },
       });
-      if (result.count !== 1) throw new ConflictError("The application was changed or is not reviewable.");
+      if (result.count !== 1) throw new ConflictError("Hồ sơ đã được thay đổi hoặc không thể xét duyệt.");
       await transaction.application_status_histories.create({ data: {
         application_id: input.applicationId, previous_status: "SUBMITTED", new_status: input.newStatus,
         changed_by: input.actorId, reason: input.reason,

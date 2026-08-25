@@ -1,4 +1,5 @@
 import type { ValidationIssue } from "./application-api-client";
+import { toVietnameseValidationMessage } from "../../../../shared/validation/index";
 
 const fieldLabels: Readonly<Record<string, string>> = {
   majorId: "Ngành đăng ký",
@@ -103,7 +104,10 @@ export function mapValidationIssues(
       continue;
     }
 
-    fieldErrors[path] = [...(fieldErrors[path] ?? []), issue.message];
+    fieldErrors[path] = [
+      ...(fieldErrors[path] ?? []),
+      toVietnameseValidationMessage(issue.message, issue.code),
+    ];
     firstField ??= path;
 
     const label = labelForPath(path);

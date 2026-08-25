@@ -49,4 +49,18 @@ describe("application validation error mapper", () => {
     assert.deepEqual(result.summaryItems, ["CCCD hoặc giấy tờ định danh"]);
     assert.equal(JSON.stringify(result.summaryItems).includes(sensitiveValue), false);
   });
+
+  it("does not expose English validation messages to the student", () => {
+    const result = mapValidationIssues([
+      {
+        path: ["majorId"],
+        code: "invalid_format",
+        message: "Invalid UUID",
+      },
+    ]);
+
+    assert.deepEqual(result.fieldErrors.majorId, [
+      "Định dạng dữ liệu không hợp lệ.",
+    ]);
+  });
 });

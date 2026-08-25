@@ -16,6 +16,7 @@ const applicationId = "22222222-2222-4222-8222-222222222222";
 
 const context: RegistrationContext = {
   status: "ACTIVE",
+  majorId: "33333333-3333-4333-8333-333333333333",
   majors: [
     {
       id: "33333333-3333-4333-8333-333333333333",
@@ -27,6 +28,11 @@ const context: RegistrationContext = {
   entryQualification: null,
   hasApplication: false,
   application: null,
+  payment: {
+    account: null,
+    applicationFeeAmount: null,
+    instructions: null,
+  },
 };
 
 function editable(version: number): EditableApplication {
@@ -76,6 +82,17 @@ describe("student application form", () => {
     assert.equal(screen.queryByText("Người thân 1"), null);
   });
 
+  it("prefills and locks the major fixed by the registration link", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationForm token={token} context={context} />);
+
+    await user.click(screen.getByRole("button", { name: "Bước 2: Học vấn" }));
+
+    const major = screen.getByRole("combobox", { name: /Ngành đăng ký/ });
+    assert.match(major.textContent ?? "", /^CNTT — Công nghệ thông tin/);
+    assert.equal(major.hasAttribute("disabled"), true);
+  });
+
   it("adds at most two relatives and renumbers after removal", async () => {
     const user = userEvent.setup();
     render(<ApplicationForm token={token} context={context} />);
@@ -105,7 +122,6 @@ describe("student application form", () => {
   it("creates a draft once, then updates with the latest expectedVersion", async () => {
     const user = userEvent.setup();
     const updateVersions: number[] = [];
-    let createdId: string | null = null;
 
     const mutationClient: ApplicationMutationClient = {
       createDraft: async (): Promise<DraftApplication> => ({
@@ -131,17 +147,15 @@ describe("student application form", () => {
         token={token}
         context={context}
         mutationClient={mutationClient}
-        onApplicationCreated={(id) => {
-          createdId = id;
-        }}
       />,
     );
 
     await user.type(screen.getByLabelText(/Họ và tên/), "Nguyễn Văn A");
     await user.click(screen.getByRole("button", { name: "Lưu bản nháp" }));
 
-    await waitFor(() => assert.equal(createdId, applicationId));
-    assert.match(screen.getByRole("status").textContent ?? "", /Đã lưu/);
+    await waitFor(() =>
+      assert.match(screen.getByRole("status").textContent ?? "", /Đã lưu/),
+    );
 
     await user.type(screen.getByLabelText(/Quốc tịch/), "Việt Nam");
     await user.click(screen.getByRole("button", { name: "Lưu bản nháp" }));

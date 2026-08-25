@@ -40,25 +40,28 @@ function optionalNullableString(maxLength: number) {
 
 const dateOnlySchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected date format YYYY-MM-DD.")
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ.")
   .refine((value) => {
     const parsed = new Date(`${value}T00:00:00.000Z`);
     return (
       !Number.isNaN(parsed.getTime()) &&
       parsed.toISOString().slice(0, 10) === value
     );
-  }, "Expected a valid calendar date.");
+  }, "Ngày không hợp lệ.");
 
 export const applicationRelativeInputSchema = z
   .object({
-    position: z.int().min(1).max(2),
+    position: z
+      .int("Vị trí người thân không hợp lệ.")
+      .min(1, "Vị trí người thân phải từ 1 đến 2.")
+      .max(2, "Vị trí người thân phải từ 1 đến 2."),
     fullName: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeFullName),
     relationship: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeRelationship),
     occupation: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeOccupation),
     phone: z
       .string()
       .trim()
-      .regex(/^[0-9]{10,15}$/)
+      .regex(/^[0-9]{10,15}$/, "Số điện thoại người thân phải gồm từ 10 đến 15 chữ số.")
       .nullable()
       .optional(),
     address: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.relativeAddress),
@@ -67,7 +70,7 @@ export const applicationRelativeInputSchema = z
 
 const relativesSchema = z
   .array(applicationRelativeInputSchema)
-  .max(2)
+  .max(2, "Chỉ được cung cấp tối đa hai người thân.")
   .superRefine((relatives, context) => {
     const positions = new Set<number>();
 
@@ -76,7 +79,7 @@ const relativesSchema = z
         context.addIssue({
           code: "custom",
           path: [index, "position"],
-          message: "Relative positions must be unique.",
+          message: "Vị trí người thân không được trùng nhau.",
         });
       }
 
@@ -85,10 +88,13 @@ const relativesSchema = z
   });
 
 const draftFields = {
-  majorId: z.uuid().nullable().optional(),
-  entryQualification: z.enum(ADMISSION_QUALIFICATIONS).nullable().optional(),
+  majorId: z.uuid("Ngành đăng ký không hợp lệ.").nullable().optional(),
+  entryQualification: z
+    .enum(ADMISSION_QUALIFICATIONS, "Đối tượng đầu vào không hợp lệ.")
+    .nullable()
+    .optional(),
   fullName: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.fullName),
-  gender: z.enum(GENDERS).nullable().optional(),
+  gender: z.enum(GENDERS, "Giới tính không hợp lệ.").nullable().optional(),
   dateOfBirth: dateOnlySchema.nullable().optional(),
   placeOfBirth: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.placeOfBirth),
   ethnicity: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.ethnicity),
@@ -97,27 +103,46 @@ const draftFields = {
   citizenId: z
     .string()
     .trim()
-    .regex(/^[0-9]{9,12}$/)
+    .regex(/^[0-9]{9,12}$/, "Số giấy tờ định danh phải gồm từ 9 đến 12 chữ số.")
     .nullable()
     .optional(),
   citizenIdIssuedDate: dateOnlySchema.nullable().optional(),
   citizenIdIssuedPlace: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.citizenIdIssuedPlace),
   permanentAddress: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.permanentAddress),
   workplace: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.workplace),
-  phone: z.string().trim().regex(/^[0-9]{10}$/).nullable().optional(),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[0-9]{10}$/, "Số điện thoại phải gồm đúng 10 chữ số.")
+    .nullable()
+    .optional(),
   email: z
     .string()
     .trim()
-    .pipe(z.email().max(WORD_EXPORT_TEXT_LIMITS.email))
+    .pipe(
+      z
+        .email("Email không đúng định dạng.")
+        .max(
+          WORD_EXPORT_TEXT_LIMITS.email,
+          "Email không được vượt quá " +
+            WORD_EXPORT_TEXT_LIMITS.email +
+            " ký tự.",
+        ),
+    )
     .nullable()
     .optional(),
   contactAddress: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.contactAddress),
   admissionDiploma: z
-    .enum(ADMISSION_QUALIFICATIONS)
+    .enum(ADMISSION_QUALIFICATIONS, "Bằng đăng ký xét tuyển không hợp lệ.")
     .nullable()
     .optional(),
   graduateMajor: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.graduateMajor),
-  graduationYear: z.int().min(1950).max(2100).nullable().optional(),
+  graduationYear: z
+    .int("Năm tốt nghiệp không hợp lệ.")
+    .min(1950, "Năm tốt nghiệp phải từ 1950 đến 2100.")
+    .max(2100, "Năm tốt nghiệp phải từ 1950 đến 2100.")
+    .nullable()
+    .optional(),
   highSchoolName: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.highSchoolName),
   highSchoolWard: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.highSchoolWard),
   highSchoolProvince: optionalNullableString(WORD_EXPORT_TEXT_LIMITS.highSchoolProvince),
@@ -138,17 +163,17 @@ export const updateDraftApplicationSchema = z
   .object({
     ...draftFields,
     relatives: relativesSchema.optional(),
-    expectedVersion: z.int().min(1),
+    expectedVersion: z.int("Phiên bản hồ sơ không hợp lệ.").min(1, "Phiên bản hồ sơ không hợp lệ."),
   })
   .strict();
 
 export const submitApplicationSchema = z
   .object({
-    expectedVersion: z.int().min(1),
+    expectedVersion: z.int("Phiên bản hồ sơ không hợp lệ.").min(1, "Phiên bản hồ sơ không hợp lệ."),
   })
   .strict();
 
-export const applicationIdentifierSchema = z.uuid();
+export const applicationIdentifierSchema = z.uuid("Mã hồ sơ không hợp lệ.");
 
 export type CreateDraftApplicationInput = z.infer<
   typeof createDraftApplicationSchema
