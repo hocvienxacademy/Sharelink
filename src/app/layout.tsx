@@ -12,11 +12,6 @@ export const metadata: Metadata = {
     template: "%s | Đại học Trà Vinh",
   },
   description: "Hệ thống đăng ký thông tin sinh viên",
-  icons: {
-    icon: [{ url: "/images/logoTVU.jpg", type: "image/jpeg" }],
-    shortcut: [{ url: "/images/logoTVU.jpg", type: "image/jpeg" }],
-    apple: [{ url: "/images/logoTVU.jpg", type: "image/jpeg" }],
-  },
 };
 
 export default function RootLayout({
