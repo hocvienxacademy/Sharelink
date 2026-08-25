@@ -85,17 +85,7 @@ export function StudentWordDownload({
   return (
     <div className="grid min-w-0 gap-3 rounded-2xl border bg-card p-4 sm:p-5">
       {payment === undefined ? null : (
-        <>
-          {payment.account === null ? null : (
-            <Alert variant="destructive" className="min-w-0">
-              <TriangleAlertIcon aria-hidden="true" />
-              <AlertTitle>Lưu ý quan trọng</AlertTitle>
-              <AlertDescription>
-                <strong>Nội dung chuyển khoản phải điền theo cán bộ tư vấn.</strong>
-              </AlertDescription>
-            </Alert>
-          )}
-          <Alert>
+        <Alert>
           <LandmarkIcon />
           <AlertTitle>Thông tin chuyển khoản</AlertTitle>
           <AlertDescription>
@@ -106,37 +96,46 @@ export function StudentWordDownload({
               </p>
             ) : (
               <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-start">
-                <dl className="grid gap-2 sm:grid-cols-2">
-                  <div>
-                    <dt className="font-medium text-foreground">Ngân hàng</dt>
-                    <dd>
-                      {payment.account.bankName}
-                      {payment.account.branchName === null
-                        ? ""
-                        : " — " + payment.account.branchName}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-foreground">Số tài khoản</dt>
-                    <dd className="font-semibold text-foreground">
-                      {payment.account.accountNumber}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-foreground">Chủ tài khoản</dt>
-                    <dd className="font-semibold text-foreground">
-                      {payment.account.accountName}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium text-foreground">Phí nộp hồ sơ</dt>
-                    <dd className="font-semibold text-foreground">
-                      {payment.applicationFeeAmount === null
-                        ? "Chưa được cấu hình"
-                        : formatMoney(payment.applicationFeeAmount)}
-                    </dd>
-                  </div>
-                </dl>
+                <div className="flex min-w-0 flex-col gap-4">
+                  <dl className="grid gap-2 sm:grid-cols-2">
+                    <div>
+                      <dt className="font-medium text-foreground">Ngân hàng</dt>
+                      <dd>
+                        {payment.account.bankName}
+                        {payment.account.branchName === null
+                          ? ""
+                          : " — " + payment.account.branchName}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium text-foreground">Số tài khoản</dt>
+                      <dd className="font-semibold text-foreground">
+                        {payment.account.accountNumber}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium text-foreground">Chủ tài khoản</dt>
+                      <dd className="font-semibold text-foreground">
+                        {payment.account.accountName}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-medium text-foreground">Phí nộp hồ sơ</dt>
+                      <dd className="font-semibold text-foreground">
+                        {payment.applicationFeeAmount === null
+                          ? "Chưa được cấu hình"
+                          : formatMoney(payment.applicationFeeAmount)}
+                      </dd>
+                    </div>
+                  </dl>
+                  <Alert role="note" variant="destructive" className="min-w-0">
+                    <TriangleAlertIcon aria-hidden="true" />
+                    <AlertTitle className="text-base sm:text-lg">Lưu ý quan trọng</AlertTitle>
+                    <AlertDescription className="text-base leading-6 sm:text-lg sm:leading-7">
+                      <strong>Nội dung chuyển khoản phải điền theo cán bộ tư vấn.</strong>
+                    </AlertDescription>
+                  </Alert>
+                </div>
                 <figure className="flex flex-col items-center gap-2">
                   {/* The QR must stay lossless so banking apps can scan the original PNG. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -182,8 +181,7 @@ export function StudentWordDownload({
               </p>
             ) : null}
           </AlertDescription>
-          </Alert>
-        </>
+        </Alert>
       )}
       <div>
         <h3 className="font-semibold">Tải phiếu dự tuyển Word</h3>
