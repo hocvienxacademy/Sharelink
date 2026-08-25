@@ -4,14 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangleIcon,
   CheckCircle2Icon,
-  GraduationCapIcon,
   RefreshCwIcon,
-  ShieldCheckIcon,
   WifiOffIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -112,42 +109,6 @@ function StateAlert({
         )}
       </AlertDescription>
     </Alert>
-  );
-}
-
-function RegistrationContextHeader({
-  context,
-}: {
-  readonly context: RegistrationContext;
-}) {
-  return (
-    <Card className="rounded-2xl bg-primary text-primary-foreground sm:rounded-[2rem]">
-      <CardHeader>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="secondary">Liên kết đang hoạt động</Badge>
-        </div>
-        <CardTitle className="text-xl">
-          Đăng ký hồ sơ tuyển sinh
-        </CardTitle>
-        <CardDescription className="text-primary-foreground/65">
-          Hoàn thiện thông tin theo liên kết được cấp. Liên kết còn hiệu lực cho đến thời điểm hết hạn do đơn vị tuyển sinh thiết lập.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
-        <div className="flex items-start gap-2 rounded-2xl bg-primary-foreground/10 p-4">
-          <GraduationCapIcon aria-hidden="true" />
-          <span>
-            {context.majors.length === 0
-              ? "Không có ngành đang mở trong context."
-              : `${context.majors.length} ngành có thể lựa chọn.`}
-          </span>
-        </div>
-        <div className="flex items-start gap-2 rounded-2xl bg-primary-foreground/10 p-4">
-          <ShieldCheckIcon aria-hidden="true" />
-          <span>Thông tin chỉ được gửi qua API bảo mật của hệ thống.</span>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -325,7 +286,6 @@ export function RegistrationFormShellView({
   if (state.kind === "submitted") {
     return (
       <div className="flex flex-col gap-5">
-        <RegistrationContextHeader context={state.context} />
         <StateAlert
           icon={CheckCircle2Icon}
           title="Hồ sơ không còn ở trạng thái bản nháp"
@@ -342,7 +302,6 @@ export function RegistrationFormShellView({
 
   return (
     <div className="flex flex-col gap-6">
-      <RegistrationContextHeader context={state.context} />
       <ApplicationForm
         token={token}
         context={state.context}

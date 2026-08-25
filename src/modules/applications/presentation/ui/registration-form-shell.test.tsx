@@ -128,6 +128,8 @@ describe("registration form shell", () => {
     );
 
     assert.ok(await screen.findByLabelText(/Họ và tên/));
+    assert.equal(screen.queryByText("Đăng ký hồ sơ tuyển sinh"), null);
+    assert.equal(screen.queryByText("Liên kết đang hoạt động"), null);
     assert.equal(screen.queryByText("Thông tin thanh toán"), null);
   });
 
