@@ -159,7 +159,7 @@ export function StudentWordDownload({
                 <Button
                   type="button"
                   variant="outline"
-                  className="mt-3"
+                  className="mt-3 h-auto min-h-11 w-full whitespace-normal py-2 sm:w-auto sm:whitespace-nowrap"
                   onClick={() => setPaymentAcknowledged(true)}
                 >
                   Tôi đã đọc và lưu lại thông tin

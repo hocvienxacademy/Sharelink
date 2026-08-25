@@ -78,6 +78,17 @@ for (const viewport of mobileViewports) {
         dimensions.documentWidth,
         route + " overflowed at " + viewport.width + "px",
       ).toBeLessThanOrEqual(dimensions.viewportWidth);
+      const overflowingTables = await page
+        .locator('[data-slot="table-container"]')
+        .evaluateAll((containers) =>
+          containers.filter(
+            (container) => container.scrollWidth > container.clientWidth,
+          ).length,
+        );
+      expect(
+        overflowingTables,
+        route + " contained a horizontally scrolling table at " + viewport.width + "px",
+      ).toBe(0);
     }
 
     await page.screenshot({

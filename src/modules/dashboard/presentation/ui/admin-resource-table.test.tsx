@@ -31,5 +31,8 @@ describe("AdminResourceTable", () => {
       screen.getByRole("button", { name: "Xem chi tiết" }).closest("td")?.dataset.label,
       "Thao tác",
     );
+    const table = screen.getByRole("table");
+    assert.match(table.className, /\blg:table\b/);
+    assert.doesNotMatch(table.className, /\bmd:table\b/);
   });
 });

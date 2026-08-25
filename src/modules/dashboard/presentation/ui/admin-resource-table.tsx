@@ -52,9 +52,9 @@ export function AdminResourceTable<Key extends string>({
       <CardContent className="p-0">
         <Table
           aria-label={emptyDescription}
-          className="block w-full md:table"
+          className="block w-full lg:table"
         >
-          <TableHeader className="hidden md:table-header-group">
+          <TableHeader className="hidden lg:table-header-group">
             <TableRow>
               {columns.map((column) => (
                 <TableHead key={column.key}>
@@ -63,19 +63,19 @@ export function AdminResourceTable<Key extends string>({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody className="grid gap-3 p-3 md:table-row-group md:p-0">
+          <TableBody className="grid gap-3 p-3 lg:table-row-group lg:p-0">
             {rows.map((row) => (
               <TableRow
                 key={String(row.id)}
-                className="grid rounded-xl border bg-background p-1 hover:bg-background md:table-row md:rounded-none md:border-x-0 md:border-t-0 md:bg-transparent md:p-0 md:hover:bg-muted/50"
+                className="grid rounded-xl border bg-background p-1 hover:bg-background lg:table-row lg:rounded-none lg:border-x-0 lg:border-t-0 lg:bg-transparent lg:p-0 lg:hover:bg-muted/50"
               >
                 {columns.map((column) => (
                   <TableCell
                     key={column.key}
                     data-label={column.label === "" ? "Thao tác" : column.label}
-                    className="grid min-w-0 grid-cols-[minmax(6.5rem,0.45fr)_minmax(0,1fr)] items-start gap-3 border-b px-3 py-3 whitespace-normal break-words last:border-b-0 md:table-cell md:border-b-0 md:p-2 md:whitespace-nowrap [&_a]:break-words [&_[data-slot=button]]:w-full md:[&_[data-slot=button]]:w-auto"
+                    className="grid min-w-0 grid-cols-[minmax(6.5rem,0.45fr)_minmax(0,1fr)] items-start gap-3 border-b px-3 py-3 whitespace-normal break-words last:border-b-0 lg:table-cell lg:border-b-0 lg:p-2 lg:whitespace-nowrap [&_a]:break-words [&_[data-slot=button]]:w-full lg:[&_[data-slot=button]]:w-auto"
                   >
-                    <span className="text-xs font-medium text-muted-foreground md:hidden">
+                    <span className="text-xs font-medium text-muted-foreground lg:hidden">
                       {column.label === "" ? "Thao tác" : column.label}
                     </span>
                     <div className="min-w-0">{row[column.key]}</div>
