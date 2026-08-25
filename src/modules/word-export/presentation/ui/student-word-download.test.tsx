@@ -49,7 +49,7 @@ describe("StudentWordDownload", () => {
     assert.equal(screen.queryByText(/\(VCB\)/), null);
     assert.ok(
       screen.getByText(
-        "Nội dung chuyển khoản phải điền theo cán bộ tư vấn.",
+        "Nội dung chuyển khoản được Cán bộ tư vấn hướng dẫn.",
       ),
     );
     assert.ok(screen.getByText(/260\.000/));
