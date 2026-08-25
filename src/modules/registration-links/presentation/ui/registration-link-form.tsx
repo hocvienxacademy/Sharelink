@@ -89,22 +89,27 @@ export function RegistrationLinkForm({
 
   const localExpiry = initial?.expiresAtIso?.slice(0, 16) ?? "";
   return (
-    <Card className="max-w-4xl rounded-[2rem]">
+    <Card className="max-w-4xl rounded-2xl sm:rounded-[2rem]">
       <CardHeader><CardTitle>{linkId === undefined ? "Thông tin liên kết mới" : "Chỉnh sửa liên kết nháp"}</CardTitle></CardHeader>
       <form onSubmit={submit}>
         <CardContent>
           <FieldGroup className="grid md:grid-cols-2">
-            <Field><FieldLabel htmlFor="saleId">SALE phụ trách *</FieldLabel><select id="saleId" name="saleId" required disabled={linkId !== undefined || lockSaleSelection} defaultValue={initial?.saleId ?? sales[0]?.id ?? ""} className="h-10 rounded-md border bg-background px-3 disabled:opacity-60"><option value="">Chọn SALE</option>{sales.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></Field>
-            <Field><FieldLabel htmlFor="majorId">Ngành học</FieldLabel><select id="majorId" name="majorId" defaultValue={initial?.majorId ?? ""} className="h-10 rounded-md border bg-background px-3"><option value="">Chưa chọn</option>{majors.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></Field>
+            <Field><FieldLabel htmlFor="saleId">SALE phụ trách *</FieldLabel><select id="saleId" name="saleId" required disabled={linkId !== undefined || lockSaleSelection} defaultValue={initial?.saleId ?? sales[0]?.id ?? ""} className="h-10 w-full rounded-md border bg-background px-3 disabled:opacity-60"><option value="">Chọn SALE</option>{sales.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></Field>
+            <Field><FieldLabel htmlFor="majorId">Ngành học</FieldLabel><select id="majorId" name="majorId" defaultValue={initial?.majorId ?? ""} className="h-10 w-full rounded-md border bg-background px-3"><option value="">Chưa chọn</option>{majors.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></Field>
             <Field><FieldLabel htmlFor="studentNameHint">Gợi ý tên sinh viên</FieldLabel><Input id="studentNameHint" name="studentNameHint" maxLength={150} defaultValue={initial?.studentNameHint ?? ""} /></Field>
-            <Field><FieldLabel htmlFor="entryQualification">Trình độ đầu vào</FieldLabel><select id="entryQualification" name="entryQualification" defaultValue={initial?.entryQualification ?? ""} className="h-10 rounded-md border bg-background px-3"><option value="">Chưa chọn</option>{ADMISSION_QUALIFICATION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
+            <Field><FieldLabel htmlFor="entryQualification">Trình độ đầu vào</FieldLabel><select id="entryQualification" name="entryQualification" defaultValue={initial?.entryQualification ?? ""} className="h-10 w-full rounded-md border bg-background px-3"><option value="">Chưa chọn</option>{ADMISSION_QUALIFICATION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
             <Field><FieldLabel htmlFor="paymentRound">Đợt thanh toán</FieldLabel><Input id="paymentRound" name="paymentRound" maxLength={50} defaultValue={initial?.paymentRound ?? "D1"} /></Field>
             <Field><FieldLabel htmlFor="expiresAt">Hết hạn</FieldLabel><Input id="expiresAt" name="expiresAt" type="datetime-local" defaultValue={localExpiry} /></Field>
-            <Field className="md:col-span-2"><FieldLabel htmlFor="internalNote">Ghi chú nội bộ</FieldLabel><textarea id="internalNote" name="internalNote" maxLength={2000} defaultValue={initial?.internalNote ?? ""} className="min-h-24 rounded-md border bg-background p-3" /></Field>
+            <Field className="md:col-span-2"><FieldLabel htmlFor="internalNote">Ghi chú nội bộ</FieldLabel><textarea id="internalNote" name="internalNote" maxLength={2000} defaultValue={initial?.internalNote ?? ""} className="min-h-24 w-full rounded-md border bg-background p-3" /></Field>
           </FieldGroup>
           {error === null ? null : <Alert variant="destructive" className="mt-5"><AlertTitle>Chưa thể lưu</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
         </CardContent>
-        <CardFooter className="justify-end"><Button type="submit" disabled={submitting}>{submitting ? <Spinner data-icon="inline-start" /> : null}{linkId === undefined ? "Tạo liên kết" : "Lưu thay đổi"}</Button></CardFooter>
+        <CardFooter className="justify-end">
+          <Button className="w-full sm:w-auto" type="submit" disabled={submitting}>
+            {submitting ? <Spinner data-icon="inline-start" /> : null}
+            {linkId === undefined ? "Tạo liên kết" : "Lưu thay đổi"}
+          </Button>
+        </CardFooter>
       </form>
     </Card>
   );

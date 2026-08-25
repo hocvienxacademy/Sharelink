@@ -22,11 +22,13 @@ export function AdminDetailGrid({
         {description === undefined ? null : <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
-        <dl className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <dl className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
           {items.map((item) => (
             <div key={item.label} className="flex min-w-0 flex-col gap-1">
               <dt className="text-xs font-medium text-muted-foreground">{item.label}</dt>
-              <dd className="break-words text-sm font-medium">{item.value ?? "—"}</dd>
+              <dd className="min-w-0 break-words text-sm font-medium [&_a]:break-all">
+                {item.value ?? "—"}
+              </dd>
             </div>
           ))}
         </dl>

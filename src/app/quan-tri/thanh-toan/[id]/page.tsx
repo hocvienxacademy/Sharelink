@@ -6,6 +6,7 @@ import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page
 import { formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
 import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detail-grid";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
+import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
 import { PaymentActions } from "@/modules/payments/presentation/ui/payment-actions";
 import { toAuthenticatedActor } from "@/shared/authorization";
@@ -63,23 +64,22 @@ export default async function PaymentDetailPage({ params }: { readonly params: P
       />
       <section className="flex flex-col gap-4" aria-labelledby="payment-history-title">
         <h2 id="payment-history-title" className="text-xl font-semibold">Lịch sử trạng thái</h2>
-        <div className="overflow-x-auto rounded-2xl border bg-background">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/40 text-left">
-              <tr><th className="p-4">Thời gian</th><th className="p-4">Thay đổi</th><th className="p-4">Người thực hiện</th><th className="p-4">Nội dung</th></tr>
-            </thead>
-            <tbody>
-              {history.map((event) => (
-                <tr key={event.id} className="border-b last:border-0">
-                  <td className="p-4">{formatDateTime(event.createdAt)}</td>
-                  <td className="p-4"><AdminStatusBadge status={event.newStatus} /></td>
-                  <td className="p-4">{event.actorName}</td>
-                  <td className="max-w-xl whitespace-pre-wrap p-4">{event.reason ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminResourceTable
+          columns={[
+            { key: "time", label: "Thời gian" },
+            { key: "change", label: "Thay đổi" },
+            { key: "actor", label: "Người thực hiện" },
+            { key: "content", label: "Nội dung" },
+          ]}
+          emptyDescription="Chưa có lịch sử trạng thái thanh toán."
+          rows={history.map((event) => ({
+            id: event.id,
+            time: formatDateTime(event.createdAt),
+            change: <AdminStatusBadge status={event.newStatus} />,
+            actor: event.actorName,
+            content: <span className="whitespace-pre-wrap">{event.reason ?? "—"}</span>,
+          }))}
+        />
       </section>
     </div>
   );

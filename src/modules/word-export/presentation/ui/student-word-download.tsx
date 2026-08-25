@@ -83,7 +83,7 @@ export function StudentWordDownload({
   }
 
   return (
-    <div className="grid gap-3 rounded-2xl border bg-card p-5">
+    <div className="grid min-w-0 gap-3 rounded-2xl border bg-card p-4 sm:p-5">
       {payment === undefined ? null : (
         <Alert>
           <LandmarkIcon />
@@ -95,7 +95,7 @@ export function StudentWordDownload({
                 tuyển sinh trước khi thanh toán.
               </p>
             ) : (
-              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-start">
+              <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-start">
                 <dl className="grid gap-2 sm:grid-cols-2">
                   <div>
                     <dt className="font-medium text-foreground">Ngân hàng</dt>
@@ -189,7 +189,7 @@ export function StudentWordDownload({
           </AlertDescription>
         </Alert>
       ) : null}
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
         <Input
           aria-label="Mã tải phiếu Word"
           autoComplete="off"
@@ -199,6 +199,7 @@ export function StudentWordDownload({
           onChange={(event) => setDownloadCode(event.target.value)}
         />
         <Button
+          className="w-full sm:w-auto"
           type="button"
           disabled={
             busy ||

@@ -80,11 +80,11 @@ export function RegistrationLinkActions({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border bg-background p-5" aria-label="Thao tác liên kết">
-      <div className="flex flex-wrap gap-3">
-        {publicUrl === null ? null : <Button type="button" variant="outline" onClick={copyUrl}>Sao chép URL</Button>}
+    <section className="flex flex-col gap-4 rounded-2xl border bg-background p-4 sm:p-5" aria-label="Thao tác liên kết">
+      <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">
+        {publicUrl === null ? null : <Button className="w-full sm:w-auto" type="button" variant="outline" onClick={copyUrl}>Sao chép URL</Button>}
         {(canMutate ? actionsFor(status, applicationId !== null) : []).map((action) => (
-          <Button key={action} type="button" variant={["cancel", "archive"].includes(action) ? "destructive" : "default"} disabled={pending !== null} onClick={() => mutate(action)}>
+          <Button className="w-full sm:w-auto" key={action} type="button" variant={["cancel", "archive"].includes(action) ? "destructive" : "default"} disabled={pending !== null} onClick={() => mutate(action)}>
             {pending === action ? <Spinner data-icon="inline-start" /> : null}{actionLabels[action]}
           </Button>
         ))}

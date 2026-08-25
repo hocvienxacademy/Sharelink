@@ -81,7 +81,7 @@ export function PaymentActions({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border bg-background p-5" aria-label="Thao tác thanh toán">
+    <section className="flex flex-col gap-4 rounded-2xl border bg-background p-4 sm:p-5" aria-label="Thao tác thanh toán">
       {!canMutate ? <p className="text-sm text-muted-foreground">Tài khoản SALE chỉ được xem thông tin thanh toán trong phạm vi phụ trách.</p> : null}
       {canMutate && applicationStatus !== "VALID" ? <p className="text-sm text-muted-foreground">Chỉ hồ sơ ở trạng thái VALID mới được xác nhận hoặc hủy xác nhận thanh toán.</p> : null}
       {canMutate && status === "PENDING" && !applicationFeeConfigured ? <Alert variant="destructive"><AlertTitle>Chưa thể xác nhận</AlertTitle><AlertDescription>Phí nộp hồ sơ toàn hệ thống chưa được cấu hình hoặc không hợp lệ.</AlertDescription></Alert> : null}
@@ -89,7 +89,7 @@ export function PaymentActions({
         <div className="flex flex-col gap-3">
           <label htmlFor="confirmation-note" className="font-medium">Ghi chú xác nhận (không bắt buộc)</label>
           <Textarea id="confirmation-note" value={confirmationNote} onChange={(event) => setConfirmationNote(event.target.value)} disabled={pending !== null} />
-          <Button type="button" className="w-fit" disabled={pending !== null} onClick={() => mutate("confirm")}>
+          <Button type="button" className="w-full sm:w-fit" disabled={pending !== null} onClick={() => mutate("confirm")}>
             {pending === "confirm" ? <Spinner data-icon="inline-start" /> : null}Xác nhận thanh toán
           </Button>
         </div>
@@ -98,7 +98,7 @@ export function PaymentActions({
         <div className="flex flex-col gap-3">
           <label htmlFor="cancellation-reason" className="font-medium">Lý do hủy xác nhận</label>
           <Textarea id="cancellation-reason" maxLength={2000} required value={cancellationReason} onChange={(event) => setCancellationReason(event.target.value)} disabled={pending !== null} />
-          <Button type="button" variant="destructive" className="w-fit" disabled={pending !== null} onClick={() => mutate("cancel")}>
+          <Button type="button" variant="destructive" className="w-full sm:w-fit" disabled={pending !== null} onClick={() => mutate("cancel")}>
             {pending === "cancel" ? <Spinner data-icon="inline-start" /> : null}Hủy xác nhận
           </Button>
         </div>

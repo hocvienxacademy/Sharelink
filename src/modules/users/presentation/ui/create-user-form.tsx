@@ -106,7 +106,7 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
   });
 
   return (
-    <Card className="max-w-3xl rounded-[2rem]">
+    <Card className="max-w-3xl rounded-2xl sm:rounded-[2rem]">
       <CardHeader>
         <CardTitle>Thông tin tài khoản</CardTitle>
         <CardDescription>
@@ -180,7 +180,7 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
           )}
         </CardContent>
         <CardFooter className="justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+          <Button className="w-full sm:w-auto" type="submit" disabled={isSubmitting}>
             {isSubmitting ? <Spinner data-icon="inline-start" /> : <UserPlusIcon data-icon="inline-start" />}
             Tạo tài khoản
           </Button>

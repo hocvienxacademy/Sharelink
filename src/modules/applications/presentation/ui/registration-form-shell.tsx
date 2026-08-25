@@ -72,7 +72,7 @@ function applicationRoute(token: string, applicationId: string): string {
 
 function LoadingState() {
   return (
-    <Card aria-busy="true" className="rounded-[2rem]">
+    <Card aria-busy="true" className="rounded-2xl sm:rounded-[2rem]">
       <CardHeader>
         <CardTitle>Đang tải thông tin đăng ký</CardTitle>
         <CardDescription>
@@ -105,7 +105,11 @@ function StateAlert({
       <AlertTitle>{title}</AlertTitle>
       <AlertDescription>
         <p>{description}</p>
-        {action === undefined ? null : <div className="mt-3">{action}</div>}
+        {action === undefined ? null : (
+          <div className="mt-3 [&_[data-slot=button]]:w-full sm:[&_[data-slot=button]]:w-auto">
+            {action}
+          </div>
+        )}
       </AlertDescription>
     </Alert>
   );
@@ -117,7 +121,7 @@ function RegistrationContextHeader({
   readonly context: RegistrationContext;
 }) {
   return (
-    <Card className="rounded-[2rem] bg-primary text-primary-foreground">
+    <Card className="rounded-2xl bg-primary text-primary-foreground sm:rounded-[2rem]">
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="secondary">Liên kết đang hoạt động</Badge>

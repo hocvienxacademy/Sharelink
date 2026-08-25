@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { requestCatalog } from "./catalog-api-client";
 
 export interface BankAccountView {
@@ -104,14 +104,29 @@ export function BankAccountManagementPanel({
   return (
     <div className="flex flex-col gap-6">
       {feedback !== null && <Alert variant={feedback.error ? "destructive" : "default"}><AlertTitle>{feedback.error ? "Không thể thực hiện" : "Đã cập nhật"}</AlertTitle><AlertDescription>{feedback.message}</AlertDescription></Alert>}
-      {canManage && <Card><CardHeader><CardTitle>Tạo tài khoản ngân hàng</CardTitle><CardDescription>Bản ghi mới luôn tạm dừng và không mặc định.</CardDescription></CardHeader><CardContent><form onSubmit={create} className="flex flex-col gap-4"><AccountFields prefix="create-bank" /><Button className="self-start" type="submit" disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}Tạo tài khoản</Button></form></CardContent></Card>}
-      {editing !== null && canManage && <Card><CardHeader><CardTitle>Chỉnh sửa {editing.bankCode}</CardTitle><CardDescription>Mã ngân hàng và số tài khoản sẽ bị khóa sau khi được payment confirmation tham chiếu.</CardDescription></CardHeader><CardContent><form onSubmit={update} className="flex flex-col gap-4"><AccountFields value={editing} prefix="edit-bank" /><div className="flex gap-2"><Button type="submit" disabled={pending}>Lưu</Button><Button type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button></div></form></CardContent></Card>}
-      <Card className="overflow-hidden"><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Ngân hàng</TableHead><TableHead>Số tài khoản</TableHead><TableHead>Chủ tài khoản</TableHead><TableHead>Chi nhánh</TableHead><TableHead>Trạng thái</TableHead><TableHead>Thao tác</TableHead></TableRow></TableHeader><TableBody>
-        {items.length === 0 && <TableRow><TableCell colSpan={6} className="py-10 text-center text-muted-foreground">Chưa có tài khoản ngân hàng.</TableCell></TableRow>}
-        {items.map((item) => <TableRow key={item.id}><TableCell><div className="flex items-center gap-2"><span>{item.bankCode} — {item.bankName}</span>{item.isDefault && <Badge>Mặc định</Badge>}</div></TableCell><TableCell className="font-mono">{item.accountNumber ?? item.maskedAccountNumber}</TableCell><TableCell>{item.accountName}</TableCell><TableCell>{item.branchName ?? "—"}</TableCell><TableCell><Badge variant="secondary">{item.isActive ? "Hoạt động" : "Tạm dừng"}</Badge></TableCell><TableCell><div className="flex flex-wrap gap-1">
-          {canManage && <><Button type="button" variant="outline" size="sm" onClick={() => setEditing(item)} disabled={pending}><PencilIcon data-icon="inline-start" />Sửa</Button><Button type="button" variant={item.isActive ? "outline" : "default"} size="sm" onClick={() => transition(item)} disabled={pending || item.isDefault}>{item.isActive ? <PowerOffIcon data-icon="inline-start" /> : <PowerIcon data-icon="inline-start" />}{item.isActive ? "Tạm dừng" : "Kích hoạt"}</Button>{item.isDefault ? <Button type="button" variant="outline" size="sm" onClick={() => clearDefault(item)} disabled={pending}><StarIcon data-icon="inline-start" />Bỏ mặc định</Button> : <Button type="button" variant="outline" size="sm" onClick={() => setDefault(item)} disabled={pending || !item.isActive}><StarIcon data-icon="inline-start" />Đặt mặc định</Button>}<Button type="button" variant="ghost" size="sm" onClick={() => loadHistory(item.id)} disabled={pending}><HistoryIcon data-icon="inline-start" />Lịch sử</Button></>}
-        </div>{history?.id === item.id && <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">{history.items.length === 0 ? <span>Chưa có lịch sử.</span> : history.items.map((entry) => <span key={entry.id}>{entry.action} · {entry.actorName ?? "Hệ thống"} · {new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(entry.occurredAt))}</span>)}</div>}</TableCell></TableRow>)}
-      </TableBody></Table></CardContent></Card>
+      {canManage && <Card><CardHeader><CardTitle>Tạo tài khoản ngân hàng</CardTitle><CardDescription>Bản ghi mới luôn tạm dừng và không mặc định.</CardDescription></CardHeader><CardContent><form onSubmit={create} className="flex flex-col gap-4"><AccountFields prefix="create-bank" /><Button className="w-full sm:w-fit" type="submit" disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}Tạo tài khoản</Button></form></CardContent></Card>}
+      {editing !== null && canManage && <Card><CardHeader><CardTitle>Chỉnh sửa {editing.bankCode}</CardTitle><CardDescription>Mã ngân hàng và số tài khoản sẽ bị khóa sau khi được payment confirmation tham chiếu.</CardDescription></CardHeader><CardContent><form onSubmit={update} className="flex flex-col gap-4"><AccountFields value={editing} prefix="edit-bank" /><div className="grid grid-cols-1 gap-2 sm:flex"><Button className="w-full sm:w-auto" type="submit" disabled={pending}>Lưu</Button><Button className="w-full sm:w-auto" type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button></div></form></CardContent></Card>}
+      <AdminResourceTable
+        columns={[{ key: "bank", label: "Ngân hàng" }, { key: "number", label: "Số tài khoản" }, { key: "owner", label: "Chủ tài khoản" }, { key: "branch", label: "Chi nhánh" }, { key: "status", label: "Trạng thái" }, { key: "action", label: "" }]}
+        emptyDescription="Chưa có tài khoản ngân hàng."
+        rows={items.map((item) => ({
+          id: item.id,
+          bank: <div className="flex flex-wrap items-center gap-2"><span>{item.bankCode} — {item.bankName}</span>{item.isDefault && <Badge>Mặc định</Badge>}</div>,
+          number: <span className="font-mono">{item.accountNumber ?? item.maskedAccountNumber}</span>,
+          owner: item.accountName,
+          branch: item.branchName ?? "—",
+          status: <Badge variant="secondary">{item.isActive ? "Hoạt động" : "Tạm dừng"}</Badge>,
+          action: <div className="flex flex-col gap-2">
+            {canManage && <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+              <Button className="w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={() => setEditing(item)} disabled={pending}><PencilIcon data-icon="inline-start" />Sửa</Button>
+              <Button className="w-full sm:w-auto" type="button" variant={item.isActive ? "outline" : "default"} size="sm" onClick={() => transition(item)} disabled={pending || item.isDefault}>{item.isActive ? <PowerOffIcon data-icon="inline-start" /> : <PowerIcon data-icon="inline-start" />}{item.isActive ? "Tạm dừng" : "Kích hoạt"}</Button>
+              {item.isDefault ? <Button className="w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={() => clearDefault(item)} disabled={pending}><StarIcon data-icon="inline-start" />Bỏ mặc định</Button> : <Button className="w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={() => setDefault(item)} disabled={pending || !item.isActive}><StarIcon data-icon="inline-start" />Đặt mặc định</Button>}
+              <Button className="w-full sm:w-auto" type="button" variant="ghost" size="sm" onClick={() => loadHistory(item.id)} disabled={pending}><HistoryIcon data-icon="inline-start" />Lịch sử</Button>
+            </div>}
+            {history?.id === item.id && <div className="flex flex-col gap-1 text-xs text-muted-foreground">{history.items.length === 0 ? <span>Chưa có lịch sử.</span> : history.items.map((entry) => <span key={entry.id}>{entry.action} · {entry.actorName ?? "Hệ thống"} · {new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(entry.occurredAt))}</span>)}</div>}
+          </div>,
+        }))}
+      />
     </div>
   );
 }

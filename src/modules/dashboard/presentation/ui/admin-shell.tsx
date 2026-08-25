@@ -15,10 +15,10 @@ export function AdminShell({
   return (
     <main className="min-h-dvh bg-surface">
       <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <Link href="/quan-tri" className="flex items-center gap-3">
             <span>
-              <BrandLogo imageClassName="size-11" textClassName="hidden sm:inline" />
+              <BrandLogo imageClassName="size-10 sm:size-11" textClassName="hidden sm:inline" />
               <span className="hidden text-xs text-muted-foreground sm:block">Control Center</span>
             </span>
           </Link>
@@ -36,7 +36,9 @@ export function AdminShell({
 
       <div className="mx-auto grid max-w-[1600px] lg:grid-cols-[240px_minmax(0,1fr)]">
         <AdminDesktopNavigation role={identity.role} />
-        <div className="min-w-0 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</div>
+        <div className="min-w-0 px-3 py-5 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
+          {children}
+        </div>
       </div>
     </main>
   );

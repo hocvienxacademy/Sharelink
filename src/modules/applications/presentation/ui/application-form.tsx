@@ -427,7 +427,7 @@ export function ApplicationForm({
           </div>
         )}
 
-        <Card className="rounded-[2rem]">
+        <Card className="rounded-2xl sm:rounded-[2rem]">
           <CardContent>
             {currentStep === 0 ? <PersonalInformationSection /> : null}
             {currentStep === 1 ? (
@@ -439,8 +439,8 @@ export function ApplicationForm({
             ) : null}
           </CardContent>
 
-          <CardFooter className="flex flex-wrap justify-between gap-3">
-            <div className="flex flex-wrap gap-2">
+          <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
               {currentStep === 0 ? null : (
                 <Button
                   type="button"
@@ -465,7 +465,7 @@ export function ApplicationForm({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap justify-end gap-2">
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
               {currentStep < steps.length - 1 ? (
                 <>
                   <Button

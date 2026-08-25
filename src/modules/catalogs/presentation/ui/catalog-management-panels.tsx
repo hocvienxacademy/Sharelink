@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { requestCatalog } from "./catalog-api-client";
 
 export interface AdmissionPeriodView {
@@ -92,7 +92,7 @@ export function AdmissionPeriodManagementPanel({ initialItems, canManage }: { re
         <Field><FieldLabel htmlFor="period-name">Tên kỳ</FieldLabel><Input id="period-name" name="name" required maxLength={255} /></Field>
         <Field><FieldLabel htmlFor="period-start">Ngày bắt đầu</FieldLabel><Input id="period-start" name="startDate" type="date" required /></Field>
         <Field><FieldLabel htmlFor="period-end">Ngày kết thúc</FieldLabel><Input id="period-end" name="endDate" type="date" required /></Field>
-        <Button type="submit" disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}Tạo kỳ</Button>
+        <Button className="w-full md:w-auto" type="submit" disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}Tạo kỳ</Button>
       </FieldGroup></form>
     </CardContent></Card>}
     {editing !== null && canManage && <Card><CardHeader><CardTitle>Chỉnh sửa {editing.code}</CardTitle><CardDescription>Kỳ đã được tham chiếu chỉ có thể đổi tên.</CardDescription></CardHeader><CardContent>
@@ -101,15 +101,28 @@ export function AdmissionPeriodManagementPanel({ initialItems, canManage }: { re
         <Field><FieldLabel htmlFor="edit-period-name">Tên kỳ</FieldLabel><Input id="edit-period-name" name="name" defaultValue={editing.name} required /></Field>
         <Field><FieldLabel htmlFor="edit-period-start">Ngày bắt đầu</FieldLabel><Input id="edit-period-start" name="startDate" type="date" defaultValue={dateInput(editing.startDate)} required /></Field>
         <Field><FieldLabel htmlFor="edit-period-end">Ngày kết thúc</FieldLabel><Input id="edit-period-end" name="endDate" type="date" defaultValue={dateInput(editing.endDate)} required /></Field>
-        <div className="flex gap-2"><Button type="submit" disabled={pending}>Lưu</Button><Button type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button></div>
+        <div className="grid grid-cols-1 gap-2 sm:flex"><Button className="w-full sm:w-auto" type="submit" disabled={pending}>Lưu</Button><Button className="w-full sm:w-auto" type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button></div>
       </FieldGroup></form>
     </CardContent></Card>}
-    <Card className="overflow-hidden"><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Mã</TableHead><TableHead>Tên kỳ</TableHead><TableHead>Bắt đầu</TableHead><TableHead>Kết thúc</TableHead><TableHead>Trạng thái</TableHead><TableHead>Thao tác</TableHead></TableRow></TableHeader><TableBody>
-      {items.map((item) => <TableRow key={item.id}><TableCell>{item.code}</TableCell><TableCell>{item.name}</TableCell><TableCell>{dateLabel(item.startDate)}</TableCell><TableCell>{dateLabel(item.endDate)}</TableCell><TableCell><Badge variant="secondary">{item.isActive ? "Hoạt động" : "Tạm dừng"}</Badge></TableCell><TableCell><div className="flex flex-col gap-1">
-        {canManage && <div className="flex gap-1"><Button type="button" variant="outline" size="sm" onClick={() => setEditing(item)}><PencilIcon data-icon="inline-start" />Sửa</Button><Button type="button" variant={item.isActive ? "outline" : "default"} size="sm" onClick={() => transition(item)} disabled={pending}>{item.isActive ? <PowerOffIcon data-icon="inline-start" /> : <PowerIcon data-icon="inline-start" />}{item.isActive ? "Tạm dừng" : "Kích hoạt"}</Button></div>}
-        <HistoryPanel basePath="/api/admin/admission-periods" id={item.id} />
-      </div></TableCell></TableRow>)}
-    </TableBody></Table></CardContent></Card>
+    <AdminResourceTable
+      columns={[{ key: "code", label: "Mã" }, { key: "name", label: "Tên kỳ" }, { key: "start", label: "Bắt đầu" }, { key: "end", label: "Kết thúc" }, { key: "status", label: "Trạng thái" }, { key: "action", label: "" }]}
+      emptyDescription="Chưa có kỳ tuyển sinh."
+      rows={items.map((item) => ({
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        start: dateLabel(item.startDate),
+        end: dateLabel(item.endDate),
+        status: <Badge variant="secondary">{item.isActive ? "Hoạt động" : "Tạm dừng"}</Badge>,
+        action: <div className="flex flex-col gap-2">
+          {canManage && <div className="grid grid-cols-1 gap-2 sm:flex">
+            <Button className="w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={() => setEditing(item)}><PencilIcon data-icon="inline-start" />Sửa</Button>
+            <Button className="w-full sm:w-auto" type="button" variant={item.isActive ? "outline" : "default"} size="sm" onClick={() => transition(item)} disabled={pending}>{item.isActive ? <PowerOffIcon data-icon="inline-start" /> : <PowerIcon data-icon="inline-start" />}{item.isActive ? "Tạm dừng" : "Kích hoạt"}</Button>
+          </div>}
+          <HistoryPanel basePath="/api/admin/admission-periods" id={item.id} />
+        </div>,
+      }))}
+    />
   </div>;
 }
 
@@ -127,6 +140,6 @@ export function MajorManagementPanel({ initialItems, canManage }: { readonly ini
     catch (error) { setFeedback({ message: error instanceof Error ? error.message : "Không thể cập nhật.", error: true }); } finally { setPending(false); }
   };
   const transition = async (item: MajorView) => { setPending(true); setFeedback(null); try { const updated = await requestCatalog<MajorView>(`/api/admin/majors/${item.id}/${item.isActive ? "deactivate" : "activate"}`, "POST", { expectedUpdatedAt: item.updatedAt }); apply(updated); setFeedback({ message: `Đã ${updated.isActive ? "kích hoạt" : "tạm dừng"} ngành học.`, error: false }); } catch (error) { setFeedback({ message: error instanceof Error ? error.message : "Không thể đổi trạng thái.", error: true }); } finally { setPending(false); } };
-  const form = (mode: "create" | "edit") => { const value = mode === "edit" ? editing : null; return <form onSubmit={mode === "create" ? submitCreate : submitEdit}><FieldGroup className="grid md:grid-cols-3 xl:grid-cols-4"><Field><FieldLabel htmlFor={`${mode}-major-code`}>Mã ngành</FieldLabel><Input id={`${mode}-major-code`} name="code" defaultValue={value?.code} required maxLength={50} /></Field><Field><FieldLabel htmlFor={`${mode}-major-name`}>Tên ngành</FieldLabel><Input id={`${mode}-major-name`} name="name" defaultValue={value?.name} required maxLength={80} /></Field><Field><FieldLabel htmlFor={`${mode}-major-order`}>Thứ tự</FieldLabel><Input id={`${mode}-major-order`} name="displayOrder" type="number" min={0} step={1} defaultValue={value?.displayOrder ?? 0} required /></Field><div className="flex items-end gap-2"><Button type="submit" disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : mode === "create" ? <PlusIcon data-icon="inline-start" /> : null}{mode === "create" ? "Tạo ngành" : "Lưu"}</Button>{mode === "edit" && <Button type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button>}</div></FieldGroup></form>; };
-  return <div className="flex flex-col gap-6"><Feedback message={feedback?.message ?? null} error={feedback?.error ?? false} />{canManage && <Card><CardHeader><CardTitle>Tạo ngành học</CardTitle><CardDescription>Mã được chuẩn hóa uppercase; bản ghi mới ở trạng thái tạm dừng.</CardDescription></CardHeader><CardContent>{form("create")}</CardContent></Card>}{editing !== null && canManage && <Card><CardHeader><CardTitle>Chỉnh sửa {editing.code}</CardTitle><CardDescription>Ngành đã được tham chiếu không thể đổi mã.</CardDescription></CardHeader><CardContent>{form("edit")}</CardContent></Card>}<Card className="overflow-hidden"><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Thứ tự</TableHead><TableHead>Mã ngành</TableHead><TableHead>Tên ngành</TableHead><TableHead>Trạng thái</TableHead><TableHead>Thao tác</TableHead></TableRow></TableHeader><TableBody>{items.map((item) => <TableRow key={item.id}><TableCell>{item.displayOrder}</TableCell><TableCell>{item.code}</TableCell><TableCell>{item.name}</TableCell><TableCell><Badge variant="secondary">{item.isActive ? "Hoạt động" : "Tạm dừng"}</Badge></TableCell><TableCell><div className="flex flex-col gap-1">{canManage && <div className="flex gap-1"><Button type="button" variant="outline" size="sm" onClick={() => setEditing(item)}><PencilIcon data-icon="inline-start" />Sửa</Button><Button type="button" variant={item.isActive ? "outline" : "default"} size="sm" onClick={() => transition(item)} disabled={pending}>{item.isActive ? <PowerOffIcon data-icon="inline-start" /> : <PowerIcon data-icon="inline-start" />}{item.isActive ? "Tạm dừng" : "Kích hoạt"}</Button></div>}<HistoryPanel basePath="/api/admin/majors" id={item.id} /></div></TableCell></TableRow>)}</TableBody></Table></CardContent></Card></div>;
+  const form = (mode: "create" | "edit") => { const value = mode === "edit" ? editing : null; return <form onSubmit={mode === "create" ? submitCreate : submitEdit}><FieldGroup className="grid md:grid-cols-3 xl:grid-cols-4"><Field><FieldLabel htmlFor={`${mode}-major-code`}>Mã ngành</FieldLabel><Input id={`${mode}-major-code`} name="code" defaultValue={value?.code} required maxLength={50} /></Field><Field><FieldLabel htmlFor={`${mode}-major-name`}>Tên ngành</FieldLabel><Input id={`${mode}-major-name`} name="name" defaultValue={value?.name} required maxLength={80} /></Field><Field><FieldLabel htmlFor={`${mode}-major-order`}>Thứ tự</FieldLabel><Input id={`${mode}-major-order`} name="displayOrder" type="number" min={0} step={1} defaultValue={value?.displayOrder ?? 0} required /></Field><div className="grid items-end gap-2 sm:flex"><Button className="w-full sm:w-auto" type="submit" disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : mode === "create" ? <PlusIcon data-icon="inline-start" /> : null}{mode === "create" ? "Tạo ngành" : "Lưu"}</Button>{mode === "edit" && <Button className="w-full sm:w-auto" type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button>}</div></FieldGroup></form>; };
+  return <div className="flex flex-col gap-6"><Feedback message={feedback?.message ?? null} error={feedback?.error ?? false} />{canManage && <Card><CardHeader><CardTitle>Tạo ngành học</CardTitle><CardDescription>Mã được chuẩn hóa uppercase; bản ghi mới ở trạng thái tạm dừng.</CardDescription></CardHeader><CardContent>{form("create")}</CardContent></Card>}{editing !== null && canManage && <Card><CardHeader><CardTitle>Chỉnh sửa {editing.code}</CardTitle><CardDescription>Ngành đã được tham chiếu không thể đổi mã.</CardDescription></CardHeader><CardContent>{form("edit")}</CardContent></Card>}<AdminResourceTable columns={[{ key: "order", label: "Thứ tự" }, { key: "code", label: "Mã ngành" }, { key: "name", label: "Tên ngành" }, { key: "status", label: "Trạng thái" }, { key: "action", label: "" }]} emptyDescription="Chưa có ngành học." rows={items.map((item) => ({ id: item.id, order: item.displayOrder, code: item.code, name: item.name, status: <Badge variant="secondary">{item.isActive ? "Hoạt động" : "Tạm dừng"}</Badge>, action: <div className="flex flex-col gap-2">{canManage && <div className="grid grid-cols-1 gap-2 sm:flex"><Button className="w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={() => setEditing(item)}><PencilIcon data-icon="inline-start" />Sửa</Button><Button className="w-full sm:w-auto" type="button" variant={item.isActive ? "outline" : "default"} size="sm" onClick={() => transition(item)} disabled={pending}>{item.isActive ? <PowerOffIcon data-icon="inline-start" /> : <PowerIcon data-icon="inline-start" />}{item.isActive ? "Tạm dừng" : "Kích hoạt"}</Button></div>}<HistoryPanel basePath="/api/admin/majors" id={item.id} /></div> }))} /></div>;
 }

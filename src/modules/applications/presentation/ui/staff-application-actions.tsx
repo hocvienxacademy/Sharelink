@@ -82,7 +82,7 @@ export function StaffApplicationActionsView({
   }
 
   return (
-    <div className="grid gap-5 rounded-3xl border bg-card p-6">
+    <div className="grid min-w-0 gap-5 rounded-2xl border bg-card p-4 sm:rounded-3xl sm:p-6">
       <div>
         <h2 className="text-xl font-semibold">Thao tác hồ sơ</h2>
         <p className="text-sm text-muted-foreground">
@@ -100,6 +100,7 @@ export function StaffApplicationActionsView({
       {downloadable ? (
         <div>
           <Button
+            className="w-full sm:w-auto"
             type="button"
             variant="outline"
             onClick={() => {
@@ -138,8 +139,9 @@ export function StaffApplicationActionsView({
             value={reason}
             onChange={(event) => setReason(event.target.value)}
           />
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
             <Button
+              className="w-full sm:w-auto"
               variant="outline"
               disabled={busy || reason.trim().length === 0}
               onClick={() => void mutate("/request-revision", "POST", {
@@ -151,6 +153,7 @@ export function StaffApplicationActionsView({
               Yêu cầu bổ sung
             </Button>
             <Button
+              className="w-full sm:w-auto"
               disabled={busy}
               onClick={() => {
                 if (window.confirm("Xác nhận hồ sơ hợp lệ?")) {

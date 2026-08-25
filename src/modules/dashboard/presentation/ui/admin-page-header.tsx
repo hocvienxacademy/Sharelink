@@ -21,9 +21,9 @@ export function AdminPageHeader({
   readonly title: string;
 }) {
   return (
-    <header className="flex flex-col gap-5">
-      <Breadcrumb>
-        <BreadcrumbList>
+    <header className="flex min-w-0 flex-col gap-4 sm:gap-5">
+      <Breadcrumb className="min-w-0 overflow-hidden">
+        <BreadcrumbList className="flex-nowrap overflow-hidden">
           <BreadcrumbItem>
             <BreadcrumbLink render={<Link href="/quan-tri" />}>Quản trị</BreadcrumbLink>
           </BreadcrumbItem>
@@ -39,18 +39,22 @@ export function AdminPageHeader({
             </>
           )}
           <BreadcrumbItem>
-            <BreadcrumbPage>{title}</BreadcrumbPage>
+            <BreadcrumbPage className="truncate">{title}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-        <div className="max-w-3xl">
-          <h1 className="font-heading text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+      <div className="flex min-w-0 flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div className="min-w-0 max-w-3xl">
+          <h1 className="font-heading text-3xl font-semibold tracking-[-0.04em] break-words sm:text-5xl">
             {title}
           </h1>
           <p className="mt-3 text-base leading-7 text-muted-foreground">{description}</p>
         </div>
-        {action}
+        {action === undefined ? null : (
+          <div className="w-full shrink-0 md:w-auto [&>*]:w-full [&_[data-slot=button]]:w-full md:[&>*]:w-auto md:[&_[data-slot=button]]:w-auto">
+            {action}
+          </div>
+        )}
       </div>
     </header>
   );

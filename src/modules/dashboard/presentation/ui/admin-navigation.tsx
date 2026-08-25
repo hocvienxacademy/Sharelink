@@ -88,12 +88,13 @@ function NavigationLinks({ onNavigate, role }: { readonly onNavigate?: () => voi
 export function AdminMobileNavigation({ role }: { readonly role: UserRole }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b bg-background px-4 py-3 lg:hidden">
+    <div className="border-b bg-background px-3 py-2.5 sm:px-6 lg:hidden">
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger render={<Button variant="outline" size="icon-lg" aria-label="Mở điều hướng quản trị" />}>
-          <MenuIcon aria-hidden="true" />
+        <SheetTrigger render={<Button variant="outline" aria-label="Mở điều hướng quản trị" />}>
+          <MenuIcon data-icon="inline-start" aria-hidden="true" />
+          Menu quản trị
         </SheetTrigger>
-        <SheetContent side="left">
+        <SheetContent side="left" className="w-[min(22rem,calc(100vw-1rem))]">
           <SheetHeader>
             <SheetTitle>Điều hướng quản trị</SheetTitle>
             <SheetDescription>Chọn khu vực vận hành cần mở.</SheetDescription>
