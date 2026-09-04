@@ -89,7 +89,11 @@ describe("student application form", () => {
     await user.click(screen.getByRole("button", { name: "Bước 2: Học vấn" }));
 
     const major = screen.getByRole("combobox", { name: /Ngành đăng ký/ });
-    assert.match(major.textContent ?? "", /^CNTT — Công nghệ thông tin/);
+    assert.equal(
+      major.textContent?.startsWith(context.majors[0]?.name ?? ""),
+      true,
+    );
+    assert.doesNotMatch(major.textContent ?? "", /CNTT/);
     assert.equal(major.hasAttribute("disabled"), true);
   });
 

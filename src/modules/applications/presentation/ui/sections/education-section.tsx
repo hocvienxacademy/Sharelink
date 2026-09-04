@@ -40,7 +40,7 @@ export function EducationSection({
             required
             options={context.majors.map((major) => ({
               value: major.id,
-              label: `${major.code} — ${major.name}`,
+              label: major.name,
             }))}
           />
           <ApplicationSelectField
