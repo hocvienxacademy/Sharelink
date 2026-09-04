@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ValidationError } from "@/shared/errors";
+import { ForbiddenError, ValidationError } from "@/shared/errors";
 import type { UserManagementRepository } from "../ports/user-repository";
 import { UserAdministrationService } from "./user-administration";
 
@@ -41,5 +41,51 @@ describe("UserAdministrationService.changeOwnPassword", () => {
       ValidationError,
     );
     assert.equal(context.changedPasswordHash(), null);
+  });
+});
+
+describe("UserAdministrationService.updateProfile username authorization", () => {
+  function profileService(role: "SALE" | "MANAGER" | "ADMIN") {
+    const profileActor = { ...actor, role };
+    let receivedValues: unknown = null;
+    const repository = {
+      findAuthorizationResource: async () => ({ id: profileActor.userId, role, managerId: null }),
+      updateProfile: async (command: { readonly values: unknown }) => {
+        receivedValues = command.values;
+        return { id: profileActor.userId, role, status: "ACTIVE" as const, updatedAt: new Date("2026-09-04T00:00:01.000Z") };
+      },
+    } as unknown as UserManagementRepository;
+    return {
+      actor: profileActor,
+      receivedValues: () => receivedValues,
+      service: new UserAdministrationService(repository, { hash: async () => "hash" }, { verify: async () => true }),
+    };
+  }
+
+  for (const role of ["SALE", "MANAGER"] as const) {
+    it(`rejects username changes from ${role} before persistence`, async () => {
+      const context = profileService(role);
+      await assert.rejects(
+        context.service.updateProfile(
+          context.actor,
+          context.actor.userId,
+          { ...expected, expectedRole: role, username: "new-username" },
+          { requestId: "profile-update" },
+        ),
+        ForbiddenError,
+      );
+      assert.equal(context.receivedValues(), null);
+    });
+  }
+
+  it("allows ADMIN to change a username", async () => {
+    const context = profileService("ADMIN");
+    await context.service.updateProfile(
+      context.actor,
+      context.actor.userId,
+      { ...expected, expectedRole: "ADMIN", username: "New-Username" },
+      { requestId: "profile-update" },
+    );
+    assert.deepEqual(context.receivedValues(), { ...expected, expectedRole: "ADMIN", username: "new-username" });
   });
 });

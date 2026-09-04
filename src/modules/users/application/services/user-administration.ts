@@ -1,5 +1,5 @@
 import type { AuthenticatedActor } from "@/shared/authorization";
-import { NotFoundError, ValidationError } from "@/shared/errors";
+import { ForbiddenError, NotFoundError, ValidationError } from "@/shared/errors";
 import type { UserAccountStatus } from "../../domain/user";
 import { UserAuthorizationPolicy, assertUserAuthorized, type UserCapability } from "../authorization/user-authorization";
 import type { PasswordHasher, PasswordVerifier, UserManagementRepository, UserMutationContext } from "../ports/user-repository";
@@ -20,7 +20,9 @@ export class UserAdministrationService {
   }
   async updateProfile(actor: AuthenticatedActor, id: string, input: unknown, context: UserMutationContext) {
     await this.authorize(actor, id, "user.updateProfile");
-    return this.repository.updateProfile({ actor, id, context, values: parseProfileUpdate(input) });
+    const values = parseProfileUpdate(input);
+    if (actor.role !== "ADMIN" && values.username !== undefined) throw new ForbiddenError();
+    return this.repository.updateProfile({ actor, id, context, values });
   }
   async changeRole(actor: AuthenticatedActor, id: string, input: unknown, context: UserMutationContext) {
     await this.authorize(actor, id, "user.changeRole");

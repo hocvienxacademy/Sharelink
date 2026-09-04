@@ -27,7 +27,7 @@ export function StaffAccountPanel({ user }: { readonly user: UserDetail }) {
       const result = await mutateStaffAccount("profile", {
         ...version,
         fullName: form.get("fullName"),
-        username: form.get("username"),
+        ...(user.role === "ADMIN" ? { username: form.get("username") } : {}),
         email: form.get("email"),
         phone: form.get("phone"),
       });
@@ -59,10 +59,10 @@ export function StaffAccountPanel({ user }: { readonly user: UserDetail }) {
   }
 
   return <div className="grid gap-6 xl:grid-cols-2">
-    <Card><CardHeader><CardTitle>Thông tin cá nhân</CardTitle><CardDescription>Cập nhật thông tin liên hệ và tên đăng nhập của bạn.</CardDescription></CardHeader>
+    <Card><CardHeader><CardTitle>Thông tin cá nhân</CardTitle><CardDescription>{user.role === "ADMIN" ? "Cập nhật thông tin liên hệ và tên đăng nhập của bạn." : "Cập nhật thông tin liên hệ. Chỉ ADMIN được thay đổi tên đăng nhập."}</CardDescription></CardHeader>
       <CardContent><form className="flex flex-col gap-4" onSubmit={profile}><FieldGroup className="grid md:grid-cols-2">
         <Field><FieldLabel htmlFor="account-fullName">Họ và tên</FieldLabel><Input id="account-fullName" name="fullName" defaultValue={user.fullName} maxLength={150} required /></Field>
-        <Field><FieldLabel htmlFor="account-username">Tên đăng nhập</FieldLabel><Input id="account-username" name="username" defaultValue={user.username} maxLength={100} autoComplete="username" required /></Field>
+        <Field><FieldLabel htmlFor="account-username">Tên đăng nhập</FieldLabel><Input id="account-username" name="username" defaultValue={user.username} maxLength={100} autoComplete="username" disabled={user.role !== "ADMIN"} required /></Field>
         <Field><FieldLabel htmlFor="account-email">Email</FieldLabel><Input id="account-email" name="email" type="email" defaultValue={user.email ?? ""} maxLength={255} autoComplete="email" required /></Field>
         <Field><FieldLabel htmlFor="account-phone">Điện thoại</FieldLabel><Input id="account-phone" name="phone" type="tel" defaultValue={user.phone ?? ""} minLength={10} maxLength={15} autoComplete="tel" /></Field>
       </FieldGroup><Button className="w-full sm:w-fit" disabled={busy} type="submit">Lưu thông tin</Button></form></CardContent></Card>
