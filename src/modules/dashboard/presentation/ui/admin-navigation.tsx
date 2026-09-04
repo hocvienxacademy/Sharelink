@@ -7,6 +7,7 @@ import {
   BanknoteIcon,
   Building2Icon,
   ClipboardListIcon,
+  CircleUserRoundIcon,
   FileTextIcon,
   GraduationCapIcon,
   LayoutDashboardIcon,
@@ -39,6 +40,7 @@ const navigationItems: readonly NavigationItem[] = [
   { href: "/quan-tri/ho-so", label: "Hồ sơ", icon: FileTextIcon },
   { href: "/quan-tri/thanh-toan", label: "Thanh toán", icon: BanknoteIcon },
   { href: "/quan-tri/nhan-su", label: "Nhân sự", icon: UsersIcon },
+  { href: "/quan-tri/tai-khoan", label: "Tài khoản", icon: CircleUserRoundIcon },
   { href: "/quan-tri/nganh-hoc", label: "Ngành học", icon: GraduationCapIcon },
   { href: "/quan-tri/tai-khoan-ngan-hang", label: "Ngân hàng", icon: Building2Icon },
   { href: "/quan-tri/cai-dat", label: "Cài đặt", icon: SettingsIcon },
@@ -61,6 +63,7 @@ function NavigationLinks({ onNavigate, role }: { readonly onNavigate?: () => voi
         "/quan-tri/thanh-toan",
         "/quan-tri/nganh-hoc",
         "/quan-tri/tai-khoan-ngan-hang",
+        "/quan-tri/tai-khoan",
         ...(role === "MANAGER" ? ["/quan-tri/nhan-su"] : []),
       ].includes(item.href));
   return visibleItems.map(({ href, icon: Icon, label }) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -16,11 +16,30 @@ export function UserManagementPanel({ user, managers }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const expected = { expectedRole: user.role, expectedStatus: user.status, expectedUpdatedAt: user.updatedAt.toISOString() };
+  const [expected, setExpected] = useState({ expectedRole: user.role, expectedStatus: user.status, expectedUpdatedAt: user.updatedAt.toISOString() });
+  const [role, setRole] = useState<UserRole>(user.role);
+  const [managerId, setManagerId] = useState(user.managerId ?? "");
+  const [assignedManagerId, setAssignedManagerId] = useState(user.managerId ?? "");
+  useEffect(() => {
+    setExpected({ expectedRole: user.role, expectedStatus: user.status, expectedUpdatedAt: user.updatedAt.toISOString() });
+    setRole(user.role);
+    setManagerId(user.managerId ?? "");
+    setAssignedManagerId(user.managerId ?? "");
+  }, [user.managerId, user.role, user.status, user.updatedAt]);
   async function run(operation: Parameters<typeof mutateAdminUser>[1], input: unknown) {
     setBusy(true); setMessage(null);
-    try { await mutateAdminUser(user.id, operation, input); router.refresh(); setMessage("Thao tác đã hoàn tất."); }
-    catch (error) { setMessage(error instanceof AdminUserApiError && error.kind === "conflict" ? "Dữ liệu đã thay đổi hoặc thao tác không hợp lệ. Hãy tải lại trang." : "Không thể hoàn tất thao tác."); }
+    try {
+      const result = await mutateAdminUser(user.id, operation, input);
+      setExpected({ expectedRole: result.role, expectedStatus: result.status, expectedUpdatedAt: result.updatedAt });
+      if (operation === "manager") setAssignedManagerId(managerId);
+      router.refresh();
+      setMessage("Thao tác đã hoàn tất.");
+    }
+    catch (error) {
+      setMessage(error instanceof AdminUserApiError
+        ? error.issues[0]?.message ?? error.message
+        : "Không thể hoàn tất thao tác.");
+    }
     finally { setBusy(false); }
   }
   function profile(event: FormEvent<HTMLFormElement>) {
@@ -40,11 +59,11 @@ export function UserManagementPanel({ user, managers }: Props) {
         <Field><FieldLabel htmlFor="phone">Điện thoại</FieldLabel><Input id="phone" name="phone" defaultValue={user.phone ?? ""} /></Field>
       </FieldGroup><Button className="w-full sm:w-fit" disabled={busy} type="submit">Lưu hồ sơ</Button></form></CardContent></Card>
     <Card><CardHeader><CardTitle>Vai trò và quản lý</CardTitle><CardDescription>Đổi vai trò sẽ thu hồi toàn bộ phiên đăng nhập của tài khoản.</CardDescription></CardHeader><CardContent className="flex flex-col gap-5">
-      <form className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); const role = new FormData(event.currentTarget).get("role") as UserRole; void run("role", { ...expected, role }); }}>
-        <Field className="flex-1"><FieldLabel htmlFor="role">Vai trò</FieldLabel><select id="role" name="role" defaultValue={user.role} className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"><option>SALE</option><option>MANAGER</option><option>ADMIN</option></select></Field><Button className="w-full sm:w-auto" disabled={busy}>Đổi vai trò</Button>
+      <form className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); void run("role", { ...expected, role }); }}>
+        <Field className="flex-1"><FieldLabel htmlFor="role">Vai trò</FieldLabel><select id="role" name="role" value={role} onChange={(event) => setRole(event.target.value as UserRole)} className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"><option>SALE</option><option>MANAGER</option><option>ADMIN</option></select></Field><Button className="w-full sm:w-auto" disabled={busy || role === expected.expectedRole}>Đổi vai trò</Button>
       </form>
-      {user.role === "SALE" ? <form className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); const value = new FormData(event.currentTarget).get("managerId"); void run("manager", { ...expected, managerId: value === "" ? null : value }); }}>
-        <Field className="flex-1"><FieldLabel htmlFor="managerId">Quản lý trực tiếp</FieldLabel><select id="managerId" name="managerId" defaultValue={user.managerId ?? ""} className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"><option value="">Chưa phân công</option>{managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.fullName}</option>)}</select></Field><Button className="w-full sm:w-auto" disabled={busy}>Phân công</Button>
+      {expected.expectedRole === "SALE" ? <form className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end" onSubmit={(event) => { event.preventDefault(); void run("manager", { ...expected, managerId: managerId === "" ? null : managerId }); }}>
+        <Field className="flex-1"><FieldLabel htmlFor="managerId">Quản lý trực tiếp</FieldLabel><select id="managerId" name="managerId" value={managerId} onChange={(event) => setManagerId(event.target.value)} className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"><option value="">Chưa phân công</option>{managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.fullName}</option>)}</select></Field><Button className="w-full sm:w-auto" disabled={busy || managerId === assignedManagerId}>Phân công</Button>
       </form> : null}
     </CardContent></Card>
     <Card><CardHeader><CardTitle>Vòng đời và bảo mật</CardTitle><CardDescription>Khóa bảo mật tạm thời độc lập với trạng thái ACTIVE/DISABLED.</CardDescription></CardHeader><CardContent className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">

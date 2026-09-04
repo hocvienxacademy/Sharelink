@@ -61,21 +61,31 @@ export class PrismaUserRepository implements UserManagementRepository {
       status: toUserAccountStatus(user.is_active), managerName: user.users?.full_name ?? null, updatedAt: user.updated_at }));
   }
 
+  async listActiveManagerOptions(): Promise<readonly Pick<UserListItem, "id" | "fullName">[]> {
+    return executePrismaOperation(() => prisma.users.findMany({
+      where: { role: "MANAGER", is_active: true },
+      orderBy: [{ full_name: "asc" }, { id: "asc" }],
+      take: 500,
+      select: { id: true, full_name: true },
+    })).then((users) => users.map((user) => ({ id: user.id, fullName: user.full_name })));
+  }
+
   async findDetail(actor: AuthenticatedActor, id: string): Promise<UserDetail | null> {
+    const ownAccount = actor.userId === id;
     const user = await executePrismaOperation(() => prisma.users.findFirst({
-      where: { id, ...(actor.role === "ADMIN" ? {} : { role: "SALE", manager_id: actor.userId }) },
+      where: { id, ...(actor.role === "ADMIN" || ownAccount ? {} : { role: "SALE", manager_id: actor.userId }) },
       select: { id: true, username: true, full_name: true, email: true, phone: true, role: true, manager_id: true,
         is_active: true, failed_login_attempts: true, locked_until: true, last_login_at: true,
         password_changed_at: true, created_at: true, updated_at: true, users: { select: { full_name: true } } },
     }));
     if (user === null) return null;
-    const admin = actor.role === "ADMIN";
+    const revealPrivateFields = actor.role === "ADMIN" || ownAccount;
     return { id: user.id, username: user.username, fullName: user.full_name, role: user.role,
       status: toUserAccountStatus(user.is_active), managerName: user.users?.full_name ?? null, managerId: user.manager_id,
-      updatedAt: user.updated_at, email: admin ? user.email : null, phone: admin ? user.phone : null,
-      lastLoginAt: admin ? user.last_login_at : null, failedLoginAttempts: admin ? user.failed_login_attempts : null,
-      lockedUntil: admin ? user.locked_until : null, passwordChangedAt: admin ? user.password_changed_at : null,
-      createdAt: admin ? user.created_at : null };
+      updatedAt: user.updated_at, email: revealPrivateFields ? user.email : null, phone: revealPrivateFields ? user.phone : null,
+      lastLoginAt: revealPrivateFields ? user.last_login_at : null, failedLoginAttempts: revealPrivateFields ? user.failed_login_attempts : null,
+      lockedUntil: revealPrivateFields ? user.locked_until : null, passwordChangedAt: revealPrivateFields ? user.password_changed_at : null,
+      createdAt: revealPrivateFields ? user.created_at : null };
   }
 
   async findHistory(actor: AuthenticatedActor, id: string): Promise<readonly UserHistoryItem[] | null> {
@@ -160,6 +170,32 @@ export class PrismaUserRepository implements UserManagementRepository {
     return this.mutate(command, "USER_PASSWORD_RESET", async (transaction, _current, now) => {
       if (command.id === command.actor.userId) throw new ForbiddenError();
       const updated = await transaction.users.update({ where: { id: command.id }, data: { password_hash: command.passwordHash, password_changed_at: now, failed_login_attempts: 0, locked_until: null, updated_at: now }, select: { id: true, role: true, is_active: true, updated_at: true } });
+      await this.deleteSessions(transaction, command.id);
+      return { updated, metadata: { changedFields: ["password", "failedLoginAttempts", "lockedUntil"] } };
+    });
+  }
+
+  async findPasswordHash(id: string): Promise<string | null> {
+    const user = await executePrismaOperation(() => prisma.users.findUnique({
+      where: { id },
+      select: { password_hash: true },
+    }));
+    return user?.password_hash ?? null;
+  }
+
+  async changeOwnPassword(command: UserCommand<AccountTransitionInput> & { readonly passwordHash: string }): Promise<UserMutationResult> {
+    return this.mutate(command, "USER_PASSWORD_CHANGED", async (transaction, _current, now) => {
+      const updated = await transaction.users.update({
+        where: { id: command.id },
+        data: {
+          password_hash: command.passwordHash,
+          password_changed_at: now,
+          failed_login_attempts: 0,
+          locked_until: null,
+          updated_at: now,
+        },
+        select: { id: true, role: true, is_active: true, updated_at: true },
+      });
       await this.deleteSessions(transaction, command.id);
       return { updated, metadata: { changedFields: ["password", "failedLoginAttempts", "lockedUntil"] } };
     });

@@ -18,6 +18,7 @@ export { USER_ROLES, USER_ACCOUNT_STATUSES, toUserAccountStatus, type CreatedUse
 export type {
   CreateUserPersistenceInput,
   PasswordHasher,
+  PasswordVerifier,
   UserRepository,
   UserManagementRepository,
   UserMutationContext,

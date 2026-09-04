@@ -14,13 +14,16 @@ export default async function UserDetailPage({ params }: { readonly params: Prom
   const { id } = await params;
   if (id === "moi") {
     const admin = await requireAdminPage();
-    const managers = (await queryUsers.list(toAuthenticatedActor(admin))).filter((user) => user.role === "MANAGER" && user.status === "ACTIVE").map((user) => ({ id: user.id, fullName: user.fullName }));
+    const managers = await queryUsers.activeManagerOptions(toAuthenticatedActor(admin));
     return <div className="flex flex-col gap-8"><AdminPageHeader parent={{ href: "/quan-tri/nhan-su", label: "Nhân sự" }} title="Tạo tài khoản" description="Tạo tài khoản ACTIVE và phân công quản lý cho SALE nếu cần." /><CreateUserForm managers={managers} /></div>;
   }
   const identity = await requireStaffPage(); const actor = toAuthenticatedActor(identity);
-  const [item, users, history] = await Promise.all([queryUsers.detail(actor, id), queryUsers.list(actor), queryUsers.history(actor, id)]);
+  const [item, managers, history] = await Promise.all([
+    queryUsers.detail(actor, id),
+    identity.role === "ADMIN" ? queryUsers.activeManagerOptions(actor) : Promise.resolve([]),
+    queryUsers.history(actor, id),
+  ]);
   if (item === null || history === null) notFound();
-  const managers = identity.role === "ADMIN" ? users.filter((user) => user.role === "MANAGER" && user.status === "ACTIVE").map(({ id: managerId, fullName }) => ({ id: managerId, fullName })) : [];
   return <div className="flex flex-col gap-8">
     <AdminPageHeader parent={{ href: "/quan-tri/nhan-su", label: "Nhân sự" }} title={item.fullName} description={identity.role === "ADMIN" ? "Chi tiết tài khoản và trạng thái bảo mật." : "Thông tin SALE báo cáo trực tiếp; chế độ chỉ đọc."} />
     <AdminDetailGrid title="Thông tin tài khoản" items={[

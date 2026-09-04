@@ -25,14 +25,24 @@ export const roleChangeSchema = z.object({ ...expected, role: z.enum(USER_ROLES)
 export const managerAssignmentSchema = z.object({ ...expected, managerId: z.uuid().nullable() }).strict();
 export const accountTransitionSchema = z.object(expected).strict();
 export const resetPasswordSchema = z.object({ ...expected, password: z.string().min(8).max(128) }).strict();
+export const ownPasswordChangeSchema = z.object({
+  ...expected,
+  currentPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(8).max(128),
+}).strict().refine((values) => values.currentPassword !== values.newPassword, {
+  path: ["newPassword"],
+  message: "Mật khẩu mới phải khác mật khẩu hiện tại.",
+});
 
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
 export type RoleChangeInput = z.infer<typeof roleChangeSchema>;
 export type ManagerAssignmentInput = z.infer<typeof managerAssignmentSchema>;
 export type AccountTransitionInput = z.infer<typeof accountTransitionSchema>;
+export type OwnPasswordChangeInput = z.infer<typeof ownPasswordChangeSchema>;
 
 export const parseProfileUpdate = (input: unknown) => parseWithSchema(profileUpdateSchema, input);
 export const parseRoleChange = (input: unknown) => parseWithSchema(roleChangeSchema, input);
 export const parseManagerAssignment = (input: unknown) => parseWithSchema(managerAssignmentSchema, input);
 export const parseAccountTransition = (input: unknown) => parseWithSchema(accountTransitionSchema, input);
 export const parseResetPassword = (input: unknown) => parseWithSchema(resetPasswordSchema, input);
+export const parseOwnPasswordChange = (input: unknown) => parseWithSchema(ownPasswordChangeSchema, input);

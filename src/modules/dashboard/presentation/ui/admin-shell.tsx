@@ -23,10 +23,10 @@ export function AdminShell({
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <div className="hidden text-right sm:block">
+            <Link href="/quan-tri/tai-khoan" className="hidden rounded-lg px-2 py-1 text-right hover:bg-muted sm:block" aria-label="Mở tài khoản của tôi">
               <p className="text-sm font-medium">{identity.fullName}</p>
               <p className="text-xs text-muted-foreground">{identity.role}</p>
-            </div>
+            </Link>
             <LogoutButton />
           </div>
         </div>

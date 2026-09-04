@@ -27,6 +27,7 @@ export interface UserRepository {
 export interface UserManagementRepository extends UserRepository {
   findAuthorizationResource(id: string): Promise<UserAuthorizationResource | null>;
   list(actor: AuthenticatedActor): Promise<readonly UserListItem[]>;
+  listActiveManagerOptions(): Promise<readonly Pick<UserListItem, "id" | "fullName">[]>;
   findDetail(actor: AuthenticatedActor, id: string): Promise<UserDetail | null>;
   findHistory(actor: AuthenticatedActor, id: string): Promise<readonly UserHistoryItem[] | null>;
   updateProfile(command: UserCommand<ProfileUpdateInput>): Promise<UserMutationResult>;
@@ -35,6 +36,9 @@ export interface UserManagementRepository extends UserRepository {
   transitionAccount(command: UserCommand<AccountTransitionInput> & { readonly targetStatus: UserAccountStatus }): Promise<UserMutationResult>;
   unlockSecurity(command: UserCommand<AccountTransitionInput>): Promise<UserMutationResult>;
   resetPassword(command: UserCommand<AccountTransitionInput> & { readonly passwordHash: string }): Promise<UserMutationResult>;
+  findPasswordHash(id: string): Promise<string | null>;
+  changeOwnPassword(command: UserCommand<AccountTransitionInput> & { readonly passwordHash: string }): Promise<UserMutationResult>;
   revokeSessions(command: UserCommand<AccountTransitionInput>): Promise<UserMutationResult>;
 }
 export interface PasswordHasher { hash(password: string): Promise<string> }
+export interface PasswordVerifier { verify(password: string, passwordHash: string): Promise<boolean> }

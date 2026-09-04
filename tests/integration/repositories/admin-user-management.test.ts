@@ -110,6 +110,11 @@ describe("PrismaUserRepository", () => {
       const scoped = await repository.findDetail(managerActor, sale.id);
       assert.equal(scoped?.email, null);
 
+      await repository.assignManager({ actor: admin, id: sale.id, context, values: { ...(await expected()), managerId: null } });
+      assert.equal((await repository.findDetail(admin, sale.id))?.managerId, null);
+      await repository.assignManager({ actor: admin, id: sale.id, context, values: { ...(await expected()), managerId: manager.id } });
+      assert.equal((await repository.findDetail(admin, sale.id))?.managerId, manager.id);
+
       await withTestClient((client) => client.query("UPDATE users SET failed_login_attempts = 5, locked_until = NOW() + INTERVAL '15 minutes', updated_at = NOW() WHERE id = $1", [sale.id]));
       await repository.unlockSecurity({ actor: admin, id: sale.id, context, values: await expected() });
       const unlocked = await repository.findDetail(admin, sale.id);
@@ -121,6 +126,14 @@ describe("PrismaUserRepository", () => {
       const persisted = await withTestClient((client) => client.query<{ password_hash: string; sessions: string }>("SELECT u.password_hash, (SELECT COUNT(*)::text FROM app_sessions WHERE sess->>'userId' = u.id::text) sessions FROM users u WHERE u.id = $1", [sale.id]));
       assert.equal(await verifyPassword(replacement, persisted.rows[0]!.password_hash), true);
       assert.equal(persisted.rows[0]!.sessions, "0");
+
+      await withTestClient((client) => client.query("INSERT INTO app_sessions (sid, sess, expire) VALUES ('lifecycle-session-2', $1::json, NOW() + INTERVAL '1 hour')", [JSON.stringify({ userId: sale.id, role: "SALE", issuedAt: new Date().toISOString() })]));
+      const selfReplacement = "self-replacement-password";
+      await repository.changeOwnPassword({ actor: { userId: sale.id, username: "lifecycle-sale", role: "SALE" }, id: sale.id, context, values: await expected(), passwordHash: await hashPassword(selfReplacement) });
+      const selfChanged = await withTestClient((client) => client.query<{ password_hash: string; sessions: string; audit_count: string }>("SELECT u.password_hash, (SELECT COUNT(*)::text FROM app_sessions WHERE sess->>'userId' = u.id::text) sessions, (SELECT COUNT(*)::text FROM audit_logs WHERE entity_id = u.id AND action = 'USER_PASSWORD_CHANGED') audit_count FROM users u WHERE u.id = $1", [sale.id]));
+      assert.equal(await verifyPassword(selfReplacement, selfChanged.rows[0]!.password_hash), true);
+      assert.equal(selfChanged.rows[0]!.sessions, "0");
+      assert.equal(selfChanged.rows[0]!.audit_count, "1");
 
       const disabled = await repository.transitionAccount({ actor: admin, id: sale.id, context, targetStatus: "DISABLED", values: await expected() });
       assert.equal(disabled.status, "DISABLED");

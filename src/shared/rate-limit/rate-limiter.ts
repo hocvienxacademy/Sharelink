@@ -1,5 +1,6 @@
 export type RateLimitEndpoint =
   | "auth-login"
+  | "account-password"
   | "context"
   | "create"
   | "update"
