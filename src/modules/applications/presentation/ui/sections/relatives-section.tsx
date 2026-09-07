@@ -34,7 +34,7 @@ export function RelativesSection() {
     }
 
     setRemovalMessage(
-      `Người thân ${index + 1} sẽ bị xóa khỏi hồ sơ khi bạn lưu bản nháp.`,
+      `Người thân ${index + 1} sẽ bị xóa khỏi hồ sơ khi bạn chuyển sang trang sau.`,
     );
   };
 

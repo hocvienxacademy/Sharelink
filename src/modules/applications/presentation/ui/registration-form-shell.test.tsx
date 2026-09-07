@@ -173,7 +173,7 @@ describe("registration form shell", () => {
     );
   });
 
-  it("keeps the current step after the first save-and-continue", async () => {
+  it("keeps the next page after the first save-and-continue", async () => {
     const user = userEvent.setup();
     const routes: string[] = [];
     const queryClient: RegistrationQueryClient = {
@@ -202,11 +202,10 @@ describe("registration form shell", () => {
     );
 
     await screen.findByLabelText(/Họ và tên/);
-    await user.click(screen.getByRole("button", { name: "Bước 2: Học vấn" }));
     await user.type(screen.getByLabelText(/Ngành tốt nghiệp/), "Công nghệ thông tin");
-    await user.click(screen.getByRole("button", { name: "Lưu và tiếp tục" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
 
-    await screen.findByText("Bước 3: Người thân");
+    await screen.findByRole("button", { name: "Thêm người thân" });
     assert.deepEqual(routes, []);
   });
 

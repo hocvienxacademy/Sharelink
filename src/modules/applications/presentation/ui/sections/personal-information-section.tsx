@@ -17,8 +17,8 @@ export function PersonalInformationSection() {
     <FieldSet>
       <FieldLegend>Thông tin cá nhân và liên hệ</FieldLegend>
       <FieldDescription>
-        Các trường có dấu * cần đầy đủ trước khi nộp hồ sơ. Bạn vẫn có thể
-        lưu bản nháp khi đang nhập dở.
+        Các trường có dấu * cần đầy đủ trước khi nộp hồ sơ. Thông tin được lưu
+        khi bạn chuyển sang trang sau.
       </FieldDescription>
       <FieldGroup className="grid gap-5 md:grid-cols-2">
         <ApplicationTextField name="fullName" label="Họ và tên" required />

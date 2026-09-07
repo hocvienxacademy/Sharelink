@@ -6,7 +6,6 @@ import {
   ArrowRightIcon,
   CheckCircle2Icon,
   RefreshCwIcon,
-  SaveIcon,
   SendIcon,
 } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,10 +16,8 @@ import {
   useForm,
 } from "react-hook-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import {
   createDraftApplicationSchema,
@@ -49,12 +46,7 @@ import { RelativesSection } from "./sections/relatives-section";
 import { ReviewSection } from "./sections/review-section";
 import { StudentWordDownload } from "@/modules/word-export/presentation/ui/student-word-download";
 
-const steps = [
-  { title: "Thông tin cá nhân", shortTitle: "Cá nhân" },
-  { title: "Học vấn", shortTitle: "Học vấn" },
-  { title: "Người thân", shortTitle: "Người thân" },
-  { title: "Xem lại", shortTitle: "Xem lại" },
-] as const;
+const LAST_PAGE_INDEX = 2;
 
 export interface ApplicationMutationClient {
   createDraft(
@@ -116,7 +108,7 @@ export function ApplicationForm({
     reset,
     setError,
   } = form;
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const [applicationId, setApplicationId] = useState(application?.id ?? null);
   const [version, setVersion] = useState(application?.version ?? null);
   const [isRequesting, setIsRequesting] = useState(false);
@@ -150,7 +142,7 @@ export function ApplicationForm({
       )
       ?.focus();
     setPendingFocus(null);
-  }, [currentStep, pendingFocus]);
+  }, [currentPage, pendingFocus]);
 
   const applyValidationIssues = (error: ApiClientError) => {
     const mapped = mapValidationIssues(error.issues);
@@ -172,26 +164,9 @@ export function ApplicationForm({
 
     if (mapped.firstField !== null) {
       const target = mapped.firstField as FieldPath<ApplicationFormValues>;
-      const targetStep = mapped.firstField.startsWith("relatives.")
-        ? 2
-        : [
-              "majorId",
-              "entryQualification",
-              "admissionDiploma",
-              "graduateMajor",
-              "graduationYear",
-              "highSchoolName",
-              "highSchoolWard",
-              "highSchoolProvince",
-              "declarationPlace",
-              "declarationDate",
-              "declarationConfirmed",
-              "dataProcessingConsent",
-            ].includes(mapped.firstField)
-          ? 1
-          : 0;
+      const targetPage = mapped.firstField.startsWith("relatives.") ? 1 : 0;
 
-      setCurrentStep(targetStep);
+      setCurrentPage(targetPage);
       setPendingFocus(target);
     }
   };
@@ -288,21 +263,18 @@ export function ApplicationForm({
     }
   };
 
-  const save = (values: ApplicationFormValues, continueAfterSave: boolean) =>
+  const saveAndContinue = (values: ApplicationFormValues) =>
     runLocked(async () => {
       if (applicationId === null && !isDirty) {
         setGeneralMessage(
-          "Vui lòng nhập ít nhất một thông tin trước khi lưu bản nháp.",
+          "Vui lòng nhập ít nhất một thông tin trước khi chuyển sang trang sau.",
         );
         return;
       }
 
       await persistDraft(values);
       setSavedMessage("Đã lưu");
-
-      if (continueAfterSave) {
-        setCurrentStep((step) => Math.min(step + 1, steps.length - 1));
-      }
+      setCurrentPage((page) => Math.min(page + 1, LAST_PAGE_INDEX));
     });
 
   const submit = (values: ApplicationFormValues) =>
@@ -350,8 +322,6 @@ export function ApplicationForm({
   }
 
   const watchedValues = getValues();
-  const progressValue = ((currentStep + 1) / steps.length) * 100;
-
   return (
     <FormProvider {...form}>
       <form
@@ -365,34 +335,6 @@ export function ApplicationForm({
             <AlertDescription className="whitespace-pre-wrap">{application.latestRevisionReason}</AlertDescription>
           </Alert>
         ) : null}
-        <div className="flex flex-col gap-3">
-          <Progress value={progressValue}>
-            <ProgressLabel>
-              Bước {currentStep + 1}: {steps[currentStep].title}
-            </ProgressLabel>
-            <ProgressValue />
-          </Progress>
-          <div
-            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-            aria-label="Các bước của hồ sơ"
-          >
-            {steps.map((step, index) => (
-              <Button
-                key={step.title}
-                type="button"
-                size="sm"
-                variant={index === currentStep ? "default" : "outline"}
-                aria-label={`Bước ${index + 1}: ${step.title}`}
-                aria-current={index === currentStep ? "step" : undefined}
-                onClick={() => setCurrentStep(index)}
-                disabled={isRequesting}
-              >
-                <span className="sm:hidden">{index + 1}</span>
-                <span className="hidden sm:inline">{step.shortTitle}</span>
-              </Button>
-            ))}
-          </div>
-        </div>
 
         {generalMessage === null ? null : (
           <Alert variant={hasConflict ? "destructive" : "default"}>
@@ -429,27 +371,29 @@ export function ApplicationForm({
 
         <Card className="rounded-2xl sm:rounded-[2rem]">
           <CardContent>
-            {currentStep === 0 ? <PersonalInformationSection /> : null}
-            {currentStep === 1 ? (
-              <EducationSection context={context} />
+            {currentPage === 0 ? (
+              <div className="flex flex-col gap-10">
+                <PersonalInformationSection />
+                <EducationSection context={context} />
+              </div>
             ) : null}
-            {currentStep === 2 ? <RelativesSection /> : null}
-            {currentStep === 3 ? (
+            {currentPage === 1 ? <RelativesSection /> : null}
+            {currentPage === 2 ? (
               <ReviewSection context={context} values={watchedValues} />
             ) : null}
           </CardContent>
 
           <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-              {currentStep === 0 ? null : (
+              {currentPage === 0 ? null : (
                 <Button
                   type="button"
                   variant="outline"
                   disabled={isRequesting}
-                  onClick={() => setCurrentStep((step) => step - 1)}
+                  onClick={() => setCurrentPage((page) => page - 1)}
                 >
                   <ArrowLeftIcon data-icon="inline-start" />
-                  Quay lại
+                  Trang trước
                 </Button>
               )}
               {hasConflict && onReload !== undefined ? (
@@ -466,40 +410,19 @@ export function ApplicationForm({
             </div>
 
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
-              {currentStep < steps.length - 1 ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isRequesting}
-                    onClick={handleSubmit(
-                      (values) => save(values, false),
-                      invalidForm,
-                    )}
-                  >
-                    {isRequesting ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : (
-                      <SaveIcon data-icon="inline-start" />
-                    )}
-                    Lưu bản nháp
-                  </Button>
-                  <Button
-                    type="button"
-                    disabled={isRequesting}
-                    onClick={handleSubmit(
-                      (values) => save(values, true),
-                      invalidForm,
-                    )}
-                  >
-                    {isRequesting ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : (
-                      <ArrowRightIcon data-icon="inline-end" />
-                    )}
-                    Lưu và tiếp tục
-                  </Button>
-                </>
+              {currentPage < LAST_PAGE_INDEX ? (
+                <Button
+                  type="button"
+                  disabled={isRequesting}
+                  onClick={handleSubmit(saveAndContinue, invalidForm)}
+                >
+                  {isRequesting ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : (
+                    <ArrowRightIcon data-icon="inline-end" />
+                  )}
+                  Trang sau
+                </Button>
               ) : (
                 <Button
                   type="button"
@@ -519,7 +442,8 @@ export function ApplicationForm({
         </Card>
 
         <p className="text-xs text-muted-foreground">
-          Hồ sơ chỉ được gửi khi bạn nhấn “Nộp hồ sơ”. Không có lưu tự động.
+          Thông tin được lưu khi bạn chuyển sang trang sau. Hồ sơ chỉ được gửi
+          khi bạn nhấn “Nộp hồ sơ”.
         </p>
       </form>
     </FormProvider>

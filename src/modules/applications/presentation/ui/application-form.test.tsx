@@ -78,15 +78,18 @@ describe("student application form", () => {
     render(<ApplicationForm token={token} context={context} />);
 
     assert.ok(screen.getByLabelText(/Họ và tên/));
+    assert.ok(screen.getByLabelText(/Ngành tốt nghiệp/));
     assert.ok(screen.getByLabelText(/Công việc.*không bắt buộc/));
     assert.equal(screen.queryByText("Người thân 1"), null);
+    assert.equal(screen.queryByRole("progressbar"), null);
+    assert.equal(screen.queryByRole("button", { name: /Bước/ }), null);
+    assert.ok(screen.getByRole("button", { name: "Trang sau" }));
+    assert.equal(screen.queryByRole("button", { name: "Trang trước" }), null);
+    assert.equal(screen.queryByRole("button", { name: "Nộp hồ sơ" }), null);
   });
 
-  it("prefills and locks the major fixed by the registration link", async () => {
-    const user = userEvent.setup();
+  it("prefills and locks the major fixed by the registration link", () => {
     render(<ApplicationForm token={token} context={context} />);
-
-    await user.click(screen.getByRole("button", { name: "Bước 2: Học vấn" }));
 
     const major = screen.getByRole("combobox", { name: /Ngành đăng ký/ });
     assert.equal(
@@ -99,11 +102,15 @@ describe("student application form", () => {
 
   it("adds at most two relatives and renumbers after removal", async () => {
     const user = userEvent.setup();
-    render(<ApplicationForm token={token} context={context} />);
-
-    await user.click(
-      screen.getByRole("button", { name: "Bước 3: Người thân" }),
+    render(
+      <ApplicationForm
+        token={token}
+        context={context}
+        application={editable(1)}
+      />,
     );
+
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
     await user.click(screen.getByRole("button", { name: "Thêm người thân" }));
     await user.click(screen.getByRole("button", { name: "Thêm người thân" }));
 
@@ -120,7 +127,7 @@ describe("student application form", () => {
 
     assert.ok(screen.getByText("Người thân 1"));
     assert.equal(screen.queryByText("Người thân 2"), null);
-    assert.match(screen.getByRole("status").textContent ?? "", /sẽ bị xóa/);
+    assert.ok(screen.getByText(/sẽ bị xóa/));
   });
 
   it("creates a draft once, then updates with the latest expectedVersion", async () => {
@@ -155,16 +162,23 @@ describe("student application form", () => {
     );
 
     await user.type(screen.getByLabelText(/Họ và tên/), "Nguyễn Văn A");
-    await user.click(screen.getByRole("button", { name: "Lưu bản nháp" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
 
     await waitFor(() =>
       assert.match(screen.getByRole("status").textContent ?? "", /Đã lưu/),
     );
 
+    await user.click(screen.getByRole("button", { name: "Trang trước" }));
+    assert.equal(
+      (screen.getByLabelText(/Họ và tên/) as HTMLInputElement).value,
+      "Nguyễn Văn A",
+    );
     await user.type(screen.getByLabelText(/Quốc tịch/), "Việt Nam");
-    await user.click(screen.getByRole("button", { name: "Lưu bản nháp" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
 
     await waitFor(() => assert.deepEqual(updateVersions, [1]));
+    assert.ok(screen.getByRole("button", { name: "Trang trước" }));
+    assert.equal(screen.queryByRole("button", { name: "Nộp hồ sơ" }), null);
   });
 
   it("submits once with optional workplace, major and relatives left empty", async () => {
@@ -203,7 +217,10 @@ describe("student application form", () => {
     );
 
     await user.type(screen.getByLabelText(/Họ và tên/), "Nguyễn Văn A");
-    await user.click(screen.getByRole("button", { name: "Bước 4: Xem lại" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
+    assert.ok(screen.getByText("Xem lại thông tin cá nhân"));
+    assert.ok(screen.getByRole("button", { name: "Trang trước" }));
     await user.dblClick(screen.getByRole("button", { name: "Nộp hồ sơ" }));
 
     await screen.findByText("Hồ sơ đã được nộp thành công");
@@ -256,13 +273,56 @@ describe("student application form", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Bước 4: Xem lại" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
     await user.click(screen.getByRole("button", { name: "Nộp hồ sơ" }));
 
     const phone = await screen.findByLabelText("Điện thoại *");
     assert.equal(phone.getAttribute("aria-invalid"), "true");
     await waitFor(() => assert.equal(document.activeElement, phone));
     assert.ok(screen.getByText("Điện thoại người thân 1"));
+  });
+
+  it("returns an education server issue to the combined first page", async () => {
+    const user = userEvent.setup();
+    const mutationClient: ApplicationMutationClient = {
+      createDraft: async () => ({
+        id: applicationId,
+        status: "DRAFT",
+        version: 1,
+      }),
+      updateDraft: async () => editable(2),
+      submit: async () => {
+        throw new ApiClientError("validation", {
+          status: 422,
+          issues: [
+            {
+              path: ["graduateMajor"],
+              code: "required",
+              message: "Vui lòng nhập ngành tốt nghiệp.",
+            },
+          ],
+        });
+      },
+    };
+
+    render(
+      <ApplicationForm
+        token={token}
+        context={context}
+        application={editable(1)}
+        mutationClient={mutationClient}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
+    await user.click(screen.getByRole("button", { name: "Nộp hồ sơ" }));
+
+    const graduateMajor = await screen.findByLabelText(/Ngành tốt nghiệp/);
+    assert.equal(graduateMajor.getAttribute("aria-invalid"), "true");
+    await waitFor(() => assert.equal(document.activeElement, graduateMajor));
+    assert.ok(screen.getByLabelText(/Họ và tên/));
   });
 
   it("shows a reload action on optimistic concurrency conflict", async () => {
@@ -299,7 +359,7 @@ describe("student application form", () => {
     );
 
     await user.type(screen.getByLabelText(/Quốc tịch/), "Việt Nam");
-    await user.click(screen.getByRole("button", { name: "Lưu bản nháp" }));
+    await user.click(screen.getByRole("button", { name: "Trang sau" }));
 
     assert.ok(await screen.findByText(/phiên khác/));
     await user.click(screen.getByRole("button", { name: "Tải lại hồ sơ" }));
