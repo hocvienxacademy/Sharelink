@@ -11,9 +11,11 @@ import {
   type RegistrationQueryClient,
 } from "./registration-form-shell";
 import type { ApplicationMutationClient } from "./application-form";
+import { fillRequiredFirstPage } from "./application-form.test-helpers";
 
 const token = "11111111-1111-4111-8111-111111111111";
 const applicationId = "22222222-2222-4222-8222-222222222222";
+const majorId = "33333333-3333-4333-8333-333333333333";
 
 function context(
   overrides: Partial<RegistrationContext> = {},
@@ -177,7 +179,12 @@ describe("registration form shell", () => {
     const user = userEvent.setup();
     const routes: string[] = [];
     const queryClient: RegistrationQueryClient = {
-      getContext: async () => context(),
+      getContext: async () =>
+        context({
+          majorId,
+          majors: [{ id: majorId, code: "CNTT", name: "Công nghệ thông tin" }],
+          entryQualification: "THPT",
+        }),
       getApplication: async () => editable(),
     };
     const mutationClient: ApplicationMutationClient = {
@@ -202,7 +209,7 @@ describe("registration form shell", () => {
     );
 
     await screen.findByLabelText(/Họ và tên/);
-    await user.type(screen.getByLabelText(/Ngành tốt nghiệp/), "Công nghệ thông tin");
+    await fillRequiredFirstPage(user);
     await user.click(screen.getByRole("button", { name: "Trang sau" }));
 
     await screen.findByRole("button", { name: "Thêm người thân" });

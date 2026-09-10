@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import type { ApplicationFormValues } from "../application-form.types";
 
 interface FieldOption {
@@ -36,6 +37,7 @@ interface FieldOption {
 }
 
 interface BaseFieldProps {
+  readonly className?: string;
   readonly description?: string;
   readonly label: string;
   readonly name: FieldPath<ApplicationFormValues>;
@@ -62,17 +64,32 @@ function FieldLabelText({
 }
 
 export function ApplicationTextField({
+  autoCapitalize,
+  autoComplete,
+  className,
   description,
+  inputMode,
   label,
+  max,
+  maxLength,
+  min,
   name,
   optional,
+  placeholder,
   required,
+  spellCheck,
   type = "text",
-  inputMode,
   multiline = false,
 }: BaseFieldProps & {
+  readonly autoCapitalize?: React.HTMLAttributes<HTMLInputElement>["autoCapitalize"];
+  readonly autoComplete?: React.InputHTMLAttributes<HTMLInputElement>["autoComplete"];
   readonly inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  readonly max?: number;
+  readonly maxLength?: number;
+  readonly min?: number;
   readonly multiline?: boolean;
+  readonly placeholder?: string;
+  readonly spellCheck?: React.HTMLAttributes<HTMLInputElement>["spellCheck"];
   readonly type?: React.HTMLInputTypeAttribute;
 }) {
   const { control } = useFormContext<ApplicationFormValues>();
@@ -120,7 +137,13 @@ export function ApplicationTextField({
         } as const;
 
         return (
-          <Field data-invalid={fieldState.invalid}>
+          <Field
+            className={className}
+            data-empty={displayValue === ""}
+            data-field-name={field.name}
+            data-invalid={fieldState.invalid}
+            data-required={required || undefined}
+          >
             <FieldLabel htmlFor={id}>
               <FieldLabelText
                 label={label}
@@ -129,11 +152,29 @@ export function ApplicationTextField({
               />
             </FieldLabel>
             {multiline ? (
-              <Textarea {...controlProps} />
+              <Textarea
+                {...controlProps}
+                autoCapitalize={autoCapitalize}
+                autoComplete={autoComplete}
+                className="min-h-24"
+                maxLength={maxLength}
+                placeholder={placeholder}
+                required={required}
+                spellCheck={spellCheck}
+              />
             ) : (
               <Input
                 {...controlProps}
+                autoCapitalize={autoCapitalize}
+                autoComplete={autoComplete}
+                className="min-h-11"
                 inputMode={inputMode}
+                max={max}
+                maxLength={maxLength}
+                min={min}
+                placeholder={placeholder}
+                required={required}
+                spellCheck={spellCheck}
                 type={type}
               />
             )}
@@ -155,6 +196,7 @@ export function ApplicationTextField({
 }
 
 export function ApplicationDatePickerField({
+  className,
   description,
   label,
   name,
@@ -180,7 +222,13 @@ export function ApplicationDatePickerField({
           .join(" ");
 
         return (
-          <Field data-invalid={fieldState.invalid}>
+          <Field
+            className={cn("[&_button]:min-h-11", className)}
+            data-empty={field.value === null || field.value === undefined}
+            data-field-name={field.name}
+            data-invalid={fieldState.invalid}
+            data-required={required || undefined}
+          >
             <FieldLabel htmlFor={id}>
               <FieldLabelText
                 label={label}
@@ -216,6 +264,7 @@ export function ApplicationDatePickerField({
 }
 
 export function ApplicationSelectField({
+  className,
   description,
   disabled = false,
   label,
@@ -236,8 +285,22 @@ export function ApplicationSelectField({
     <Controller
       control={control}
       name={name}
-      render={({ field, fieldState }) => (
-        <Field data-invalid={fieldState.invalid}>
+      render={({ field, fieldState }) => {
+        const describedBy = [
+          description === undefined ? null : `${id}-description`,
+          fieldState.error === undefined ? null : `${id}-error`,
+        ]
+          .filter((value): value is string => value !== null)
+          .join(" ");
+
+        return (
+        <Field
+          className={className}
+          data-empty={field.value === null || field.value === undefined}
+          data-field-name={field.name}
+          data-invalid={fieldState.invalid}
+          data-required={required || undefined}
+        >
           <FieldLabel htmlFor={id}>
             <FieldLabelText
               label={label}
@@ -253,11 +316,10 @@ export function ApplicationSelectField({
           >
             <SelectTrigger
               id={id}
-              className="w-full"
-              aria-describedby={
-                fieldState.error === undefined ? undefined : `${id}-error`
-              }
+              className="min-h-11 w-full"
+              aria-describedby={describedBy || undefined}
               aria-invalid={fieldState.invalid}
+              aria-required={required}
             >
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
@@ -272,7 +334,9 @@ export function ApplicationSelectField({
             </SelectContent>
           </Select>
           {description === undefined ? null : (
-            <FieldDescription>{description}</FieldDescription>
+            <FieldDescription id={`${id}-description`}>
+              {description}
+            </FieldDescription>
           )}
           {fieldState.error === undefined ? null : (
             <FieldError id={`${id}-error`}>
@@ -280,13 +344,16 @@ export function ApplicationSelectField({
             </FieldError>
           )}
         </Field>
-      )}
+        );
+      }}
     />
   );
 }
 
 export function ApplicationComboboxField({
   allowCustomValue = true,
+  autoComplete,
+  className,
   description,
   disabled = false,
   emptyMessage = "Không tìm thấy kết quả.",
@@ -300,6 +367,7 @@ export function ApplicationComboboxField({
   required,
 }: BaseFieldProps & {
   readonly allowCustomValue?: boolean;
+  readonly autoComplete?: React.InputHTMLAttributes<HTMLInputElement>["autoComplete"];
   readonly disabled?: boolean;
   readonly emptyMessage?: string;
   readonly maxLength?: number;
@@ -325,8 +393,14 @@ export function ApplicationComboboxField({
 
         return (
           <Field
+            className={className}
             data-disabled={disabled || undefined}
+            data-empty={
+              typeof field.value !== "string" || field.value.trim() === ""
+            }
+            data-field-name={field.name}
             data-invalid={fieldState.invalid}
+            data-required={required || undefined}
           >
             <FieldLabel htmlFor={id}>
               <FieldLabelText
@@ -349,11 +423,14 @@ export function ApplicationComboboxField({
             >
               <ComboboxInput
                 id={id}
+                autoComplete={autoComplete}
+                className="min-h-11"
                 name={field.name}
                 maxLength={maxLength}
                 placeholder={placeholder}
                 aria-describedby={describedBy || undefined}
                 aria-invalid={fieldState.invalid}
+                aria-required={required}
                 onBlur={field.onBlur}
               />
               <ComboboxContent>
@@ -388,6 +465,7 @@ export function ApplicationComboboxField({
 }
 
 export function ApplicationCheckboxField({
+  className,
   description,
   label,
   name,
@@ -401,6 +479,7 @@ export function ApplicationCheckboxField({
       name={name}
       render={({ field, fieldState }) => (
         <Field
+          className={className}
           orientation="horizontal"
           data-invalid={fieldState.invalid}
         >

@@ -19,6 +19,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 import {
   createDraftApplicationSchema,
   updateDraftApplicationSchema,
@@ -85,6 +86,28 @@ interface PersistedDraft {
   readonly version: number;
 }
 
+function applicationFieldId(name: FieldPath<ApplicationFormValues>): string {
+  return `application-field-${name.replaceAll(".", "-")}`;
+}
+
+function focusAndScrollToField(
+  name: FieldPath<ApplicationFormValues>,
+): void {
+  const target = document.getElementById(applicationFieldId(name));
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  target.focus({ preventScroll: true });
+  if (typeof target.scrollIntoView === "function") {
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+  }
+}
+
 export function ApplicationForm({
   application,
   context,
@@ -119,6 +142,7 @@ export function ApplicationForm({
   const [submitted, setSubmitted] = useState<SubmittedApplication | null>(null);
   const [pendingFocus, setPendingFocus] =
     useState<FieldPath<ApplicationFormValues> | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const requestLock = useRef(false);
 
   useEffect(() => {
@@ -136,11 +160,7 @@ export function ApplicationForm({
       return;
     }
 
-    document
-      .getElementById(
-        `application-field-${pendingFocus.replaceAll(".", "-")}`,
-      )
-      ?.focus();
+    focusAndScrollToField(pendingFocus);
     setPendingFocus(null);
   }, [currentPage, pendingFocus]);
 
@@ -295,10 +315,55 @@ export function ApplicationForm({
       onReload?.();
     });
 
+  const focusFirstInvalidField = (): void => {
+    const invalidField = formRef.current?.querySelector<HTMLElement>(
+      '[data-field-name][data-invalid="true"]',
+    );
+    const name = invalidField?.dataset.fieldName;
+
+    if (name !== undefined) {
+      focusAndScrollToField(name as FieldPath<ApplicationFormValues>);
+    }
+  };
+
   const invalidForm = () => {
     setGeneralMessage(
       "Một số thông tin chưa đúng định dạng. Vui lòng kiểm tra các trường được đánh dấu.",
     );
+    requestAnimationFrame(focusFirstInvalidField);
+  };
+
+  const continueToNextPage = (): void => {
+    const missingFields = Array.from(
+      formRef.current?.querySelectorAll<HTMLElement>(
+        '[data-field-name][data-required="true"][data-empty="true"]',
+      ) ?? [],
+    );
+
+    if (missingFields.length > 0) {
+      for (const field of missingFields) {
+        const name = field.dataset.fieldName;
+        if (name === undefined) continue;
+
+        setError(name as FieldPath<ApplicationFormValues>, {
+          type: "required",
+          message: "Vui lòng điền thông tin bắt buộc này.",
+        });
+      }
+
+      setGeneralMessage(
+        "Vui lòng điền các trường bắt buộc trước khi tiếp tục.",
+      );
+      const firstName = missingFields[0]?.dataset.fieldName;
+      if (firstName !== undefined) {
+        focusAndScrollToField(
+          firstName as FieldPath<ApplicationFormValues>,
+        );
+      }
+      return;
+    }
+
+    void handleSubmit(saveAndContinue, invalidForm)();
   };
 
   if (submitted !== null) {
@@ -325,6 +390,7 @@ export function ApplicationForm({
   return (
     <FormProvider {...form}>
       <form
+        ref={formRef}
         noValidate
         onSubmit={(event) => event.preventDefault()}
         className="flex flex-col gap-5"
@@ -383,12 +449,13 @@ export function ApplicationForm({
             ) : null}
           </CardContent>
 
-          <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+          <CardFooter className="flex flex-col items-stretch gap-3 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center min-[480px]:justify-between">
+            <div className="grid w-full grid-cols-1 gap-2 min-[480px]:flex min-[480px]:w-auto min-[480px]:flex-wrap">
               {currentPage === 0 ? null : (
                 <Button
                   type="button"
                   variant="outline"
+                  className="min-h-11 w-full min-[480px]:w-auto"
                   disabled={isRequesting}
                   onClick={() => setCurrentPage((page) => page - 1)}
                 >
@@ -400,6 +467,7 @@ export function ApplicationForm({
                 <Button
                   type="button"
                   variant="outline"
+                  className="min-h-11 w-full min-[480px]:w-auto"
                   disabled={isRequesting}
                   onClick={onReload}
                 >
@@ -409,12 +477,19 @@ export function ApplicationForm({
               ) : null}
             </div>
 
-            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
+            <div
+              className={cn(
+                "grid w-full grid-cols-1 gap-2",
+                currentPage !== 0 &&
+                  "min-[480px]:flex min-[480px]:w-auto min-[480px]:flex-wrap min-[480px]:justify-end",
+              )}
+            >
               {currentPage < LAST_PAGE_INDEX ? (
                 <Button
                   type="button"
+                  className="min-h-11 w-full min-[480px]:w-auto"
                   disabled={isRequesting}
-                  onClick={handleSubmit(saveAndContinue, invalidForm)}
+                  onClick={continueToNextPage}
                 >
                   {isRequesting ? (
                     <Spinner data-icon="inline-start" />
@@ -426,6 +501,7 @@ export function ApplicationForm({
               ) : (
                 <Button
                   type="button"
+                  className="min-h-11 w-full min-[480px]:w-auto"
                   disabled={isRequesting}
                   onClick={handleSubmit(submit, invalidForm)}
                 >

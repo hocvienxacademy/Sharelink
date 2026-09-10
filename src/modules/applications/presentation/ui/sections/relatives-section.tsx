@@ -11,6 +11,7 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
+import { WORD_EXPORT_TEXT_LIMITS } from "../../../application/validation/application-schemas";
 import type { ApplicationFormValues } from "../application-form.types";
 import { emptyRelative } from "../application-form.types";
 import { ApplicationTextField } from "../components/application-field";
@@ -67,6 +68,7 @@ export function RelativesSection() {
                 type="button"
                 variant="destructive"
                 size="sm"
+                className="min-h-11"
                 aria-label={`Xóa người thân ${index + 1}`}
                 onClick={() => removeRelative(index)}
               >
@@ -74,32 +76,54 @@ export function RelativesSection() {
                 Xóa
               </Button>
             </div>
-            <FieldGroup className="grid gap-5 md:grid-cols-2">
+            <FieldGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12">
               <ApplicationTextField
+                className="sm:col-span-2 lg:col-span-6"
                 name={`relatives.${index}.fullName`}
                 label="Họ và tên"
+                autoCapitalize="words"
+                autoComplete={`section-relative-${index + 1} name`}
+                maxLength={WORD_EXPORT_TEXT_LIMITS.relativeFullName}
+                placeholder="Ví dụ: Nguyễn Thị Mai"
+                spellCheck={false}
                 required
               />
               <ApplicationTextField
+                className="lg:col-span-3"
                 name={`relatives.${index}.relationship`}
                 label="Quan hệ"
+                maxLength={WORD_EXPORT_TEXT_LIMITS.relativeRelationship}
+                placeholder="Ví dụ: Mẹ"
                 required
               />
               <ApplicationTextField
+                className="lg:col-span-3"
                 name={`relatives.${index}.occupation`}
                 label="Nghề nghiệp"
+                maxLength={WORD_EXPORT_TEXT_LIMITS.relativeOccupation}
+                placeholder="Ví dụ: Giáo viên"
                 required
               />
               <ApplicationTextField
+                className="lg:col-span-4"
                 name={`relatives.${index}.phone`}
                 label="Điện thoại"
+                autoComplete={`section-relative-${index + 1} tel`}
+                description="Số điện thoại người thân phải gồm từ 10 đến 15 chữ số."
                 inputMode="numeric"
+                maxLength={15}
+                placeholder="Ví dụ: 0912345678"
+                spellCheck={false}
+                type="tel"
                 required
               />
-              <div className="md:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-12">
                 <ApplicationTextField
                   name={`relatives.${index}.address`}
                   label="Địa chỉ"
+                  autoComplete={`section-relative-${index + 1} street-address`}
+                  maxLength={WORD_EXPORT_TEXT_LIMITS.relativeAddress}
+                  placeholder="Nhập địa chỉ hiện tại"
                   multiline
                   required
                 />
@@ -112,7 +136,7 @@ export function RelativesSection() {
           <Button
             type="button"
             variant="outline"
-            className="self-start"
+            className="min-h-11 w-full min-[480px]:w-auto min-[480px]:self-start"
             onClick={() => {
               append(emptyRelative(fields.length + 1));
               setRemovalMessage(null);

@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type {
   DraftApplication,
@@ -10,6 +15,7 @@ import type {
 import { ApiClientError } from "./application-api-client";
 import { ApplicationForm } from "./application-form";
 import type { ApplicationMutationClient } from "./application-form";
+import { fillRequiredFirstPage } from "./application-form.test-helpers";
 
 const token = "11111111-1111-4111-8111-111111111111";
 const applicationId = "22222222-2222-4222-8222-222222222222";
@@ -25,7 +31,7 @@ const context: RegistrationContext = {
     },
   ],
   studentNameHint: null,
-  entryQualification: null,
+  entryQualification: "THPT",
   hasApplication: false,
   application: null,
   payment: {
@@ -40,29 +46,29 @@ function editable(version: number): EditableApplication {
     id: applicationId,
     status: "DRAFT",
     version,
-    majorId: null,
-    entryQualification: null,
+    majorId: context.majorId,
+    entryQualification: "THPT",
     fullName: "Nguyễn Văn A",
-    gender: null,
-    dateOfBirth: null,
-    placeOfBirth: null,
-    ethnicity: null,
-    religion: null,
-    nationality: null,
-    citizenId: null,
-    citizenIdIssuedDate: null,
-    citizenIdIssuedPlace: null,
-    permanentAddress: null,
+    gender: "MALE",
+    dateOfBirth: "2000-01-10",
+    placeOfBirth: "Trà Vinh",
+    ethnicity: "Kinh",
+    religion: "Không",
+    nationality: "Việt Nam",
+    citizenId: "012345678901",
+    citizenIdIssuedDate: "2020-01-10",
+    citizenIdIssuedPlace: "Cục Cảnh sát quản lý hành chính",
+    permanentAddress: "Trà Vinh",
     workplace: null,
-    phone: null,
-    email: null,
-    contactAddress: null,
-    admissionDiploma: null,
-    graduateMajor: null,
-    graduationYear: null,
-    highSchoolName: null,
-    highSchoolWard: null,
-    highSchoolProvince: null,
+    phone: "0912345678",
+    email: "nguyenvana@example.com",
+    contactAddress: "Trà Vinh",
+    admissionDiploma: "THPT",
+    graduateMajor: "Công nghệ thông tin",
+    graduationYear: 2024,
+    highSchoolName: "THPT Trà Vinh",
+    highSchoolWard: "Phường 1",
+    highSchoolProvince: "Trà Vinh",
     declarationPlace: null,
     declarationDate: null,
     declarationConfirmed: false,
@@ -86,6 +92,44 @@ describe("student application form", () => {
     assert.ok(screen.getByRole("button", { name: "Trang sau" }));
     assert.equal(screen.queryByRole("button", { name: "Trang trước" }), null);
     assert.equal(screen.queryByRole("button", { name: "Nộp hồ sơ" }), null);
+    assert.equal(
+      screen.getByLabelText(/Họ và tên/).getAttribute("placeholder"),
+      "Ví dụ: Nguyễn Văn An",
+    );
+    assert.equal(
+      screen.getByLabelText(/Họ và tên/).getAttribute("autocomplete"),
+      "name",
+    );
+    assert.equal(
+      screen.getByLabelText(/^Số điện thoại/).getAttribute("inputmode"),
+      "numeric",
+    );
+  });
+
+  it("focuses and scrolls to the first missing required field", async () => {
+    const user = userEvent.setup();
+    let scrolledElement: Element | null = null;
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = function scrollIntoView() {
+      scrolledElement = this;
+    };
+
+    try {
+      render(<ApplicationForm token={token} context={context} />);
+      await user.click(screen.getByRole("button", { name: "Trang sau" }));
+
+      const fullName = screen.getByLabelText(/Họ và tên/);
+      assert.equal(document.activeElement, fullName);
+      assert.equal(scrolledElement, fullName);
+      assert.equal(fullName.getAttribute("aria-invalid"), "true");
+      assert.ok(
+        screen.getByText(
+          "Vui lòng điền các trường bắt buộc trước khi tiếp tục.",
+        ),
+      );
+    } finally {
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    }
   });
 
   it("prefills and locks the major fixed by the registration link", () => {
@@ -162,7 +206,7 @@ describe("student application form", () => {
       />,
     );
 
-    await user.type(screen.getByLabelText(/Họ và tên/), "Nguyễn Văn A");
+    await fillRequiredFirstPage(user);
     await user.click(screen.getByRole("button", { name: "Trang sau" }));
 
     await waitFor(() =>
@@ -174,7 +218,7 @@ describe("student application form", () => {
       (screen.getByLabelText(/Họ và tên/) as HTMLInputElement).value,
       "Nguyễn Văn A",
     );
-    await user.type(screen.getByLabelText(/Quốc tịch/), "Việt Nam");
+    await user.type(screen.getByLabelText(/Quốc tịch/), " mới");
     await user.click(screen.getByRole("button", { name: "Trang sau" }));
 
     await waitFor(() => assert.deepEqual(updateVersions, [1]));
@@ -218,7 +262,7 @@ describe("student application form", () => {
       />,
     );
 
-    await user.type(screen.getByLabelText(/Họ và tên/), "Nguyễn Văn A");
+    await fillRequiredFirstPage(user);
     await user.click(screen.getByRole("button", { name: "Trang sau" }));
     await user.click(screen.getByRole("button", { name: "Trang sau" }));
     assert.ok(screen.getByText("Xem lại thông tin cá nhân"));
@@ -266,7 +310,7 @@ describe("student application form", () => {
               fullName: "Nguyễn Văn B",
               relationship: "Cha",
               occupation: "Kinh doanh",
-              phone: null,
+              phone: "0912345678",
               address: "Hà Nội",
             },
           ],

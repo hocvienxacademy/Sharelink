@@ -22,11 +22,13 @@ type AddressSearch = (
 ) => Promise<readonly AddressSuggestion[]>;
 
 export function ApplicationAddressAutocompleteField({
+  autoComplete,
   label,
   name,
   search = searchAddressSuggestions,
   token,
 }: {
+  readonly autoComplete: string;
   readonly label: string;
   readonly name: FieldPath<ApplicationFormValues>;
   readonly search?: AddressSearch;
@@ -93,6 +95,7 @@ export function ApplicationAddressAutocompleteField({
   return (
     <ApplicationComboboxField
       name={name}
+      autoComplete={autoComplete}
       label={label}
       description={
         loadFailed
