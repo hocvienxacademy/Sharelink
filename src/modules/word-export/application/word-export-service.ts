@@ -31,6 +31,18 @@ export interface WordDownload {
   readonly fileName: string;
 }
 
+export interface SubmissionEmailWord {
+  readonly download: WordDownload;
+  readonly recipientEmail: string;
+  readonly templateData: {
+    readonly applicationCode: string;
+    readonly entryQualification: ApplicationWordExportRecord["entryQualification"];
+    readonly fullName: string;
+    readonly majorName: string;
+    readonly submittedAt: Date;
+  };
+}
+
 interface DownloadServiceOptions {
   readonly maximumAttempts?: number;
   readonly lockDurationMs?: number;
@@ -50,15 +62,17 @@ function toDownload(
   record: ApplicationWordExportRecord,
   generator: WordDocumentGenerator,
 ): WordDownload {
-  const reference = record.applicationCode ?? record.id.slice(0, 8);
+  const reference = applicationReference(record);
   return {
     bytes: generator.generate(record),
     fileName: `phieu-du-tuyen-${safeFileSegment(reference)}.docx`,
   };
 }
 
-function isDownloadable(record: { readonly status: string; readonly submittedAt?: Date | null }): boolean {
-  return DOWNLOADABLE_STATUSES.has(record.status) && record.submittedAt !== null;
+function isDownloadable<T extends { readonly status: string; readonly submittedAt?: Date | null }>(
+  record: T,
+): record is T & { readonly submittedAt: Date } {
+  return DOWNLOADABLE_STATUSES.has(record.status) && record.submittedAt instanceof Date;
 }
 
 export class DownloadApplicationWord {
@@ -124,4 +138,35 @@ export class DownloadApplicationWord {
     }
     return toDownload(record, this.generator);
   }
+
+  async forSubmissionEmail(
+    applicationIdInput: unknown,
+  ): Promise<SubmissionEmailWord> {
+    const applicationId = parseApplicationIdentifier(applicationIdInput);
+    const record = await this.repository.loadForSubmissionEmail(applicationId);
+    if (
+      record === null ||
+      !isDownloadable(record) ||
+      record.email === null ||
+      record.email.trim().length === 0
+    ) {
+      throw new NotFoundError("Application export");
+    }
+
+    return {
+      download: toDownload(record, this.generator),
+      recipientEmail: record.email,
+      templateData: {
+        applicationCode: applicationReference(record),
+        entryQualification: record.entryQualification,
+        fullName: record.fullName ?? "Anh/Chị",
+        majorName: record.majorName ?? "Chưa cập nhật",
+        submittedAt: record.submittedAt,
+      },
+    };
+  }
+}
+
+function applicationReference(record: ApplicationWordExportRecord): string {
+  return record.applicationCode ?? record.id.slice(0, 8);
 }

@@ -5,12 +5,19 @@ import {
   SubmitApplication,
   UpdateDraftApplication,
 } from "../modules/applications/index";
-import { PrismaApplicationRepository } from "../modules/applications/infrastructure/index";
+import {
+  DirectSubmissionEmailDispatcher,
+  PrismaApplicationRepository,
+} from "../modules/applications/infrastructure/index";
 import { PrismaAdminApplicationQueryRepository } from "@/modules/applications/infrastructure/prisma-admin-application-queries";
 import { QueryStaffApplications } from "@/modules/applications/application/services/query-staff-applications";
 import { StaffApplicationAdministration } from "@/modules/applications/application/services/staff-application-administration";
 import { catalogRepository } from "./catalogs";
 import { validateRegistrationLink } from "./registration-links";
+import { systemClock } from "@/shared/time";
+import { ExportCredentialFactory } from "@/modules/word-export/application/export-credential";
+import { createSmtpEmailSender } from "@/shared/email";
+import { downloadApplicationWord } from "./word-export";
 
 export const applicationRepository = new PrismaApplicationRepository();
 export const defaultSubmissionPolicy = new DefaultSubmissionPolicy();
@@ -39,9 +46,19 @@ export const updateDraftApplication = new UpdateDraftApplication(
   catalogRepository,
   applicationRepository,
 );
+const submissionEmailDispatcher =
+  process.env.APP_ENV === "build" || process.env.APP_ENV === "test"
+    ? undefined
+    : new DirectSubmissionEmailDispatcher(
+        downloadApplicationWord,
+        createSmtpEmailSender(),
+      );
 export const submitApplication = new SubmitApplication(
   validateRegistrationLink,
   catalogRepository,
   applicationRepository,
   defaultSubmissionPolicy,
+  systemClock,
+  new ExportCredentialFactory(),
+  submissionEmailDispatcher,
 );

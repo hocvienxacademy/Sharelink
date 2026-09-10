@@ -429,7 +429,9 @@ export function ApplicationForm({
 
         <Card className="rounded-2xl sm:rounded-[2rem]">
           <CardContent>
-            {currentStep === 0 ? <PersonalInformationSection /> : null}
+            {currentStep === 0 ? (
+              <PersonalInformationSection token={token} />
+            ) : null}
             {currentStep === 1 ? (
               <EducationSection context={context} />
             ) : null}

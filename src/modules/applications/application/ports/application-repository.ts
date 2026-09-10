@@ -1,6 +1,9 @@
 import type { AdmissionQualification } from "../../../../shared/domain/index";
 import type { ValidationIssue } from "../../../../shared/validation/index";
-import type { Application } from "../../domain/application";
+import type {
+  Application,
+  SubmissionEmailStatus,
+} from "../../domain/application";
 import type {
   ApplicationRelativeInput,
   CreateDraftApplicationInput,
@@ -36,6 +39,12 @@ export interface SubmitApplicationPersistenceInput {
   readonly exportCredentialDigest: string;
 }
 
+export interface UpdateSubmissionEmailStatusInput {
+  readonly applicationId: string;
+  readonly expectedStatus: Extract<SubmissionEmailStatus, "PENDING">;
+  readonly status: Extract<SubmissionEmailStatus, "SENT" | "FAILED">;
+}
+
 export interface ApplicationRepository {
   createDraft(input: CreateDraftPersistenceInput): Promise<Application>;
   findByRegistrationContext(
@@ -46,6 +55,9 @@ export interface ApplicationRepository {
     registrationLinkId: string,
   ): Promise<Application | null>;
   submit(input: SubmitApplicationPersistenceInput): Promise<Application>;
+  updateSubmissionEmailStatus(
+    input: UpdateSubmissionEmailStatusInput,
+  ): Promise<void>;
   updateDraft(input: UpdateDraftPersistenceInput): Promise<Application>;
 }
 

@@ -15,8 +15,17 @@ export const APPLICATION_STATUSES = [
 
 export const GENDERS = ["MALE", "FEMALE", "OTHER"] as const;
 
+export const SUBMISSION_EMAIL_STATUSES = [
+  "NOT_SENT",
+  "PENDING",
+  "SENT",
+  "FAILED",
+] as const;
+
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number];
 export type Gender = (typeof GENDERS)[number];
+export type SubmissionEmailStatus =
+  (typeof SUBMISSION_EMAIL_STATUSES)[number];
 
 export interface ApplicationRelative {
   readonly id: string;

@@ -39,6 +39,7 @@ export default async function ApplicationDetailPage({ params }: { readonly param
         title="Tổng quan xử lý"
         items={[
           { label: "Trạng thái", value: <AdminStatusBadge status={item.status} /> },
+          { label: "Email hồ sơ", value: <AdminStatusBadge status={item.submissionEmailStatus} /> },
           { label: "SALE phụ trách", value: item.saleName },
           { label: "Người xét duyệt", value: item.reviewerName },
           { label: "Ngày nộp", value: formatDateTime(item.submittedAt) },

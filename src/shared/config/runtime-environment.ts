@@ -1,3 +1,5 @@
+import { validateSmtpEnvironment } from "../email/smtp-configuration";
+
 const LOG_LEVELS = new Set(["error", "warn", "info"]);
 const LOCAL_DEVELOPMENT_DATABASE_HOSTS = new Set([
   "localhost",
@@ -188,6 +190,8 @@ export function validateRuntimeEnvironment(
 ): void {
   if (environment.APP_ENV === "development") {
     validateDevelopmentEnvironment(environment);
+    required(environment, "VIETMAP_API_KEY");
+    validateSmtpEnvironment(environment);
     return;
   }
   if (
@@ -229,6 +233,7 @@ export function validateRuntimeEnvironment(
     "APP_BASE_URL or RENDER_EXTERNAL_URL",
   );
   const keySecret = required(environment, "RATE_LIMIT_KEY_SECRET");
+  required(environment, "VIETMAP_API_KEY");
   const redisHosts = allowlist(
     environment,
     environment.APP_ENV === "staging"
@@ -281,4 +286,5 @@ export function validateRuntimeEnvironment(
   if (!Number.isSafeInteger(bodyLimit) || bodyLimit < 16_384 || bodyLimit > 262_144) {
     throw new Error("REQUEST_BODY_MAX_BYTES must be between 16384 and 262144.");
   }
+  validateSmtpEnvironment(environment);
 }

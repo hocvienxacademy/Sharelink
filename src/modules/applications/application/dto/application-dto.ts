@@ -3,6 +3,7 @@ import type { DateOnly } from "../../../../shared/time/index";
 import type {
   ApplicationStatus,
   Gender,
+  SubmissionEmailStatus,
 } from "../../domain/application";
 
 export interface ApplicationRelativeDto {
@@ -56,6 +57,7 @@ export interface SubmittedApplicationResultDto {
   readonly downloadCode: string;
   readonly id: string;
   readonly status: ApplicationStatus;
+  readonly submissionEmailStatus: SubmissionEmailStatus;
   readonly submittedAt: string;
   readonly version: number;
 }

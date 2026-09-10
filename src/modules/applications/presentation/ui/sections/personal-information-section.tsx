@@ -6,13 +6,24 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field";
-import { GENDER_OPTIONS } from "@/shared/presentation/student-option-labels";
 import {
+  GENDER_OPTIONS,
+  VIETNAM_PROVINCE_OPTIONS,
+} from "@/shared/presentation/student-option-labels";
+import {
+  ApplicationAddressAutocompleteField,
+} from "../components/application-address-autocomplete-field";
+import {
+  ApplicationDatePickerField,
   ApplicationSelectField,
   ApplicationTextField,
 } from "../components/application-field";
 
-export function PersonalInformationSection() {
+export function PersonalInformationSection({
+  token,
+}: {
+  readonly token: string;
+}) {
   return (
     <FieldSet>
       <FieldLegend>Thông tin cá nhân và liên hệ</FieldLegend>
@@ -22,10 +33,9 @@ export function PersonalInformationSection() {
       </FieldDescription>
       <FieldGroup className="grid gap-5 md:grid-cols-2">
         <ApplicationTextField name="fullName" label="Họ và tên" required />
-        <ApplicationTextField
+        <ApplicationDatePickerField
           name="dateOfBirth"
           label="Ngày sinh"
-          type="date"
           required
         />
         <ApplicationSelectField
@@ -35,7 +45,13 @@ export function PersonalInformationSection() {
           required
         />
         <ApplicationTextField name="nationality" label="Quốc tịch" required />
-        <ApplicationTextField name="placeOfBirth" label="Nơi sinh" required />
+        <ApplicationSelectField
+          name="placeOfBirth"
+          label="Nơi sinh"
+          options={VIETNAM_PROVINCE_OPTIONS}
+          placeholder="Chọn tỉnh/thành phố"
+          required
+        />
         <ApplicationTextField name="ethnicity" label="Dân tộc" required />
         <ApplicationTextField name="religion" label="Tôn giáo" required />
         <ApplicationTextField
@@ -56,10 +72,9 @@ export function PersonalInformationSection() {
           inputMode="numeric"
           required
         />
-        <ApplicationTextField
+        <ApplicationDatePickerField
           name="citizenIdIssuedDate"
           label="Ngày cấp giấy tờ định danh"
-          type="date"
           required
         />
         <ApplicationTextField
@@ -68,19 +83,17 @@ export function PersonalInformationSection() {
           required
         />
         <div className="md:col-span-2">
-          <ApplicationTextField
+          <ApplicationAddressAutocompleteField
             name="permanentAddress"
             label="Địa chỉ thường trú"
-            multiline
-            required
+            token={token}
           />
         </div>
         <div className="md:col-span-2">
-          <ApplicationTextField
+          <ApplicationAddressAutocompleteField
             name="contactAddress"
             label="Địa chỉ liên hệ"
-            multiline
-            required
+            token={token}
           />
         </div>
         <div className="md:col-span-2">

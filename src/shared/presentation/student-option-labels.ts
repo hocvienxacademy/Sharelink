@@ -1,3 +1,5 @@
+import { VIETNAMESE_PROVINCES } from "../administrative-divisions/vietnamese-provinces";
+
 export interface StudentOption {
   readonly label: string;
   readonly value: string;
@@ -15,6 +17,10 @@ export const ADMISSION_QUALIFICATION_OPTIONS = [
   { value: "CD", label: "Cao đẳng" },
   { value: "DH", label: "Đại học" },
 ] as const satisfies readonly StudentOption[];
+
+export const VIETNAM_PROVINCE_OPTIONS = VIETNAMESE_PROVINCES.map(
+  (province) => ({ value: province.name, label: province.name }),
+) satisfies readonly StudentOption[];
 
 function displayOption(
   options: readonly StudentOption[],

@@ -87,6 +87,7 @@ model applications {
   sale_id                               String                         @db.Uuid
   application_code                      String?                        @unique(map: "uq_applications_application_code") @db.VarChar(50)
   status                                application_status             @default(DRAFT)
+  submission_email_status               submission_email_status       @default(NOT_SENT)
   major_id                              String?                        @db.Uuid
   admission_period_id                   String?                        @db.Uuid
   entry_qualification                   admission_qualification_type?
@@ -334,6 +335,13 @@ enum application_status {
   PRINTED
   COMPLETED
   CANCELLED
+}
+
+enum submission_email_status {
+  NOT_SENT
+  PENDING
+  SENT
+  FAILED
 }
 
 enum gender_type {

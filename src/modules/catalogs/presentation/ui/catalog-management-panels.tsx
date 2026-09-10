@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
@@ -52,6 +53,8 @@ function HistoryPanel({ basePath, id }: { readonly basePath: string; readonly id
 export function AdmissionPeriodManagementPanel({ initialItems, canManage }: { readonly initialItems: readonly AdmissionPeriodView[]; readonly canManage: boolean }) {
   const [items, setItems] = useState([...initialItems]);
   const [editing, setEditing] = useState<AdmissionPeriodView | null>(null);
+  const [createStartDate, setCreateStartDate] = useState<string | null>(null);
+  const [createEndDate, setCreateEndDate] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState<{ message: string; error: boolean } | null>(null);
 
@@ -60,17 +63,29 @@ export function AdmissionPeriodManagementPanel({ initialItems, canManage }: { re
     event.preventDefault(); setPending(true); setFeedback(null);
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
+    if (createStartDate === null || createEndDate === null) {
+      setPending(false);
+      setFeedback({ message: "Vui lòng chọn đủ ngày bắt đầu và ngày kết thúc.", error: true });
+      return;
+    }
     try {
-      const item = await requestCatalog<AdmissionPeriodView>("/api/admin/admission-periods", "POST", { code: form.get("code"), name: form.get("name"), startDate: form.get("startDate"), endDate: form.get("endDate") });
-      setItems((current) => [item, ...current]); formElement.reset(); setFeedback({ message: "Đã tạo kỳ tuyển sinh ở trạng thái tạm dừng.", error: false });
+      const item = await requestCatalog<AdmissionPeriodView>("/api/admin/admission-periods", "POST", { code: form.get("code"), name: form.get("name"), startDate: createStartDate, endDate: createEndDate });
+      setItems((current) => [item, ...current]); formElement.reset(); setCreateStartDate(null); setCreateEndDate(null); setFeedback({ message: "Đã tạo kỳ tuyển sinh ở trạng thái tạm dừng.", error: false });
     } catch (error) { setFeedback({ message: error instanceof Error ? error.message : "Không thể tạo kỳ tuyển sinh.", error: true }); }
     finally { setPending(false); }
   };
   const submitEdit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); if (editing === null) return; setPending(true); setFeedback(null);
     const form = new FormData(event.currentTarget);
+    const startDate = dateInput(editing.startDate);
+    const endDate = dateInput(editing.endDate);
+    if (startDate === "" || endDate === "") {
+      setPending(false);
+      setFeedback({ message: "Vui lòng chọn đủ ngày bắt đầu và ngày kết thúc.", error: true });
+      return;
+    }
     try {
-      const item = await requestCatalog<AdmissionPeriodView>(`/api/admin/admission-periods/${editing.id}`, "PATCH", { expectedUpdatedAt: editing.updatedAt, code: form.get("code"), name: form.get("name"), startDate: form.get("startDate"), endDate: form.get("endDate") });
+      const item = await requestCatalog<AdmissionPeriodView>(`/api/admin/admission-periods/${editing.id}`, "PATCH", { expectedUpdatedAt: editing.updatedAt, code: form.get("code"), name: form.get("name"), startDate, endDate });
       apply(item); setEditing(null); setFeedback({ message: "Đã cập nhật kỳ tuyển sinh.", error: false });
     } catch (error) { setFeedback({ message: error instanceof Error ? error.message : "Không thể cập nhật.", error: true }); }
     finally { setPending(false); }
@@ -90,8 +105,8 @@ export function AdmissionPeriodManagementPanel({ initialItems, canManage }: { re
       <form onSubmit={submitCreate}><FieldGroup className="grid md:grid-cols-2 xl:grid-cols-4">
         <Field><FieldLabel htmlFor="period-code">Mã kỳ</FieldLabel><Input id="period-code" name="code" required maxLength={50} /></Field>
         <Field><FieldLabel htmlFor="period-name">Tên kỳ</FieldLabel><Input id="period-name" name="name" required maxLength={255} /></Field>
-        <Field><FieldLabel htmlFor="period-start">Ngày bắt đầu</FieldLabel><Input id="period-start" name="startDate" type="date" required /></Field>
-        <Field><FieldLabel htmlFor="period-end">Ngày kết thúc</FieldLabel><Input id="period-end" name="endDate" type="date" required /></Field>
+        <Field><FieldLabel htmlFor="period-start">Ngày bắt đầu</FieldLabel><DatePicker id="period-start" value={createStartDate} onValueChange={setCreateStartDate} required /></Field>
+        <Field><FieldLabel htmlFor="period-end">Ngày kết thúc</FieldLabel><DatePicker id="period-end" value={createEndDate} onValueChange={setCreateEndDate} required /></Field>
         <Button className="w-full md:w-auto" type="submit" disabled={pending}>{pending ? <Spinner data-icon="inline-start" /> : <PlusIcon data-icon="inline-start" />}Tạo kỳ</Button>
       </FieldGroup></form>
     </CardContent></Card>}
@@ -99,8 +114,8 @@ export function AdmissionPeriodManagementPanel({ initialItems, canManage }: { re
       <form onSubmit={submitEdit}><FieldGroup className="grid md:grid-cols-2 xl:grid-cols-4">
         <Field><FieldLabel htmlFor="edit-period-code">Mã kỳ</FieldLabel><Input id="edit-period-code" name="code" defaultValue={editing.code} required /></Field>
         <Field><FieldLabel htmlFor="edit-period-name">Tên kỳ</FieldLabel><Input id="edit-period-name" name="name" defaultValue={editing.name} required /></Field>
-        <Field><FieldLabel htmlFor="edit-period-start">Ngày bắt đầu</FieldLabel><Input id="edit-period-start" name="startDate" type="date" defaultValue={dateInput(editing.startDate)} required /></Field>
-        <Field><FieldLabel htmlFor="edit-period-end">Ngày kết thúc</FieldLabel><Input id="edit-period-end" name="endDate" type="date" defaultValue={dateInput(editing.endDate)} required /></Field>
+        <Field><FieldLabel htmlFor="edit-period-start">Ngày bắt đầu</FieldLabel><DatePicker id="edit-period-start" value={dateInput(editing.startDate)} onValueChange={(value) => setEditing((current) => current === null ? null : { ...current, startDate: value })} required /></Field>
+        <Field><FieldLabel htmlFor="edit-period-end">Ngày kết thúc</FieldLabel><DatePicker id="edit-period-end" value={dateInput(editing.endDate)} onValueChange={(value) => setEditing((current) => current === null ? null : { ...current, endDate: value })} required /></Field>
         <div className="grid grid-cols-1 gap-2 sm:flex"><Button className="w-full sm:w-auto" type="submit" disabled={pending}>Lưu</Button><Button className="w-full sm:w-auto" type="button" variant="outline" onClick={() => setEditing(null)}>Hủy</Button></div>
       </FieldGroup></form>
     </CardContent></Card>}

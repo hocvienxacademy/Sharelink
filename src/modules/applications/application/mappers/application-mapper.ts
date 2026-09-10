@@ -1,4 +1,7 @@
-import type { Application } from "../../domain/application";
+import type {
+  Application,
+  SubmissionEmailStatus,
+} from "../../domain/application";
 import type {
   DraftApplicationDto,
   EditableApplicationDto,
@@ -62,6 +65,7 @@ export function toEditableApplicationDto(
 export function toSubmittedApplicationResultDto(
   application: Application,
   downloadCode: string,
+  submissionEmailStatus: SubmissionEmailStatus = "PENDING",
 ): SubmittedApplicationResultDto {
   if (application.submittedAt === null) {
     throw new Error("Submitted application is missing submittedAt.");
@@ -71,6 +75,7 @@ export function toSubmittedApplicationResultDto(
     downloadCode,
     id: application.id,
     status: application.status,
+    submissionEmailStatus,
     submittedAt: application.submittedAt.toISOString(),
     version: application.version,
   };
