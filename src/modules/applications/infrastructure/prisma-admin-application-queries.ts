@@ -27,7 +27,7 @@ async list(scope: ApplicationQueryScope): Promise<readonly AdminApplicationListI
     orderBy: { created_at: "desc" },
     take: 100,
     select: {
-      id: true, application_code: true, status: true, full_name: true,
+      id: true, application_code: true, status: true, submission_email_status: true, full_name: true,
       submitted_at: true, created_at: true,
       users_applications_sale_idTousers: { select: { full_name: true } },
       majors: { select: { code: true, name: true } },
@@ -39,6 +39,7 @@ async list(scope: ApplicationQueryScope): Promise<readonly AdminApplicationListI
     id: record.id,
     applicationCode: record.application_code,
     status: record.status,
+    submissionEmailStatus: record.submission_email_status,
     fullName: record.full_name,
     submittedAt: record.submitted_at,
     createdAt: record.created_at,
@@ -70,7 +71,7 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
   const record = await prisma.applications.findFirst({
     where: { id, ...scopeWhere(scope) },
     select: {
-      id: true, application_code: true, status: true, full_name: true, gender: true,
+      id: true, application_code: true, status: true, submission_email_status: true, full_name: true, gender: true,
       date_of_birth: true, citizen_id: true, phone: true, email: true,
       permanent_address: true, contact_address: true, entry_qualification: true,
       admission_diploma: true, graduate_major: true, graduation_year: true,
@@ -100,6 +101,7 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
     id: record.id,
     applicationCode: record.application_code,
     status: record.status,
+    submissionEmailStatus: record.submission_email_status,
     fullName: record.full_name,
     gender: record.gender,
     dateOfBirth: record.date_of_birth,

@@ -1,6 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 
 const labels: Readonly<Record<string, string>> = {
+  FAILED: "Thất bại",
+  NOT_SENT: "Chưa gửi",
+  SENT: "Đã gửi",
   ACTIVE: "Hoạt động",
   ARCHIVED: "Lưu trữ",
   CANCELLED: "Đã hủy",

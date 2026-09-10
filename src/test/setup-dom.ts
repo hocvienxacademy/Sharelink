@@ -16,6 +16,7 @@ Object.defineProperties(globalThis, {
   HTMLElement: { configurable: true, value: dom.window.HTMLElement },
   Element: { configurable: true, value: dom.window.Element },
   Node: { configurable: true, value: dom.window.Node },
+  NodeFilter: { configurable: true, value: dom.window.NodeFilter },
   MutationObserver: {
     configurable: true,
     value: dom.window.MutationObserver,
@@ -27,6 +28,15 @@ Object.defineProperties(globalThis, {
   getComputedStyle: {
     configurable: true,
     value: dom.window.getComputedStyle.bind(dom.window),
+  },
+  requestAnimationFrame: {
+    configurable: true,
+    value: (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(performance.now()), 0),
+  },
+  cancelAnimationFrame: {
+    configurable: true,
+    value: (handle: number) => clearTimeout(handle),
   },
 });
 

@@ -10,6 +10,7 @@ import type {
   ApplicationRepository,
   CreateDraftPersistenceInput,
   SubmitApplicationPersistenceInput,
+  UpdateSubmissionEmailStatusInput,
   UpdateDraftPersistenceInput,
 } from "../application/ports/application-repository";
 import type {
@@ -379,6 +380,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
           },
           data: {
             status: "SUBMITTED",
+            submission_email_status: "PENDING",
             submitted_at: input.submittedAt,
             updated_at: input.submittedAt,
             version: { increment: 1 },
@@ -417,6 +419,23 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
         return loadApplication(transaction, input.applicationId);
       }),
     );
+  }
+
+  async updateSubmissionEmailStatus(
+    input: UpdateSubmissionEmailStatusInput,
+  ): Promise<void> {
+    await executePrismaOperation(async () => {
+      const result = await prisma.applications.updateMany({
+        where: {
+          id: input.applicationId,
+          submission_email_status: input.expectedStatus,
+        },
+        data: { submission_email_status: input.status },
+      });
+      if (result.count !== 1) {
+        throw new ConflictError("Email status has already changed.");
+      }
+    });
   }
 
   async updateContent(input: StaffContentUpdateInput): Promise<Application> {

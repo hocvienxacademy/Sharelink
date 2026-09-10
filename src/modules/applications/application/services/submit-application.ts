@@ -24,6 +24,8 @@ import {
   WORD_EXPORT_TEXT_LIMITS,
 } from "../validation/application-schemas";
 import { ExportCredentialFactory } from "@/modules/word-export/application/export-credential";
+import type { SubmissionEmailStatus } from "../../domain/application";
+import type { SubmissionEmailDispatcher } from "../ports/submission-email-dispatcher";
 
 export class SubmitApplication {
   constructor(
@@ -34,7 +36,36 @@ export class SubmitApplication {
       new DefaultSubmissionPolicy(),
     private readonly clock: Clock = systemClock,
     private readonly credentialFactory = new ExportCredentialFactory(),
+    private readonly submissionEmailDispatcher?: SubmissionEmailDispatcher,
   ) {}
+
+  private async dispatchSubmissionEmail(
+    applicationId: string,
+  ): Promise<SubmissionEmailStatus> {
+    if (this.submissionEmailDispatcher === undefined) return "PENDING";
+
+    let status: Extract<SubmissionEmailStatus, "PENDING" | "SENT" | "FAILED">;
+    try {
+      status = (await this.submissionEmailDispatcher.dispatch(applicationId)).status;
+    } catch {
+      status = "FAILED";
+    }
+
+    if (status === "PENDING") return status;
+
+    try {
+      await this.applicationRepository.updateSubmissionEmailStatus({
+        applicationId,
+        expectedStatus: "PENDING",
+        status,
+      });
+      return status;
+    } catch {
+      // Submission has already committed. Keep its successful result and leave
+      // PENDING as the recoverable state for a future retry/outbox worker.
+      return "PENDING";
+    }
+  }
 
   async execute(
     tokenInput: unknown,
@@ -146,6 +177,14 @@ export class SubmitApplication {
       exportCredentialDigest: credential.digest,
     });
 
-    return toSubmittedApplicationResultDto(submitted, credential.code);
+    const submissionEmailStatus = await this.dispatchSubmissionEmail(
+      submitted.id,
+    );
+
+    return toSubmittedApplicationResultDto(
+      submitted,
+      credential.code,
+      submissionEmailStatus,
+    );
   }
 }

@@ -74,4 +74,7 @@ export interface WordExportRepository {
   loadForStaffDownload(
     input: StaffWordDownloadInput,
   ): Promise<ApplicationWordExportRecord | null>;
+  loadForSubmissionEmail(
+    applicationId: string,
+  ): Promise<ApplicationWordExportRecord | null>;
 }

@@ -3,6 +3,14 @@
 import { Controller, useFormContext, type FieldPath } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
+import {
   Field,
   FieldContent,
   FieldDescription,
@@ -10,6 +18,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -145,6 +154,67 @@ export function ApplicationTextField({
   );
 }
 
+export function ApplicationDatePickerField({
+  description,
+  label,
+  name,
+  optional,
+  placeholder = "Chọn ngày",
+  required,
+}: BaseFieldProps & {
+  readonly placeholder?: string;
+}) {
+  const { control } = useFormContext<ApplicationFormValues>();
+  const id = fieldId(name);
+
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState }) => {
+        const describedBy = [
+          description === undefined ? null : `${id}-description`,
+          fieldState.error === undefined ? null : `${id}-error`,
+        ]
+          .filter((value): value is string => value !== null)
+          .join(" ");
+
+        return (
+          <Field data-invalid={fieldState.invalid}>
+            <FieldLabel htmlFor={id}>
+              <FieldLabelText
+                label={label}
+                optional={optional}
+                required={required}
+              />
+            </FieldLabel>
+            <DatePicker
+              id={id}
+              value={typeof field.value === "string" ? field.value : null}
+              placeholder={placeholder}
+              required={required}
+              aria-describedby={describedBy || undefined}
+              aria-invalid={fieldState.invalid}
+              onBlur={field.onBlur}
+              onValueChange={field.onChange}
+            />
+            {description === undefined ? null : (
+              <FieldDescription id={`${id}-description`}>
+                {description}
+              </FieldDescription>
+            )}
+            {fieldState.error === undefined ? null : (
+              <FieldError id={`${id}-error`}>
+                {fieldState.error.message}
+              </FieldError>
+            )}
+          </Field>
+        );
+      }}
+    />
+  );
+}
+
 export function ApplicationSelectField({
   description,
   disabled = false,
@@ -152,10 +222,12 @@ export function ApplicationSelectField({
   name,
   optional,
   options,
+  placeholder,
   required,
 }: BaseFieldProps & {
   readonly disabled?: boolean;
   readonly options: readonly FieldOption[];
+  readonly placeholder?: string;
 }) {
   const { control } = useFormContext<ApplicationFormValues>();
   const id = fieldId(name);
@@ -187,7 +259,7 @@ export function ApplicationSelectField({
               }
               aria-invalid={fieldState.invalid}
             >
-              <SelectValue />
+              <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
@@ -209,6 +281,108 @@ export function ApplicationSelectField({
           )}
         </Field>
       )}
+    />
+  );
+}
+
+export function ApplicationComboboxField({
+  allowCustomValue = true,
+  description,
+  disabled = false,
+  emptyMessage = "Không tìm thấy kết quả.",
+  label,
+  name,
+  maxLength,
+  onInputValueChange,
+  optional,
+  options,
+  placeholder,
+  required,
+}: BaseFieldProps & {
+  readonly allowCustomValue?: boolean;
+  readonly disabled?: boolean;
+  readonly emptyMessage?: string;
+  readonly maxLength?: number;
+  readonly onInputValueChange?: (value: string) => void;
+  readonly options: readonly FieldOption[];
+  readonly placeholder?: string;
+}) {
+  const { control } = useFormContext<ApplicationFormValues>();
+  const id = fieldId(name);
+  const values = options.map((option) => option.value);
+
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState }) => {
+        const describedBy = [
+          description === undefined ? null : `${id}-description`,
+          fieldState.error === undefined ? null : `${id}-error`,
+        ]
+          .filter((value): value is string => value !== null)
+          .join(" ");
+
+        return (
+          <Field
+            data-disabled={disabled || undefined}
+            data-invalid={fieldState.invalid}
+          >
+            <FieldLabel htmlFor={id}>
+              <FieldLabelText
+                label={label}
+                optional={optional}
+                required={required}
+              />
+            </FieldLabel>
+            <Combobox
+              disabled={disabled}
+              items={values}
+              value={typeof field.value === "string" ? field.value : null}
+              onInputValueChange={(value) => {
+                if (allowCustomValue) {
+                  field.onChange(value === "" ? null : value);
+                }
+                onInputValueChange?.(value);
+              }}
+              onValueChange={(value) => field.onChange(value ?? null)}
+            >
+              <ComboboxInput
+                id={id}
+                name={field.name}
+                maxLength={maxLength}
+                placeholder={placeholder}
+                aria-describedby={describedBy || undefined}
+                aria-invalid={fieldState.invalid}
+                onBlur={field.onBlur}
+              />
+              <ComboboxContent>
+                <ComboboxEmpty>{emptyMessage}</ComboboxEmpty>
+                <ComboboxList>
+                  {(value: string) => {
+                    const option = options.find((item) => item.value === value);
+                    return (
+                      <ComboboxItem key={value} value={value}>
+                        {option?.label ?? value}
+                      </ComboboxItem>
+                    );
+                  }}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            {description === undefined ? null : (
+              <FieldDescription id={`${id}-description`}>
+                {description}
+              </FieldDescription>
+            )}
+            {fieldState.error === undefined ? null : (
+              <FieldError id={`${id}-error`}>
+                {fieldState.error.message}
+              </FieldError>
+            )}
+          </Field>
+        );
+      }}
     />
   );
 }

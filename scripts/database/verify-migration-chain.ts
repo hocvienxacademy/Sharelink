@@ -15,6 +15,7 @@ const EXPECTED_MIGRATIONS = [
   "20260803150000_add_usernames",
   "20260804120000_add_application_fee_setting",
   "20260810150000_add_application_export_credentials",
+  "20260907120000_add_submission_email_status",
 ] as const;
 const EXPECTED_CHECKS = [
   "chk_admission_period_dates",
@@ -200,6 +201,18 @@ async function verifyDatabase(client: Client): Promise<void> {
   for (const name of EXPECTED_SPECIAL_INDEXES) {
     assert(indexNames.has(name), `Missing partial/expression index ${name}.`);
   }
+
+  const submissionEmailStatus = await client.query<{
+    submission_email_status: string;
+  }>(`
+    SELECT submission_email_status
+    FROM applications
+    WHERE id = '50000000-0000-4000-8000-000000000001'
+  `);
+  assert(
+    submissionEmailStatus.rows[0]?.submission_email_status === "NOT_SENT",
+    "Existing applications must receive the safe NOT_SENT email default.",
+  );
 
   const comments = await client.query<{ count: string }>(`
     SELECT count(*)::text AS count FROM (

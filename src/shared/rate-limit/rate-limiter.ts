@@ -1,6 +1,7 @@
 export type RateLimitEndpoint =
   | "auth-login"
   | "account-password"
+  | "address-autocomplete"
   | "context"
   | "create"
   | "update"

@@ -122,6 +122,22 @@ function staffScope(actor: StaffWordDownloadInput["actor"]): Prisma.applications
 }
 
 export class PrismaWordExportRepository implements WordExportRepository {
+  async loadForSubmissionEmail(
+    applicationId: string,
+  ): Promise<ApplicationWordExportRecord | null> {
+    const row = await executePrismaOperation(() =>
+      prisma.applications.findFirst({
+        where: {
+          id: applicationId,
+          submitted_at: { not: null },
+          status: { notIn: ["DRAFT", "CANCELLED"] },
+        },
+        select: wordExportSelect,
+      }),
+    );
+    return row === null ? null : mapRecord(row);
+  }
+
   async findStaffAuthorizationResource(
     applicationId: string,
   ): Promise<StaffApplicationAuthorizationResource | null> {

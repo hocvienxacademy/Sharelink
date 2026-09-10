@@ -7,6 +7,7 @@ export interface AdminApplicationListItem {
   readonly major: string;
   readonly saleName: string;
   readonly status: string;
+  readonly submissionEmailStatus: string;
   readonly submittedAt: Date | null;
 }
 

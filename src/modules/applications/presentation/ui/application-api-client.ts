@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { ADMISSION_QUALIFICATIONS } from "../../../../shared/domain/index";
-import { APPLICATION_STATUSES, GENDERS } from "../../domain/application";
+import {
+  APPLICATION_STATUSES,
+  GENDERS,
+  SUBMISSION_EMAIL_STATUSES,
+} from "../../domain/application";
 import {
   createDraftApplicationSchema,
   type CreateDraftApplicationInput,
@@ -106,7 +110,18 @@ const editableApplicationSchema = draftApplicationSchema.extend({
 
 const submittedApplicationSchema = draftApplicationSchema.extend({
   downloadCode: z.string().min(20).max(128),
+  submissionEmailStatus: z.enum(SUBMISSION_EMAIL_STATUSES),
   submittedAt: z.string(),
+});
+
+const vietnameseWardSchema = z.object({
+  code: z.number().int().positive(),
+  name: z.string().trim().min(1).max(150),
+});
+
+const addressSuggestionSchema = z.object({
+  value: z.string().trim().min(1).max(80),
+  label: z.string().trim().min(1).max(80),
 });
 
 const apiErrorKinds = {
@@ -126,6 +141,8 @@ export type RegistrationContext = z.infer<typeof registrationContextSchema>;
 export type DraftApplication = z.infer<typeof draftApplicationSchema>;
 export type EditableApplication = z.infer<typeof editableApplicationSchema>;
 export type SubmittedApplication = z.infer<typeof submittedApplicationSchema>;
+export type VietnameseWard = z.infer<typeof vietnameseWardSchema>;
+export type AddressSuggestion = z.infer<typeof addressSuggestionSchema>;
 
 export class ApiClientError extends Error {
   readonly kind: ApiClientErrorKind;
@@ -257,6 +274,38 @@ export function getRegistrationContext(
     registrationContextSchema,
     { method: "GET" },
     fetchImplementation,
+  );
+}
+
+export function getVietnameseWards(
+  provinceCode: number,
+  fetchImplementation: FetchImplementation = fetch,
+): Promise<readonly VietnameseWard[]> {
+  return requestData(
+    `/api/administrative-divisions/provinces/${encodeURIComponent(String(provinceCode))}/wards`,
+    z.array(vietnameseWardSchema).max(500),
+    { method: "GET" },
+    fetchImplementation,
+  );
+}
+
+export function searchAddressSuggestions(
+  token: string,
+  query: string,
+  options: {
+    readonly fetchImplementation?: FetchImplementation;
+    readonly signal?: AbortSignal;
+  } = {},
+): Promise<readonly AddressSuggestion[]> {
+  return requestData(
+    `/api/registration-links/${encodeURIComponent(token)}/address-suggestions`,
+    z.array(addressSuggestionSchema).max(10),
+    {
+      method: "POST",
+      body: JSON.stringify({ query }),
+      signal: options.signal,
+    },
+    options.fetchImplementation ?? fetch,
   );
 }
 

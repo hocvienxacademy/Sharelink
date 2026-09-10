@@ -1,10 +1,12 @@
 export {
   APPLICATION_STATUSES,
   GENDERS,
+  SUBMISSION_EMAIL_STATUSES,
   type Application,
   type ApplicationRelative,
   type ApplicationStatus,
   type Gender,
+  type SubmissionEmailStatus,
 } from "./domain/application";
 export { isApplicationStaffEditable, isApplicationStudentEditable, isApplicationSubmittable } from "./domain/application-status-rules";
 export {
@@ -25,7 +27,12 @@ export type {
   SubmissionPolicy,
   SubmitApplicationPersistenceInput,
   UpdateDraftPersistenceInput,
+  UpdateSubmissionEmailStatusInput,
 } from "./application/ports/application-repository";
+export type {
+  SubmissionEmailDispatcher,
+  SubmissionEmailDispatchResult,
+} from "./application/ports/submission-email-dispatcher";
 export {
   DEFAULT_SUBMISSION_POLICY_CONFIG,
   DefaultSubmissionPolicy,
