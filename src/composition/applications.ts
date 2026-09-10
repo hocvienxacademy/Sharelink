@@ -15,7 +15,6 @@ import { StaffApplicationAdministration } from "@/modules/applications/applicati
 import { catalogRepository } from "./catalogs";
 import { validateRegistrationLink } from "./registration-links";
 import { systemClock } from "@/shared/time";
-import { ExportCredentialFactory } from "@/modules/word-export/application/export-credential";
 import { createSmtpEmailSender } from "@/shared/email";
 import { downloadApplicationWord } from "./word-export";
 
@@ -59,6 +58,5 @@ export const submitApplication = new SubmitApplication(
   applicationRepository,
   defaultSubmissionPolicy,
   systemClock,
-  new ExportCredentialFactory(),
   submissionEmailDispatcher,
 );

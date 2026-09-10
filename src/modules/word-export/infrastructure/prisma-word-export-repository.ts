@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/shared/infrastructure/database/prisma";
 import { executePrismaOperation } from "@/shared/infrastructure/database/prisma";
@@ -7,7 +6,6 @@ import type { StaffApplicationAuthorizationResource } from "@/modules/applicatio
 import type {
   ApplicationWordExportRecord,
   StaffWordDownloadInput,
-  StudentWordDownloadInput,
   WordExportRepository,
 } from "../application/word-export-repository";
 
@@ -58,15 +56,6 @@ type WordExportRow = Prisma.applicationsGetPayload<{
   select: typeof wordExportSelect;
 }>;
 
-interface CredentialLockRow {
-  readonly application_id: string;
-  readonly failed_attempts: number;
-  readonly id: string;
-  readonly locked_until: Date | null;
-  readonly revoked_at: Date | null;
-  readonly secret_hash: string;
-}
-
 function mapRecord(row: WordExportRow): ApplicationWordExportRecord {
   return {
     id: row.id,
@@ -107,12 +96,6 @@ function mapRecord(row: WordExportRow): ApplicationWordExportRecord {
       address: relative.address,
     })),
   };
-}
-
-function digestMatches(expected: string, actual: string): boolean {
-  const expectedBuffer = Buffer.from(expected, "ascii");
-  const actualBuffer = Buffer.from(actual, "ascii");
-  return expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer);
 }
 
 function staffScope(actor: StaffWordDownloadInput["actor"]): Prisma.applicationsWhereInput {
@@ -184,82 +167,6 @@ export class PrismaWordExportRepository implements WordExportRepository {
             metadata: {
               actorRole: input.actor.role,
               channel: "staff",
-              requestId: input.requestId,
-            },
-          },
-        });
-        return mapRecord(row);
-      }),
-    );
-  }
-
-  async authorizeStudentDownload(
-    input: StudentWordDownloadInput,
-  ): Promise<ApplicationWordExportRecord | null> {
-    return executePrismaOperation(() =>
-      prisma.$transaction(async (transaction) => {
-        const rows = await transaction.$queryRaw<CredentialLockRow[]>`
-          SELECT credential.id,
-                 credential.application_id,
-                 credential.secret_hash,
-                 credential.failed_attempts,
-                 credential.locked_until,
-                 credential.revoked_at
-          FROM application_export_credentials AS credential
-          JOIN applications AS application
-            ON application.id = credential.application_id
-          JOIN registration_links AS registration_link
-            ON registration_link.id = application.registration_link_id
-          WHERE registration_link.public_token = ${input.token}::uuid
-            AND application.submitted_at IS NOT NULL
-            AND application.status NOT IN ('DRAFT', 'CANCELLED')
-            AND registration_link.status NOT IN ('CANCELLED', 'ARCHIVED')
-          FOR UPDATE OF credential
-        `;
-        const credential = rows[0];
-        if (
-          credential === undefined ||
-          credential.revoked_at !== null ||
-          (credential.locked_until !== null && credential.locked_until > input.attemptedAt)
-        ) {
-          return null;
-        }
-
-        if (!digestMatches(credential.secret_hash, input.codeDigest)) {
-          const nextAttempts =
-            (credential.locked_until === null ? credential.failed_attempts : 0) + 1;
-          await transaction.application_export_credentials.update({
-            where: { id: credential.id },
-            data: {
-              failed_attempts: nextAttempts,
-              locked_until: nextAttempts >= input.maximumAttempts ? input.lockedUntil : null,
-              updated_at: input.attemptedAt,
-            },
-          });
-          return null;
-        }
-
-        const row = await transaction.applications.findUnique({
-          where: { id: credential.application_id },
-          select: wordExportSelect,
-        });
-        if (row === null) return null;
-        await transaction.application_export_credentials.update({
-          where: { id: credential.id },
-          data: {
-            failed_attempts: 0,
-            locked_until: null,
-            updated_at: input.attemptedAt,
-          },
-        });
-        await transaction.audit_logs.create({
-          data: {
-            actor_id: null,
-            action: "APPLICATION_WORD_EXPORT_REQUESTED",
-            entity_type: "application",
-            entity_id: credential.application_id,
-            metadata: {
-              channel: "student",
               requestId: input.requestId,
             },
           },

@@ -5,8 +5,7 @@ export type RateLimitEndpoint =
   | "context"
   | "create"
   | "update"
-  | "submit"
-  | "word-export";
+  | "submit";
 
 export interface RateLimitInput {
   readonly key: string;

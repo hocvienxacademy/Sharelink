@@ -205,7 +205,6 @@ describe("student application form", () => {
         return editable(2);
       },
       submit: async () => ({
-        downloadCode: "ASNFZ4mrze8BI0VniavN7w",
         id: applicationId,
         status: "SUBMITTED",
         submissionEmailStatus: "SENT",
@@ -257,7 +256,6 @@ describe("student application form", () => {
         submitCalls += 1;
         await new Promise((resolve) => setTimeout(resolve, 25));
         return {
-          downloadCode: "ASNFZ4mrze8BI0VniavN7w",
           id: applicationId,
           status: "SUBMITTED",
           submissionEmailStatus: "SENT",
@@ -400,7 +398,6 @@ describe("student application form", () => {
         throw new ApiClientError("conflict", { status: 409 });
       },
       submit: async () => ({
-        downloadCode: "ASNFZ4mrze8BI0VniavN7w",
         id: applicationId,
         status: "SUBMITTED",
         submissionEmailStatus: "SENT",

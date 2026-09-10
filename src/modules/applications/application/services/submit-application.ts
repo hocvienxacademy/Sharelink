@@ -23,7 +23,6 @@ import {
   parseSubmitApplicationInput,
   WORD_EXPORT_TEXT_LIMITS,
 } from "../validation/application-schemas";
-import { ExportCredentialFactory } from "@/modules/word-export/application/export-credential";
 import type { SubmissionEmailStatus } from "../../domain/application";
 import type { SubmissionEmailDispatcher } from "../ports/submission-email-dispatcher";
 
@@ -35,7 +34,6 @@ export class SubmitApplication {
     private readonly submissionPolicy: SubmissionPolicy =
       new DefaultSubmissionPolicy(),
     private readonly clock: Clock = systemClock,
-    private readonly credentialFactory = new ExportCredentialFactory(),
     private readonly submissionEmailDispatcher?: SubmissionEmailDispatcher,
   ) {}
 
@@ -167,14 +165,12 @@ export class SubmitApplication {
       );
     }
 
-    const credential = this.credentialFactory.create();
     const submitted = await this.applicationRepository.submit({
       applicationId,
       registrationLinkId: link.id,
       expectedVersion: values.expectedVersion,
       expectedStatus: application.status,
       submittedAt: this.clock.now(),
-      exportCredentialDigest: credential.digest,
     });
 
     const submissionEmailStatus = await this.dispatchSubmissionEmail(
@@ -183,7 +179,6 @@ export class SubmitApplication {
 
     return toSubmittedApplicationResultDto(
       submitted,
-      credential.code,
       submissionEmailStatus,
     );
   }

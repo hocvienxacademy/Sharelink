@@ -30,7 +30,7 @@ import {
   ApplicationForm,
   type ApplicationMutationClient,
 } from "./application-form";
-import { StudentWordDownload } from "@/modules/word-export/presentation/ui/student-word-download";
+import { StudentPaymentInformationPanel } from "./components/student-payment-information";
 
 export interface RegistrationQueryClient {
   getContext(token: string): Promise<RegistrationContext>;
@@ -127,7 +127,6 @@ export function RegistrationFormShellView({
 }) {
   const tokenIsValid = registrationTokenSchema.safeParse(token).success;
   const [reloadCounter, setReloadCounter] = useState(0);
-  const [submittedDownloadCode, setSubmittedDownloadCode] = useState<string | null>(null);
   const [state, setState] = useState<ShellState>(
     tokenIsValid ? { kind: "loading" } : { kind: "invalid-token" },
   );
@@ -226,9 +225,8 @@ export function RegistrationFormShellView({
         <StateAlert
           icon={AlertTriangleIcon}
           title="Liên kết không còn khả dụng để chỉnh sửa"
-          description="Liên kết có thể không tồn tại, đã hết hạn hoặc không còn hoạt động. Nếu hồ sơ đã được nộp, bạn vẫn có thể dùng mã đã lưu để tải lại phiếu Word."
+          description="Liên kết có thể không tồn tại, đã hết hạn hoặc không còn hoạt động. Nếu đã nộp hồ sơ nhưng chưa nhận được phiếu qua email, vui lòng kiểm tra thư rác hoặc liên hệ đơn vị tuyển sinh."
         />
-        <StudentWordDownload token={token} />
       </div>
     );
   }
@@ -289,13 +287,9 @@ export function RegistrationFormShellView({
         <StateAlert
           icon={CheckCircle2Icon}
           title="Hồ sơ không còn ở trạng thái bản nháp"
-          description="Hồ sơ đã được nộp hoặc đang được xử lý. Giao diện chỉnh sửa đã được khóa."
+          description="Hồ sơ đã được nộp hoặc đang được xử lý nên giao diện chỉnh sửa đã được khóa. Nếu chưa nhận được phiếu qua email, vui lòng kiểm tra thư rác hoặc liên hệ đơn vị tuyển sinh."
         />
-        <StudentWordDownload
-          token={token}
-          initialCode={submittedDownloadCode}
-          payment={state.context.payment}
-        />
+        <StudentPaymentInformationPanel payment={state.context.payment} />
       </div>
     );
   }
@@ -308,7 +302,6 @@ export function RegistrationFormShellView({
         application={state.application}
         mutationClient={mutationClient}
         onReload={() => setReloadCounter((value) => value + 1)}
-        onSubmitted={(result) => setSubmittedDownloadCode(result.downloadCode)}
       />
     </div>
   );

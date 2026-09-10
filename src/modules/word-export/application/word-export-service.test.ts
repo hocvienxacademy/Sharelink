@@ -9,7 +9,6 @@ import type {
 } from "./word-export-repository";
 
 const applicationId = "22222222-2222-4222-8222-222222222222";
-const token = "11111111-1111-4111-8111-111111111111";
 const actor: AuthenticatedActor = {
   userId: "33333333-3333-4333-8333-333333333333",
   username: "sale-a",
@@ -51,13 +50,13 @@ const record: ApplicationWordExportRecord = {
 
 function repository(overrides: Partial<WordExportRepository> = {}): WordExportRepository {
   return {
-    authorizeStudentDownload: async () => record,
     findStaffAuthorizationResource: async () => ({
       ownerId: actor.userId,
       ownerManagerId: null,
       status: "SUBMITTED",
     }),
     loadForStaffDownload: async () => record,
+    loadForSubmissionEmail: async () => record,
     ...overrides,
   };
 }
@@ -97,44 +96,5 @@ describe("DownloadApplicationWord", () => {
         NotFoundError,
       );
     }
-  });
-
-  it("uses the token and hashed code for a returning student", async () => {
-    let receivedDigest = "";
-    const service = new DownloadApplicationWord(
-      repository({
-        authorizeStudentDownload: async (input) => {
-          receivedDigest = input.codeDigest;
-          return record;
-        },
-      }),
-      { generate: () => Uint8Array.from([1]) },
-      { now: () => new Date("2026-08-10T09:00:00.000Z") },
-    );
-
-    await service.forStudent(
-      token,
-      "ASNFZ4mrze8BI0VniavN7w",
-      "request-2",
-    );
-
-    assert.match(receivedDigest, /^[a-f0-9]{64}$/);
-  });
-
-  it("returns the same not-found outcome for an invalid student credential", async () => {
-    const service = new DownloadApplicationWord(
-      repository({ authorizeStudentDownload: async () => null }),
-      { generate: () => Uint8Array.from([]) },
-    );
-
-    await assert.rejects(
-      () =>
-        service.forStudent(
-          token,
-          "ASNFZ4mrze8BI0VniavN7w",
-          "request-2",
-        ),
-      NotFoundError,
-    );
   });
 });

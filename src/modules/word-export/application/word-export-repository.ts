@@ -49,15 +49,6 @@ export interface ApplicationWordExportRecord {
   readonly relatives: readonly ApplicationWordExportRelative[];
 }
 
-export interface StudentWordDownloadInput {
-  readonly codeDigest: string;
-  readonly lockedUntil: Date;
-  readonly maximumAttempts: number;
-  readonly requestId: string;
-  readonly token: string;
-  readonly attemptedAt: Date;
-}
-
 export interface StaffWordDownloadInput {
   readonly actor: AuthenticatedActor;
   readonly applicationId: string;
@@ -65,9 +56,6 @@ export interface StaffWordDownloadInput {
 }
 
 export interface WordExportRepository {
-  authorizeStudentDownload(
-    input: StudentWordDownloadInput,
-  ): Promise<ApplicationWordExportRecord | null>;
   findStaffAuthorizationResource(
     applicationId: string,
   ): Promise<StaffApplicationAuthorizationResource | null>;

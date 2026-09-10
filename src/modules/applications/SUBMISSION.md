@@ -2,7 +2,8 @@
 
 ## Implemented boundary
 
-- Only `DRAFT` applications are submittable.
+- `DRAFT` and `NEEDS_REVISION` applications are submittable. Resubmitting a
+  revised application returns it to `SUBMITTED`.
 - Completeness is evaluated by `DefaultSubmissionPolicy` without database or
   HTTP dependencies.
 - `SubmitApplication` continues to validate the registration link, admission
@@ -28,10 +29,15 @@ application use case after successful context resolution.
 
 ## Submission email
 
-- The submission transaction sets `submission_email_status` to `PENDING` and
-  preserves the existing hashed Word-download credential.
+- Every submission, including a resubmission from `NEEDS_REVISION`, sets
+  `submission_email_status` to `PENDING`.
 - After the transaction commits, a dispatcher generates the attachment through
-  the same `DocxTemplateGenerator` and filename path used by student downloads.
+  the same `DocxTemplateGenerator` and filename path used by staff exports.
+- The dispatcher runs after every successful submission, so a corrected Word
+  attachment is sent again after the applicant edits and resubmits a revision.
+- Applicants no longer receive a download code or use a public Word-download
+  endpoint. The Word file is delivered by email; staff export remains available
+  through the authenticated administration flow.
 - The HTML body is maintained in
   `infrastructure/templates/submission-confirmation.html`. Its allowlisted,
   HTML-escaped variables are `ho_ten`, `ma_phieu`, `nganh_dang_ky`,

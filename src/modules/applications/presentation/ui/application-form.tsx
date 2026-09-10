@@ -45,7 +45,7 @@ import { EducationSection } from "./sections/education-section";
 import { PersonalInformationSection } from "./sections/personal-information-section";
 import { RelativesSection } from "./sections/relatives-section";
 import { ReviewSection } from "./sections/review-section";
-import { StudentWordDownload } from "@/modules/word-export/presentation/ui/student-word-download";
+import { StudentPaymentInformationPanel } from "./components/student-payment-information";
 
 const LAST_PAGE_INDEX = 2;
 
@@ -77,7 +77,6 @@ interface ApplicationFormProps {
   readonly context: RegistrationContext;
   readonly mutationClient?: ApplicationMutationClient;
   readonly onReload?: () => void;
-  readonly onSubmitted?: (result: SubmittedApplication) => void;
   readonly token: string;
 }
 
@@ -113,7 +112,6 @@ export function ApplicationForm({
   context,
   mutationClient = defaultMutationClient,
   onReload,
-  onSubmitted,
   token,
 }: ApplicationFormProps) {
   const form = useForm<ApplicationFormValues>({
@@ -311,7 +309,6 @@ export function ApplicationForm({
       setSavedMessage(null);
       setGeneralMessage(null);
       setSummaryItems([]);
-      onSubmitted?.(result);
       onReload?.();
     });
 
@@ -373,15 +370,20 @@ export function ApplicationForm({
           <CheckCircle2Icon />
           <AlertTitle>Hồ sơ đã được nộp thành công</AlertTitle>
           <AlertDescription>
-            Mã tham chiếu hồ sơ: <strong>{submitted.id}</strong>. Hồ sơ hiện ở
-            trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
+            <p>
+              Mã tham chiếu hồ sơ: <strong>{submitted.id}</strong>. Hồ sơ hiện ở
+              trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
+            </p>
+            <p className="mt-2">
+              {submitted.submissionEmailStatus === "SENT"
+                ? "Phiếu dự tuyển Word đã được gửi tới địa chỉ email bạn khai trong hồ sơ."
+                : submitted.submissionEmailStatus === "FAILED"
+                  ? "Hồ sơ đã được ghi nhận nhưng chưa thể gửi phiếu qua email. Vui lòng liên hệ đơn vị tuyển sinh."
+                  : "Phiếu dự tuyển Word đang được hệ thống xử lý để gửi qua email."}
+            </p>
           </AlertDescription>
         </Alert>
-        <StudentWordDownload
-          token={token}
-          initialCode={submitted.downloadCode}
-          payment={context.payment}
-        />
+        <StudentPaymentInformationPanel payment={context.payment} />
       </div>
     );
   }

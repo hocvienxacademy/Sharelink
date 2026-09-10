@@ -22,13 +22,13 @@ import type {
   CreateDraftPersistenceInput,
   SubmissionPolicy,
   SubmitApplicationPersistenceInput,
+  UpdateSubmissionEmailStatusInput,
   UpdateDraftPersistenceInput,
 } from "../ports/application-repository";
 import { CreateDraftApplication } from "./create-draft-application";
 import { GetEditableApplication } from "./get-editable-application";
 import { SubmitApplication } from "./submit-application";
 import { UpdateDraftApplication } from "./update-draft-application";
-import { ExportCredentialFactory } from "@/modules/word-export/application/export-credential";
 
 const token = "11111111-1111-4111-8111-111111111111";
 const applicationId = "22222222-2222-4222-8222-222222222222";
@@ -143,6 +143,8 @@ class FakeApplicationRepository implements ApplicationRepository {
   failNextUpdate = false;
   submitCalls = 0;
   lastSubmitInput: SubmitApplicationPersistenceInput | null = null;
+  emailStatusUpdates: UpdateSubmissionEmailStatusInput[] = [];
+  submissionEmailStatus: "PENDING" | "SENT" | "FAILED" = "PENDING";
 
   constructor(initial: Application | null = null) {
     this.current = initial;
@@ -233,21 +235,35 @@ class FakeApplicationRepository implements ApplicationRepository {
     if (
       this.current === null ||
       this.current.version !== input.expectedVersion ||
-      this.current.status !== "DRAFT"
+      this.current.status !== input.expectedStatus
     ) {
       throw new ConflictError();
     }
 
     this.submitCalls += 1;
     this.lastSubmitInput = input;
-    this.current = {
+    const submitted: Application = {
       ...this.current,
       status: "SUBMITTED",
       submittedAt: input.submittedAt,
       version: this.current.version + 1,
     };
+    this.current = submitted;
+    this.submissionEmailStatus = "PENDING";
 
-    return this.current;
+    return submitted;
+  }
+
+  async updateSubmissionEmailStatus(input: UpdateSubmissionEmailStatusInput) {
+    this.emailStatusUpdates.push(input);
+    if (
+      this.current === null ||
+      this.submissionEmailStatus !== input.expectedStatus
+    ) {
+      throw new ConflictError();
+    }
+
+    this.submissionEmailStatus = input.status;
   }
 }
 
@@ -532,9 +548,6 @@ describe("UpdateDraftApplication", () => {
 });
 
 describe("SubmitApplication", () => {
-  const credentialFactory = new ExportCredentialFactory(() =>
-    Buffer.from("0123456789abcdef0123456789abcdef", "hex"),
-  );
   it("uses the default policy and calls the repository for a complete draft", async () => {
     const { catalogs, validateLink } = dependencies();
     const repository = new FakeApplicationRepository(
@@ -578,7 +591,6 @@ describe("SubmitApplication", () => {
       repository,
       completePolicy,
       clock,
-      credentialFactory,
     );
 
     const result = await service.execute(token, applicationId, {
@@ -588,8 +600,82 @@ describe("SubmitApplication", () => {
     assert.equal(result.status, "SUBMITTED");
     assert.equal(result.version, 2);
     assert.equal(result.submittedAt, "2026-07-31T08:00:00.000Z");
-    assert.equal(result.downloadCode, "ASNFZ4mrze8BI0VniavN7w");
-    assert.match(repository.lastSubmitInput?.exportCredentialDigest ?? "", /^[a-f0-9]{64}$/);
+    assert.equal("downloadCode" in result, false);
+  });
+
+  it("dispatches the confirmation email again when a revised application is resubmitted", async () => {
+    const { validateLink } = dependencies();
+    const repository = new FakeApplicationRepository(
+      application({
+        status: "NEEDS_REVISION",
+        version: 3,
+      }),
+    );
+    repository.submissionEmailStatus = "SENT";
+    let dispatchCalls = 0;
+    const service = new SubmitApplication(
+      validateLink,
+      new FakeCatalogRepository(),
+      repository,
+      completePolicy,
+      clock,
+      {
+        dispatch: async () => {
+          dispatchCalls += 1;
+          return { status: "SENT" };
+        },
+      },
+    );
+
+    const result = await service.execute(token, applicationId, {
+      expectedVersion: 3,
+    });
+
+    assert.equal(result.status, "SUBMITTED");
+    assert.equal(result.submissionEmailStatus, "SENT");
+    assert.equal(dispatchCalls, 1);
+    assert.deepEqual(repository.emailStatusUpdates, [{
+      applicationId,
+      expectedStatus: "PENDING",
+      status: "SENT",
+    }]);
+    assert.equal(repository.submissionEmailStatus, "SENT");
+  });
+
+  it("records a failed email when a revised application is resubmitted", async () => {
+    const { validateLink } = dependencies();
+    const repository = new FakeApplicationRepository(
+      application({
+        status: "NEEDS_REVISION",
+        version: 3,
+      }),
+    );
+    repository.submissionEmailStatus = "SENT";
+    const service = new SubmitApplication(
+      validateLink,
+      new FakeCatalogRepository(),
+      repository,
+      completePolicy,
+      clock,
+      {
+        dispatch: async () => {
+          throw new Error("Simulated email failure.");
+        },
+      },
+    );
+
+    const result = await service.execute(token, applicationId, {
+      expectedVersion: 3,
+    });
+
+    assert.equal(result.status, "SUBMITTED");
+    assert.equal(result.submissionEmailStatus, "FAILED");
+    assert.deepEqual(repository.emailStatusUpdates, [{
+      applicationId,
+      expectedStatus: "PENDING",
+      status: "FAILED",
+    }]);
+    assert.equal(repository.submissionEmailStatus, "FAILED");
   });
 
   it("returns a conflict for a second submission", async () => {

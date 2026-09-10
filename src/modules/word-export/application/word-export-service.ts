@@ -1,12 +1,7 @@
 import type { AuthenticatedActor } from "@/shared/authorization";
 import { NotFoundError } from "@/shared/errors";
-import { parseRegistrationToken } from "@/modules/registration-links";
 import { parseApplicationIdentifier } from "@/modules/applications";
 import { StaffApplicationAuthorizationPolicy } from "@/modules/applications/application/authorization/staff-application-authorization";
-import {
-  digestExportCode,
-  parseExportCode,
-} from "./export-credential";
 import type {
   ApplicationWordExportRecord,
   WordExportRepository,
@@ -43,12 +38,6 @@ export interface SubmissionEmailWord {
   };
 }
 
-interface DownloadServiceOptions {
-  readonly maximumAttempts?: number;
-  readonly lockDurationMs?: number;
-  readonly now?: () => Date;
-}
-
 function safeFileSegment(value: string): string {
   const normalized = value
     .normalize("NFKD")
@@ -76,43 +65,11 @@ function isDownloadable<T extends { readonly status: string; readonly submittedA
 }
 
 export class DownloadApplicationWord {
-  private readonly maximumAttempts: number;
-  private readonly lockDurationMs: number;
-  private readonly now: () => Date;
-
   constructor(
     private readonly repository: WordExportRepository,
     private readonly generator: WordDocumentGenerator,
-    options: DownloadServiceOptions = {},
     private readonly staffPolicy = new StaffApplicationAuthorizationPolicy(),
-  ) {
-    this.maximumAttempts = options.maximumAttempts ?? 5;
-    this.lockDurationMs = options.lockDurationMs ?? 15 * 60 * 1000;
-    this.now = options.now ?? (() => new Date());
-  }
-
-  async forStudent(
-    tokenInput: unknown,
-    codeInput: unknown,
-    requestId: string,
-  ): Promise<WordDownload> {
-    const token = parseRegistrationToken(tokenInput);
-    const code = parseExportCode(codeInput);
-    const attemptedAt = this.now();
-    const record = await this.repository.authorizeStudentDownload({
-      token,
-      codeDigest: digestExportCode(code),
-      attemptedAt,
-      maximumAttempts: this.maximumAttempts,
-      lockedUntil: new Date(attemptedAt.getTime() + this.lockDurationMs),
-      requestId,
-    });
-
-    if (record === null || !isDownloadable(record)) {
-      throw new NotFoundError("Application export");
-    }
-    return toDownload(record, this.generator);
-  }
+  ) {}
 
   async forStaff(
     actor: AuthenticatedActor,

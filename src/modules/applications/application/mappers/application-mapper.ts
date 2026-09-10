@@ -64,7 +64,6 @@ export function toEditableApplicationDto(
 
 export function toSubmittedApplicationResultDto(
   application: Application,
-  downloadCode: string,
   submissionEmailStatus: SubmissionEmailStatus = "PENDING",
 ): SubmittedApplicationResultDto {
   if (application.submittedAt === null) {
@@ -72,7 +71,6 @@ export function toSubmittedApplicationResultDto(
   }
 
   return {
-    downloadCode,
     id: application.id,
     status: application.status,
     submissionEmailStatus,
