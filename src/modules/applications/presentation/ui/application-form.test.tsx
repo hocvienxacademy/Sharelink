@@ -106,6 +106,22 @@ describe("student application form", () => {
     );
   });
 
+  it("gives the optional declaration date enough desktop width for its label", () => {
+    render(<ApplicationForm token={token} context={context} />);
+
+    const declarationPlace = document.querySelector(
+      '[data-field-name="declarationPlace"]',
+    );
+    const declarationDate = document.querySelector(
+      '[data-field-name="declarationDate"]',
+    );
+
+    assert.ok(declarationPlace);
+    assert.ok(declarationDate);
+    assert.match(declarationPlace.className, /lg:col-span-8/);
+    assert.match(declarationDate.className, /lg:col-span-4/);
+  });
+
   it("focuses and scrolls to the first missing required field", async () => {
     const user = userEvent.setup();
     let scrolledElement: Element | null = null;

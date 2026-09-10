@@ -210,7 +210,7 @@ export function EducationSection({
         </FieldDescription>
         <FieldGroup className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-12">
           <ApplicationTextField
-            className="sm:col-span-2 lg:col-span-9"
+            className="sm:col-span-2 lg:col-span-8"
             name="declarationPlace"
             label="Nơi khai hồ sơ"
             maxLength={WORD_EXPORT_TEXT_LIMITS.declarationPlace}
@@ -218,7 +218,7 @@ export function EducationSection({
             optional
           />
           <ApplicationDatePickerField
-            className="lg:col-span-3"
+            className="lg:col-span-4"
             name="declarationDate"
             label="Ngày khai hồ sơ"
             optional
