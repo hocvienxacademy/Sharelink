@@ -371,11 +371,11 @@ export function ApplicationForm({
 
         <Card className="rounded-2xl sm:rounded-[2rem]">
           <CardContent>
-            {currentStep === 0 ? (
-              <PersonalInformationSection token={token} />
-            ) : null}
-            {currentStep === 1 ? (
-              <EducationSection context={context} />
+            {currentPage === 0 ? (
+              <div className="flex flex-col gap-10">
+                <PersonalInformationSection token={token} />
+                <EducationSection context={context} />
+              </div>
             ) : null}
             {currentPage === 1 ? <RelativesSection /> : null}
             {currentPage === 2 ? (

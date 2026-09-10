@@ -148,6 +148,7 @@ describe("student application form", () => {
         downloadCode: "ASNFZ4mrze8BI0VniavN7w",
         id: applicationId,
         status: "SUBMITTED",
+        submissionEmailStatus: "SENT",
         submittedAt: "2026-07-31T08:00:00.000Z",
         version: 3,
       }),
@@ -199,6 +200,7 @@ describe("student application form", () => {
           downloadCode: "ASNFZ4mrze8BI0VniavN7w",
           id: applicationId,
           status: "SUBMITTED",
+          submissionEmailStatus: "SENT",
           submittedAt: "2026-07-31T08:00:00.000Z",
           version: 2,
         };
@@ -341,6 +343,7 @@ describe("student application form", () => {
         downloadCode: "ASNFZ4mrze8BI0VniavN7w",
         id: applicationId,
         status: "SUBMITTED",
+        submissionEmailStatus: "SENT",
         submittedAt: "2026-07-31T08:00:00.000Z",
         version: 2,
       }),
