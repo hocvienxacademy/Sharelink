@@ -77,7 +77,8 @@ export function StudentPaymentInformationPanel({
                 </AlertTitle>
                 <AlertDescription className="text-base leading-6 sm:text-lg sm:leading-7">
                   <strong>
-                    Nội dung chuyển khoản phải điền theo cán bộ tư vấn.
+                    Nội dung chuyển khoản bạn hãy liên hệ cán bộ tư vấn để được hỗ trợ.
+                    <p>Cú pháp: Mã trạm + họ và tên + số điện thoại + LPXT</p>
                   </strong>
                 </AlertDescription>
               </Alert>
