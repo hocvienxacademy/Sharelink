@@ -284,6 +284,20 @@ describe("student application form", () => {
     await user.dblClick(screen.getByRole("button", { name: "Nộp hồ sơ" }));
 
     await screen.findByText("Hồ sơ đã được nộp thành công");
+    const submissionDialog = await screen.findByRole("dialog");
+    assert.match(
+      submissionDialog.textContent ?? "",
+      /Phiếu dự tuyển đã được gửi thành công/,
+    );
+    assert.match(submissionDialog.textContent ?? "", /nguyenvana@example.com/);
+    assert.match(
+      submissionDialog.textContent ?? "",
+      /Sau đây, vui lòng thanh toán lệ phí xét tuyển./,
+    );
+    assert.doesNotMatch(submissionDialog.textContent ?? "", /chuyển khoản/);
+    assert.ok(
+      screen.getByRole("button", { name: "Tiếp tục thanh toán" }),
+    );
     assert.equal(submitCalls, 1);
     assert.equal(reloadCalls, 1);
     assert.equal(screen.queryByLabelText(/Họ và tên/), null);

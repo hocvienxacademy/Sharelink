@@ -29,11 +29,11 @@ export function StudentPaymentInformationPanel({
   return (
     <Alert>
       <LandmarkIcon />
-      <AlertTitle>Thông tin chuyển khoản</AlertTitle>
+      <AlertTitle>Thông tin thanh toán</AlertTitle>
       <AlertDescription>
         {payment.account === null ? (
           <p>
-            Chưa có tài khoản chuyển khoản mặc định. Vui lòng liên hệ đơn vị
+            Chưa có tài khoản thanh toán mặc định. Vui lòng liên hệ đơn vị
             tuyển sinh trước khi thanh toán.
           </p>
         ) : (
@@ -77,7 +77,8 @@ export function StudentPaymentInformationPanel({
                 </AlertTitle>
                 <AlertDescription className="text-base leading-6 sm:text-lg sm:leading-7">
                   <strong>
-                    Nội dung chuyển khoản bạn hãy liên hệ cán bộ tư vấn để được hỗ trợ.
+                    Nội dung thanh toán bạn hãy liên hệ cán bộ tư vấn để{" "}
+                    <span className="whitespace-nowrap">được hỗ trợ.</span>
                     <p>Cú pháp: Mã trạm + họ và tên + số điện thoại + LPXT</p>
                   </strong>
                 </AlertDescription>
@@ -88,7 +89,7 @@ export function StudentPaymentInformationPanel({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/QR.png"
-                alt="Mã QR chuyển khoản"
+                alt="Mã QR thanh toán"
                 width={2276}
                 height={2560}
                 loading="lazy"
@@ -96,7 +97,7 @@ export function StudentPaymentInformationPanel({
                 className="h-auto w-full max-w-64 rounded-lg border bg-white"
               />
               <figcaption className="text-center text-xs text-muted-foreground">
-                Quét mã QR để nhập nhanh thông tin chuyển khoản.
+                Quét mã QR để nhập nhanh thông tin thanh toán.
               </figcaption>
             </figure>
           </div>

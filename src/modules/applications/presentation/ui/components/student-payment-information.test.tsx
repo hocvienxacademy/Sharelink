@@ -23,9 +23,13 @@ describe("StudentPaymentInformationPanel", () => {
       />,
     );
 
-    assert.ok(screen.getByText("Thông tin chuyển khoản"));
+    assert.ok(screen.getByText("Thông tin thanh toán"));
     assert.ok(screen.getByText("0123456789"));
-    assert.ok(screen.getByRole("img", { name: "Mã QR chuyển khoản" }));
+    assert.ok(screen.getByRole("img", { name: "Mã QR thanh toán" }));
+    assert.match(
+      screen.getByText("được hỗ trợ.").className,
+      /whitespace-nowrap/,
+    );
     assert.equal(screen.queryByRole("textbox"), null);
     assert.equal(screen.queryByRole("button", { name: /Tải file Word/ }), null);
   });

@@ -145,8 +145,8 @@ describe("registration form shell", () => {
     };
     render(<RegistrationFormShellView token={token} applicationId={applicationId} queryClient={queryClient} replaceRoute={() => undefined} />);
     await screen.findByText("Hồ sơ không còn ở trạng thái bản nháp");
-    assert.ok(screen.getByText("Thông tin chuyển khoản"));
-    assert.ok(screen.getByText(/Chưa có tài khoản chuyển khoản mặc định/));
+    assert.ok(screen.getByText("Thông tin thanh toán"));
+    assert.ok(screen.getByText(/Chưa có tài khoản thanh toán mặc định/));
   });
 
   it("routes to the existing application URL", async () => {

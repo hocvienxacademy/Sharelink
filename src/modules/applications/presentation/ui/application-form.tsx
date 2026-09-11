@@ -18,6 +18,15 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import {
@@ -138,6 +147,7 @@ export function ApplicationForm({
   const [generalMessage, setGeneralMessage] = useState<string | null>(null);
   const [hasConflict, setHasConflict] = useState(false);
   const [submitted, setSubmitted] = useState<SubmittedApplication | null>(null);
+  const [showSubmissionDialog, setShowSubmissionDialog] = useState(false);
   const [pendingFocus, setPendingFocus] =
     useState<FieldPath<ApplicationFormValues> | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -306,6 +316,7 @@ export function ApplicationForm({
 
       setVersion(result.version);
       setSubmitted(result);
+      setShowSubmissionDialog(true);
       setSavedMessage(null);
       setGeneralMessage(null);
       setSummaryItems([]);
@@ -364,27 +375,58 @@ export function ApplicationForm({
   };
 
   if (submitted !== null) {
+    const submittedEmail = getValues("email");
+
     return (
-      <div className="grid gap-4">
-        <Alert>
-          <CheckCircle2Icon />
-          <AlertTitle>Hồ sơ đã được nộp thành công</AlertTitle>
-          <AlertDescription>
-            <p>
-              Mã tham chiếu hồ sơ: <strong>{submitted.id}</strong>. Hồ sơ hiện ở
-              trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
-            </p>
-            <p className="mt-2">
-              {submitted.submissionEmailStatus === "SENT"
-                ? "Phiếu dự tuyển Word đã được gửi tới địa chỉ email bạn khai trong hồ sơ."
-                : submitted.submissionEmailStatus === "FAILED"
-                  ? "Hồ sơ đã được ghi nhận nhưng chưa thể gửi phiếu qua email. Vui lòng liên hệ đơn vị tuyển sinh."
-                  : "Phiếu dự tuyển Word đang được hệ thống xử lý để gửi qua email."}
-            </p>
-          </AlertDescription>
-        </Alert>
-        <StudentPaymentInformationPanel payment={context.payment} />
-      </div>
+      <>
+        <Dialog
+          open={showSubmissionDialog}
+          onOpenChange={setShowSubmissionDialog}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Phiếu dự tuyển đã được gửi thành công</DialogTitle>
+              <DialogDescription className="flex flex-col gap-3">
+                <span>
+                  Vui lòng kiểm tra email{" "}
+                  <strong className="break-all text-foreground">
+                    {submittedEmail}
+                  </strong>
+                  , tải file Word đính kèm, in phiếu và gửi về trường theo hướng
+                  dẫn.
+                </span>
+                <span>Sau đây, vui lòng thanh toán lệ phí xét tuyển.</span>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose render={<Button type="button" />}>
+                Tiếp tục thanh toán
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <div className="grid gap-4">
+          <Alert>
+            <CheckCircle2Icon />
+            <AlertTitle>Hồ sơ đã được nộp thành công</AlertTitle>
+            <AlertDescription>
+              <p>
+                Mã tham chiếu hồ sơ: <strong>{submitted.id}</strong>. Hồ sơ hiện ở
+                trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
+              </p>
+              <p className="mt-2">
+                {submitted.submissionEmailStatus === "SENT"
+                  ? "Phiếu dự tuyển Word đã được gửi tới địa chỉ email bạn khai trong hồ sơ."
+                  : submitted.submissionEmailStatus === "FAILED"
+                    ? "Hồ sơ đã được ghi nhận nhưng chưa thể gửi phiếu qua email. Vui lòng liên hệ đơn vị tuyển sinh."
+                    : "Phiếu dự tuyển Word đang được hệ thống xử lý để gửi qua email."}
+              </p>
+            </AlertDescription>
+          </Alert>
+          <StudentPaymentInformationPanel payment={context.payment} />
+        </div>
+      </>
     );
   }
 
