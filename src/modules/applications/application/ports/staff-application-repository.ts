@@ -1,5 +1,6 @@
 import type { Application } from "../../domain/application";
 import type { ApplicationRelativeInput, UpdateDraftApplicationInput } from "../validation/application-schemas";
+import type { ApplicationFeeTransferStatus } from "../../domain/application-fee";
 
 export type StaffMutationScope =
   | { readonly kind: "all" }
@@ -31,10 +32,27 @@ export interface StaffReviewInput {
   readonly scope: StaffMutationScope;
 }
 
+export interface StaffApplicationFeeUpdateInput {
+  readonly actorId: string;
+  readonly applicationId: string;
+  readonly expectedVersion: number;
+  readonly occurredAt: Date;
+  readonly reason: string | null;
+  readonly requestId: string;
+  readonly status: ApplicationFeeTransferStatus;
+}
+
+export interface StaffApplicationFeeUpdateResult {
+  readonly reason: string | null;
+  readonly status: ApplicationFeeTransferStatus;
+  readonly version: number;
+}
+
 export interface StaffApplicationRepository {
   findById(id: string): Promise<Application | null>;
   review(input: StaffReviewInput): Promise<Application>;
   updateContent(input: StaffContentUpdateInput): Promise<Application>;
+  updateFee(input: StaffApplicationFeeUpdateInput): Promise<StaffApplicationFeeUpdateResult>;
 }
 
 export type { ApplicationRelativeInput };

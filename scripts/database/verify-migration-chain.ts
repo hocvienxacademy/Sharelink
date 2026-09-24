@@ -16,6 +16,7 @@ const EXPECTED_MIGRATIONS = [
   "20260804120000_add_application_fee_setting",
   "20260810150000_add_application_export_credentials",
   "20260907120000_add_submission_email_status",
+  "20260924120000_add_application_fee_transfer_status",
 ] as const;
 const EXPECTED_CHECKS = [
   "chk_admission_period_dates",
@@ -24,6 +25,7 @@ const EXPECTED_CHECKS = [
   "chk_application_relatives_phone",
   "chk_application_relatives_position",
   "chk_applications_citizen_id",
+  "chk_applications_fee_transfer_reason",
   "chk_applications_graduation_year",
   "chk_applications_phone",
   "chk_applications_version",
@@ -202,17 +204,39 @@ async function verifyDatabase(client: Client): Promise<void> {
     assert(indexNames.has(name), `Missing partial/expression index ${name}.`);
   }
 
-  const submissionEmailStatus = await client.query<{
+  const applicationDefaults = await client.query<{
+    application_fee_transfer_status: string;
     submission_email_status: string;
   }>(`
-    SELECT submission_email_status
+    SELECT application_fee_transfer_status, submission_email_status
     FROM applications
     WHERE id = '50000000-0000-4000-8000-000000000001'
   `);
   assert(
-    submissionEmailStatus.rows[0]?.submission_email_status === "NOT_SENT",
+    applicationDefaults.rows[0]?.submission_email_status === "NOT_SENT",
     "Existing applications must receive the safe NOT_SENT email default.",
   );
+  assert(
+    applicationDefaults.rows[0]?.application_fee_transfer_status === "NOT_TRANSFERRED",
+    "Existing applications must receive the safe NOT_TRANSFERRED fee default.",
+  );
+
+  try {
+    await client.query(`
+      UPDATE applications
+      SET application_fee_transfer_status = 'TRANSFERRED',
+          application_fee_transfer_reason = 'stale reason'
+      WHERE id = '50000000-0000-4000-8000-000000000001'
+    `);
+    throw new Error("Fee transfer reason CHECK did not reject stale data.");
+  } catch (error: unknown) {
+    const databaseError = error as DatabaseError;
+    assert(
+      databaseError.code === "23514" &&
+        databaseError.constraint === "chk_applications_fee_transfer_reason",
+      "Fee transfer reason negative check failed unexpectedly.",
+    );
+  }
 
   const comments = await client.query<{ count: string }>(`
     SELECT count(*)::text AS count FROM (

@@ -1,10 +1,14 @@
+import type { ApplicationFeeTransferStatus } from "../../domain/application-fee";
+
 export interface AdminApplicationListItem {
   readonly admissionPeriod: string;
   readonly applicationCode: string | null;
+  readonly applicationFeeTransferStatus: ApplicationFeeTransferStatus;
   readonly createdAt: Date;
   readonly fullName: string | null;
   readonly id: string;
   readonly major: string;
+  readonly phone: string | null;
   readonly saleName: string;
   readonly status: string;
   readonly submissionEmailStatus: string;
@@ -23,6 +27,7 @@ export interface AdminApplicationHistoryItem {
 export type AdminApplicationHistory = readonly AdminApplicationHistoryItem[];
 
 export interface AdminApplicationDetail extends AdminApplicationListItem {
+  readonly applicationFeeTransferReason: string | null;
   readonly version: number;
   readonly admissionDiploma: string | null;
   readonly maskedCitizenId: string;

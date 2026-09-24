@@ -1,5 +1,6 @@
 import type { StaffApplicationAuthorizationResource } from "../authorization/staff-application-authorization";
 import type { AdminApplicationDetail, AdminApplicationListItem } from "../dto/admin-application-dto";
+import type { StaffApplicationListFilter } from "../validation/staff-application-list-filter";
 
 export type ApplicationQueryScope =
   | { readonly kind: "all" }
@@ -9,5 +10,5 @@ export type ApplicationQueryScope =
 export interface AdminApplicationQueryRepository {
   findAuthorizationResource(id: string): Promise<StaffApplicationAuthorizationResource | null>;
   findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplicationDetail | null>;
-  list(scope: ApplicationQueryScope): Promise<readonly AdminApplicationListItem[]>;
+  list(scope: ApplicationQueryScope, filter?: StaffApplicationListFilter, search?: string): Promise<readonly AdminApplicationListItem[]>;
 }

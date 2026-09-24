@@ -17,6 +17,26 @@ export const requestRevisionSchema = staffReviewApplicationSchema.extend({
   reason: revisionReasonSchema,
 }).strict();
 
+const optionalApplicationFeeReasonSchema = z.union([
+  z.string().trim().max(2000)
+    .refine(noHtml, "Lý do lệ phí chỉ được phép là văn bản thuần."),
+  z.null(),
+]).optional().transform((value) => value === undefined || value === "" ? null : value);
+
+export const staffUpdateApplicationFeeSchema = z.discriminatedUnion("status", [
+  z.object({
+    expectedVersion: z.int().min(1),
+    status: z.literal("NOT_TRANSFERRED"),
+    reason: optionalApplicationFeeReasonSchema,
+  }).strict(),
+  z.object({
+    expectedVersion: z.int().min(1),
+    status: z.literal("TRANSFERRED"),
+    reason: z.null().optional().transform(() => null),
+  }).strict(),
+]);
+
 export const parseStaffUpdateApplication = (input: unknown) => parseWithSchema(staffUpdateApplicationSchema, input);
 export const parseStaffReviewApplication = (input: unknown) => parseWithSchema(staffReviewApplicationSchema, input);
 export const parseRequestRevision = (input: unknown) => parseWithSchema(requestRevisionSchema, input);
+export const parseStaffUpdateApplicationFee = (input: unknown) => parseWithSchema(staffUpdateApplicationFeeSchema, input);

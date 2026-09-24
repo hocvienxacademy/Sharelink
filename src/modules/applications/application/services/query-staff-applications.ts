@@ -5,6 +5,7 @@ import {
 } from "../authorization/staff-application-authorization";
 import type { AdminApplicationDetail, AdminApplicationHistory, AdminApplicationListItem } from "../dto/admin-application-dto";
 import type { AdminApplicationQueryRepository, ApplicationQueryScope } from "../ports/admin-application-query-repository";
+import type { StaffApplicationListFilter } from "../validation/staff-application-list-filter";
 
 function scopeFor(actor: AuthenticatedActor): ApplicationQueryScope {
   if (actor.role === "ADMIN") return { kind: "all" };
@@ -18,9 +19,9 @@ export class QueryStaffApplications {
     private readonly policy = new StaffApplicationAuthorizationPolicy(),
   ) {}
 
-  async list(actor: AuthenticatedActor): Promise<readonly AdminApplicationListItem[]> {
+  async list(actor: AuthenticatedActor, filter?: StaffApplicationListFilter, search?: string): Promise<readonly AdminApplicationListItem[]> {
     assertStaffApplicationAuthorized(this.policy, "application.list", actor);
-    return this.repository.list(scopeFor(actor));
+    return this.repository.list(scopeFor(actor), filter, search);
   }
 
   async detail(actor: AuthenticatedActor, id: string): Promise<AdminApplicationDetail | null> {

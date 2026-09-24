@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/shared/infrastructure/database/prisma/prisma-client";
 import { maskSensitiveValue } from "@/shared/security/mask-sensitive-value";
 import type { AdminApplicationDetail, AdminApplicationListItem } from "../application/dto/admin-application-dto";
@@ -7,6 +8,7 @@ import type {
   ApplicationQueryScope,
 } from "../application/ports/admin-application-query-repository";
 import type { StaffApplicationAuthorizationResource } from "../application/authorization/staff-application-authorization";
+import type { StaffApplicationListFilter } from "../application/validation/staff-application-list-filter";
 
 const uuidSchema = z.uuid();
 
@@ -20,14 +22,34 @@ function scopeWhere(scope: ApplicationQueryScope) {
   return { users_applications_sale_idTousers: { manager_id: scope.managerId } };
 }
 
+function filterWhere(filter: StaffApplicationListFilter | undefined): Prisma.applicationsWhereInput {
+  if (filter === undefined) return {};
+  if (filter.kind === "status") return { status: filter.value };
+  if (filter.kind === "fee") return { application_fee_transfer_status: filter.value };
+  if (filter.kind === "email") return { submission_email_status: filter.value };
+  if (filter.kind === "major") return { major_id: filter.majorId };
+  return { submitted_at: { gte: filter.from, lt: filter.toExclusive } };
+}
+
+function searchWhere(search: string | undefined): Prisma.applicationsWhereInput {
+  if (search === undefined) return {};
+  return {
+    OR: [
+      { full_name: { contains: search, mode: "insensitive" } },
+      { phone: { contains: search } },
+    ],
+  };
+}
+
 export class PrismaAdminApplicationQueryRepository implements AdminApplicationQueryRepository {
-async list(scope: ApplicationQueryScope): Promise<readonly AdminApplicationListItem[]> {
+async list(scope: ApplicationQueryScope, filter?: StaffApplicationListFilter, search?: string): Promise<readonly AdminApplicationListItem[]> {
   const records = await prisma.applications.findMany({
-    where: scopeWhere(scope),
+    where: { ...scopeWhere(scope), ...filterWhere(filter), ...searchWhere(search) },
     orderBy: { created_at: "desc" },
     take: 100,
     select: {
-      id: true, application_code: true, status: true, submission_email_status: true, full_name: true,
+      id: true, application_code: true, status: true, submission_email_status: true,
+      application_fee_transfer_status: true, full_name: true, phone: true,
       submitted_at: true, created_at: true,
       users_applications_sale_idTousers: { select: { full_name: true } },
       majors: { select: { code: true, name: true } },
@@ -38,9 +60,11 @@ async list(scope: ApplicationQueryScope): Promise<readonly AdminApplicationListI
   return records.map((record) => ({
     id: record.id,
     applicationCode: record.application_code,
+    applicationFeeTransferStatus: record.application_fee_transfer_status,
     status: record.status,
     submissionEmailStatus: record.submission_email_status,
     fullName: record.full_name,
+    phone: record.phone,
     submittedAt: record.submitted_at,
     createdAt: record.created_at,
     saleName: record.users_applications_sale_idTousers.full_name,
@@ -71,7 +95,9 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
   const record = await prisma.applications.findFirst({
     where: { id, ...scopeWhere(scope) },
     select: {
-      id: true, application_code: true, status: true, submission_email_status: true, full_name: true, gender: true,
+      id: true, application_code: true, status: true, submission_email_status: true,
+      application_fee_transfer_status: true, application_fee_transfer_reason: true,
+      full_name: true, gender: true,
       date_of_birth: true, citizen_id: true, phone: true, email: true,
       permanent_address: true, contact_address: true, entry_qualification: true,
       admission_diploma: true, graduate_major: true, graduation_year: true,
@@ -100,6 +126,8 @@ async findDetail(id: string, scope: ApplicationQueryScope): Promise<AdminApplica
   return {
     id: record.id,
     applicationCode: record.application_code,
+    applicationFeeTransferStatus: record.application_fee_transfer_status,
+    applicationFeeTransferReason: record.application_fee_transfer_reason,
     status: record.status,
     submissionEmailStatus: record.submission_email_status,
     fullName: record.full_name,

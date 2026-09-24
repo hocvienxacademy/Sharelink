@@ -6,6 +6,7 @@ export const STAFF_APPLICATION_CAPABILITIES = [
   "application.read",
   "application.exportWord",
   "application.updateContent",
+  "application.updateFee",
   "application.requestRevision",
   "application.validate",
   "application.viewHistory",
@@ -41,6 +42,11 @@ export class StaffApplicationAuthorizationPolicy {
       (actor.role === "MANAGER" && resource.ownerManagerId === actor.userId);
     if (!inScope) return { allowed: false, reason: "outside-scope" };
     if (capability === "application.read" || capability === "application.exportWord" || capability === "application.viewHistory") return { allowed: true };
+    if (capability === "application.updateFee") {
+      return actor.role === "SALE"
+        ? { allowed: true }
+        : { allowed: false, reason: "role-not-allowed" };
+    }
     if (actor.role === "SALE") return { allowed: false, reason: "role-not-allowed" };
     if (capability === "application.updateContent") {
       return ["DRAFT", "SUBMITTED", "NEEDS_REVISION"].includes(resource.status)

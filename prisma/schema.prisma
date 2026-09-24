@@ -82,54 +82,56 @@ model application_status_histories {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model applications {
-  id                                    String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  registration_link_id                  String                         @unique(map: "uq_applications_registration_link") @db.Uuid
-  sale_id                               String                         @db.Uuid
-  application_code                      String?                        @unique(map: "uq_applications_application_code") @db.VarChar(50)
-  status                                application_status             @default(DRAFT)
-  submission_email_status               submission_email_status       @default(NOT_SENT)
-  major_id                              String?                        @db.Uuid
-  admission_period_id                   String?                        @db.Uuid
+  id                                    String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  registration_link_id                  String                          @unique(map: "uq_applications_registration_link") @db.Uuid
+  sale_id                               String                          @db.Uuid
+  application_code                      String?                         @unique(map: "uq_applications_application_code") @db.VarChar(50)
+  status                                application_status              @default(DRAFT)
+  submission_email_status               submission_email_status         @default(NOT_SENT)
+  application_fee_transfer_status       application_fee_transfer_status @default(NOT_TRANSFERRED)
+  application_fee_transfer_reason       String?
+  major_id                              String?                         @db.Uuid
+  admission_period_id                   String?                         @db.Uuid
   entry_qualification                   admission_qualification_type?
-  full_name                             String?                        @db.VarChar(150)
+  full_name                             String?                         @db.VarChar(150)
   gender                                gender_type?
-  date_of_birth                         DateTime?                      @db.Date
-  place_of_birth                        String?                        @db.VarChar(255)
-  ethnicity                             String?                        @db.VarChar(100)
-  religion                              String?                        @db.VarChar(100)
-  nationality                           String?                        @default("Việt Nam") @db.VarChar(100)
-  citizen_id                            String?                        @db.VarChar(20)
-  citizen_id_issued_date                DateTime?                      @db.Date
-  citizen_id_issued_place               String?                        @db.VarChar(255)
+  date_of_birth                         DateTime?                       @db.Date
+  place_of_birth                        String?                         @db.VarChar(255)
+  ethnicity                             String?                         @db.VarChar(100)
+  religion                              String?                         @db.VarChar(100)
+  nationality                           String?                         @default("Việt Nam") @db.VarChar(100)
+  citizen_id                            String?                         @db.VarChar(20)
+  citizen_id_issued_date                DateTime?                       @db.Date
+  citizen_id_issued_place               String?                         @db.VarChar(255)
   permanent_address                     String?
   workplace                             String?
-  phone                                 String?                        @db.VarChar(15)
-  email                                 String?                        @db.VarChar(255)
+  phone                                 String?                         @db.VarChar(15)
+  email                                 String?                         @db.VarChar(255)
   contact_address                       String?
   admission_diploma                     admission_qualification_type?
-  graduate_major                        String?                        @db.VarChar(255)
-  graduation_year                       Int?                           @db.SmallInt
-  high_school_name                      String?                        @db.VarChar(255)
-  high_school_ward                      String?                        @db.VarChar(255)
-  high_school_province                  String?                        @db.VarChar(255)
-  declaration_place                     String?                        @db.VarChar(255)
-  declaration_date                      DateTime?                      @db.Date
-  declaration_confirmed                 Boolean                        @default(false)
-  data_processing_consent               Boolean                        @default(false)
-  submitted_at                          DateTime?                      @db.Timestamptz(6)
-  reviewed_by                           String?                        @db.Uuid
-  reviewed_at                           DateTime?                      @db.Timestamptz(6)
-  version                               Int                            @default(1)
-  created_at                            DateTime                       @default(now()) @db.Timestamptz(6)
-  updated_at                            DateTime                       @default(now()) @db.Timestamptz(6)
+  graduate_major                        String?                         @db.VarChar(255)
+  graduation_year                       Int?                            @db.SmallInt
+  high_school_name                      String?                         @db.VarChar(255)
+  high_school_ward                      String?                         @db.VarChar(255)
+  high_school_province                  String?                         @db.VarChar(255)
+  declaration_place                     String?                         @db.VarChar(255)
+  declaration_date                      DateTime?                       @db.Date
+  declaration_confirmed                 Boolean                         @default(false)
+  data_processing_consent               Boolean                         @default(false)
+  submitted_at                          DateTime?                       @db.Timestamptz(6)
+  reviewed_by                           String?                         @db.Uuid
+  reviewed_at                           DateTime?                       @db.Timestamptz(6)
+  version                               Int                             @default(1)
+  created_at                            DateTime                        @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime                        @default(now()) @db.Timestamptz(6)
   application_relatives                 application_relatives[]
   application_export_credentials        application_export_credentials?
   application_status_histories          application_status_histories[]
-  admission_periods                     admission_periods?             @relation(fields: [admission_period_id], references: [id], onUpdate: NoAction, map: "fk_applications_admission_period")
-  majors                                majors?                        @relation(fields: [major_id], references: [id], onUpdate: NoAction, map: "fk_applications_major")
-  registration_links                    registration_links             @relation(fields: [registration_link_id], references: [id], onUpdate: NoAction, map: "fk_applications_registration_link")
-  users_applications_reviewed_byTousers users?                         @relation("applications_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction, map: "fk_applications_reviewed_by")
-  users_applications_sale_idTousers     users                          @relation("applications_sale_idTousers", fields: [sale_id], references: [id], onUpdate: NoAction, map: "fk_applications_sale")
+  admission_periods                     admission_periods?              @relation(fields: [admission_period_id], references: [id], onUpdate: NoAction, map: "fk_applications_admission_period")
+  majors                                majors?                         @relation(fields: [major_id], references: [id], onUpdate: NoAction, map: "fk_applications_major")
+  registration_links                    registration_links              @relation(fields: [registration_link_id], references: [id], onUpdate: NoAction, map: "fk_applications_registration_link")
+  users_applications_reviewed_byTousers users?                          @relation("applications_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction, map: "fk_applications_reviewed_by")
+  users_applications_sale_idTousers     users                           @relation("applications_sale_idTousers", fields: [sale_id], references: [id], onUpdate: NoAction, map: "fk_applications_sale")
   payment_confirmations                 payment_confirmations?
 
   @@index([citizen_id], map: "idx_applications_citizen_id", where: raw("(citizen_id IS NOT NULL)"))
@@ -335,6 +337,11 @@ enum application_status {
   PRINTED
   COMPLETED
   CANCELLED
+}
+
+enum application_fee_transfer_status {
+  NOT_TRANSFERRED
+  TRANSFERRED
 }
 
 enum submission_email_status {

@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { staffApplicationQueries } from "@/composition/applications";
 import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
 import { toAuthenticatedActor } from "@/shared/authorization";
-import { formatDate, formatDateTime, formatMoney } from "@/modules/dashboard/presentation/format-admin-value";
+import { formatDate, formatDateTime } from "@/modules/dashboard/presentation/format-admin-value";
 import { AdminDetailGrid } from "@/modules/dashboard/presentation/ui/admin-detail-grid";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
 import { BusinessRuleGate } from "@/modules/dashboard/presentation/ui/business-rule-gate";
 import { StaffApplicationActions } from "@/modules/applications/presentation/ui/staff-application-actions";
+import { ApplicationFeeEditor } from "@/modules/applications/presentation/ui/application-fee-editor";
 import {
   formatAdmissionQualification,
   formatGender,
@@ -44,7 +45,18 @@ export default async function ApplicationDetailPage({ params }: { readonly param
           { label: "Người xét duyệt", value: item.reviewerName },
           { label: "Ngày nộp", value: formatDateTime(item.submittedAt) },
           { label: "Ngày xét duyệt", value: formatDateTime(item.reviewedAt) },
-          { label: "Thanh toán", value: item.payment === null ? "Chưa có" : <><AdminStatusBadge status={item.payment.status} /> {formatMoney(item.payment.amount)}</> },
+          {
+            label: "Lệ phí",
+            value: (
+              <ApplicationFeeEditor
+                applicationId={item.id}
+                canUpdate={identity.role === "SALE"}
+                initialReason={item.applicationFeeTransferReason}
+                initialStatus={item.applicationFeeTransferStatus}
+                version={item.version}
+              />
+            ),
+          },
         ]}
       />
       <AdminDetailGrid
@@ -100,7 +112,7 @@ export default async function ApplicationDetailPage({ params }: { readonly param
       />
       {identity.role === "SALE" ? (
         <BusinessRuleGate>
-          SALE có thể xem và tải phiếu Word của hồ sơ mình phụ trách, nhưng không thể chỉnh sửa hoặc xét duyệt.
+          SALE có thể cập nhật lệ phí, xem và tải phiếu Word của hồ sơ mình phụ trách, nhưng không thể chỉnh sửa nội dung hoặc xét duyệt.
         </BusinessRuleGate>
       ) : null}
       <AdminResourceTable

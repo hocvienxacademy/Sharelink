@@ -8,9 +8,9 @@ import type { EditableApplicationDto } from "../dto/application-dto";
 import { DefaultSubmissionPolicy } from "../policies/default-submission-policy";
 import type { SubmissionPolicy } from "../ports/application-repository";
 import type { AdminApplicationQueryRepository } from "../ports/admin-application-query-repository";
-import type { StaffApplicationRepository, StaffMutationScope } from "../ports/staff-application-repository";
+import type { StaffApplicationFeeUpdateResult, StaffApplicationRepository, StaffMutationScope } from "../ports/staff-application-repository";
 import { StaffApplicationAuthorizationPolicy, assertStaffApplicationAuthorized } from "../authorization/staff-application-authorization";
-import { parseRequestRevision, parseStaffReviewApplication, parseStaffUpdateApplication } from "../validation/staff-application-schemas";
+import { parseRequestRevision, parseStaffReviewApplication, parseStaffUpdateApplication, parseStaffUpdateApplicationFee } from "../validation/staff-application-schemas";
 
 const scopeFor = (actor: AuthenticatedActor): StaffMutationScope => actor.role === "ADMIN"
   ? { kind: "all" } : { kind: "manager", managerId: actor.userId };
@@ -25,11 +25,25 @@ export class StaffApplicationAdministration {
     private readonly clock: Clock = systemClock,
   ) {}
 
-  private async context(actor: AuthenticatedActor, id: string, capability: "application.updateContent" | "application.requestRevision" | "application.validate") {
+  private async context(actor: AuthenticatedActor, id: string, capability: "application.updateContent" | "application.updateFee" | "application.requestRevision" | "application.validate") {
     const resource = await this.queries.findAuthorizationResource(id);
     if (resource === null) throw new NotFoundError("Application");
     assertStaffApplicationAuthorized(this.policy, capability, actor, resource);
     return resource;
+  }
+
+  async updateFee(actor: AuthenticatedActor, id: string, input: unknown, requestId: string): Promise<StaffApplicationFeeUpdateResult> {
+    await this.context(actor, id, "application.updateFee");
+    const values = parseStaffUpdateApplicationFee(input);
+    return this.repository.updateFee({
+      actorId: actor.userId,
+      applicationId: id,
+      expectedVersion: values.expectedVersion,
+      occurredAt: this.clock.now(),
+      reason: values.reason,
+      requestId,
+      status: values.status,
+    });
   }
 
   async updateContent(actor: AuthenticatedActor, id: string, input: unknown, requestId: string): Promise<EditableApplicationDto> {

@@ -15,6 +15,8 @@ import type {
 } from "../application/ports/application-repository";
 import type {
   StaffApplicationRepository,
+  StaffApplicationFeeUpdateInput,
+  StaffApplicationFeeUpdateResult,
   StaffContentUpdateInput,
   StaffReviewInput,
 } from "../application/ports/staff-application-repository";
@@ -440,6 +442,66 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
         metadata: { actorRole: input.actorRole, changedFields: input.changedFields, expectedVersion: input.expectedVersion, newVersion: input.expectedVersion + 1, requestId: input.requestId },
       } });
       return loadApplication(transaction, input.applicationId);
+    }));
+  }
+
+  async updateFee(input: StaffApplicationFeeUpdateInput): Promise<StaffApplicationFeeUpdateResult> {
+    return executePrismaOperation(() => prisma.$transaction(async (transaction) => {
+      const current = await transaction.applications.findFirst({
+        where: { id: input.applicationId, sale_id: input.actorId },
+        select: {
+          application_fee_transfer_status: true,
+          application_fee_transfer_reason: true,
+          version: true,
+        },
+      });
+      if (current === null || current.version !== input.expectedVersion) {
+        throw new ConflictError("Hồ sơ đã được thay đổi hoặc nằm ngoài phạm vi cho phép.");
+      }
+
+      const result = await transaction.applications.updateMany({
+        where: {
+          id: input.applicationId,
+          sale_id: input.actorId,
+          version: input.expectedVersion,
+        },
+        data: {
+          application_fee_transfer_status: input.status,
+          application_fee_transfer_reason: input.reason,
+          updated_at: input.occurredAt,
+          version: { increment: 1 },
+        },
+      });
+      if (result.count !== 1) {
+        throw new ConflictError("Hồ sơ đã được thay đổi bởi một yêu cầu khác.");
+      }
+
+      const reasonChanged = current.application_fee_transfer_reason !== input.reason;
+      await transaction.audit_logs.create({
+        data: {
+          actor_id: input.actorId,
+          action: "APPLICATION_FEE_UPDATED",
+          entity_type: "application",
+          entity_id: input.applicationId,
+          old_values: { status: current.application_fee_transfer_status },
+          new_values: { status: input.status },
+          metadata: {
+            actorRole: "SALE",
+            changedFields: reasonChanged
+              ? ["applicationFeeTransferStatus", "applicationFeeTransferReason"]
+              : ["applicationFeeTransferStatus"],
+            expectedVersion: input.expectedVersion,
+            newVersion: input.expectedVersion + 1,
+            requestId: input.requestId,
+          },
+        },
+      });
+
+      return {
+        reason: input.reason,
+        status: input.status,
+        version: input.expectedVersion + 1,
+      };
     }));
   }
 
