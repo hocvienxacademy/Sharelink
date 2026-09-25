@@ -1,0 +1,55 @@
+name: Update administrative divisions
+
+on:
+  schedule:
+    # 02:17 UTC thứ Hai, tương đương 09:17 tại Việt Nam.
+    - cron: "17 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-administrative-divisions
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update ward data
+        run: npm run administrative-divisions:update
+
+      - name: Verify types
+        run: npm run type-check
+
+      - name: Commit changed data
+        shell: bash
+        run: |
+          git add -- src/shared/administrative-divisions/data/vietnamese-wards.json
+
+          if git diff --cached --quiet; then
+            echo "Administrative division data has not changed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: update Vietnamese administrative divisions"
+          git push

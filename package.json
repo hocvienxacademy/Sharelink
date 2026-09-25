@@ -6,6 +6,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
+    "administrative-divisions:update": "tsx scripts/update-vietnamese-wards.ts",
     "dev": "next dev",
     "build": "tsx scripts/build.ts",
     "build:render": "npm run prisma:generate && npm run build",
