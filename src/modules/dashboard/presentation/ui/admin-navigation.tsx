@@ -12,6 +12,7 @@ import {
   GraduationCapIcon,
   LayoutDashboardIcon,
   Link2Icon,
+  MailIcon,
   MenuIcon,
   SettingsIcon,
   UsersIcon,
@@ -39,10 +40,19 @@ const navigationItems: readonly NavigationItem[] = [
   { href: "/quan-tri/lien-ket", label: "Liên kết", icon: Link2Icon },
   { href: "/quan-tri/ho-so", label: "Hồ sơ", icon: FileTextIcon },
   { href: "/quan-tri/thanh-toan", label: "Thanh toán", icon: BanknoteIcon },
+  { href: "/quan-tri/gui-mail", label: "Gửi mail", icon: MailIcon },
   { href: "/quan-tri/nhan-su", label: "Nhân sự", icon: UsersIcon },
-  { href: "/quan-tri/tai-khoan", label: "Tài khoản", icon: CircleUserRoundIcon },
+  {
+    href: "/quan-tri/tai-khoan",
+    label: "Tài khoản",
+    icon: CircleUserRoundIcon,
+  },
   { href: "/quan-tri/nganh-hoc", label: "Ngành học", icon: GraduationCapIcon },
-  { href: "/quan-tri/tai-khoan-ngan-hang", label: "Ngân hàng", icon: Building2Icon },
+  {
+    href: "/quan-tri/tai-khoan-ngan-hang",
+    label: "Ngân hàng",
+    icon: Building2Icon,
+  },
   { href: "/quan-tri/cai-dat", label: "Cài đặt", icon: SettingsIcon },
   { href: "/quan-tri/nhat-ky", label: "Nhật ký", icon: ClipboardListIcon },
 ];
@@ -53,19 +63,29 @@ function isActiveRoute(pathname: string, href: string): boolean {
     : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavigationLinks({ onNavigate, role }: { readonly onNavigate?: () => void; readonly role: UserRole }) {
+function NavigationLinks({
+  onNavigate,
+  role,
+}: {
+  readonly onNavigate?: () => void;
+  readonly role: UserRole;
+}) {
   const pathname = usePathname();
-  const visibleItems = role === "ADMIN"
-    ? navigationItems
-    : navigationItems.filter((item) => [
-        "/quan-tri/lien-ket",
-        "/quan-tri/ho-so",
-        "/quan-tri/thanh-toan",
-        "/quan-tri/nganh-hoc",
-        "/quan-tri/tai-khoan-ngan-hang",
-        "/quan-tri/tai-khoan",
-        ...(role === "MANAGER" ? ["/quan-tri/nhan-su"] : []),
-      ].includes(item.href));
+  const visibleItems =
+    role === "ADMIN"
+      ? navigationItems
+      : navigationItems.filter((item) =>
+          [
+            "/quan-tri/lien-ket",
+            "/quan-tri/ho-so",
+            "/quan-tri/thanh-toan",
+            "/quan-tri/gui-mail",
+            "/quan-tri/nganh-hoc",
+            "/quan-tri/tai-khoan-ngan-hang",
+            "/quan-tri/tai-khoan",
+            ...(role === "MANAGER" ? ["/quan-tri/nhan-su"] : []),
+          ].includes(item.href),
+        );
   return visibleItems.map(({ href, icon: Icon, label }) => {
     const active = isActiveRoute(pathname, href);
     return (
@@ -93,7 +113,11 @@ export function AdminMobileNavigation({ role }: { readonly role: UserRole }) {
   return (
     <div className="border-b bg-background px-3 py-2.5 sm:px-6 lg:hidden">
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger render={<Button variant="outline" aria-label="Mở điều hướng quản trị" />}>
+        <SheetTrigger
+          render={
+            <Button variant="outline" aria-label="Mở điều hướng quản trị" />
+          }
+        >
           <MenuIcon data-icon="inline-start" aria-hidden="true" />
           Menu quản trị
         </SheetTrigger>
@@ -102,7 +126,10 @@ export function AdminMobileNavigation({ role }: { readonly role: UserRole }) {
             <SheetTitle>Điều hướng quản trị</SheetTitle>
             <SheetDescription>Chọn khu vực vận hành cần mở.</SheetDescription>
           </SheetHeader>
-          <nav className="flex flex-col gap-1 px-4" aria-label="Điều hướng quản trị mobile">
+          <nav
+            className="flex flex-col gap-1 px-4"
+            aria-label="Điều hướng quản trị mobile"
+          >
             <NavigationLinks role={role} onNavigate={() => setOpen(false)} />
           </nav>
         </SheetContent>
@@ -114,7 +141,10 @@ export function AdminMobileNavigation({ role }: { readonly role: UserRole }) {
 export function AdminDesktopNavigation({ role }: { readonly role: UserRole }) {
   return (
     <aside className="hidden min-h-[calc(100dvh-73px)] border-r bg-background p-4 lg:block">
-      <nav className="sticky top-4 flex flex-col gap-1" aria-label="Điều hướng quản trị">
+      <nav
+        className="sticky top-4 flex flex-col gap-1"
+        aria-label="Điều hướng quản trị"
+      >
         <NavigationLinks role={role} />
       </nav>
     </aside>

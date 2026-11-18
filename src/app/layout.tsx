@@ -19,7 +19,10 @@ export default function RootLayout({
 }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="vi" className="font-sans">
-      <body>{children}</body>
+      {/* Browser extensions (e.g. ColorZilla's cz-shortcut-listen) add
+          attributes to <body> before hydration. This only ignores attribute
+          differences on <body> itself, not on its children. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

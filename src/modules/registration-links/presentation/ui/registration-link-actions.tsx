@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  isConflict,
+  messageForApiError,
+  requestJson,
+} from "@/shared/http/browser/json-api-client";
 import type { RegistrationLinkStatus } from "../../domain/registration-link";
 
 const actionLabels = {
@@ -16,10 +21,16 @@ const actionLabels = {
 } as const;
 type Action = keyof typeof actionLabels;
 
-function actionsFor(status: RegistrationLinkStatus, hasApplication: boolean): readonly Action[] {
-  if (status === "DRAFT") return hasApplication ? ["activate"] : ["activate", "cancel"];
-  if (status === "ACTIVE") return hasApplication ? ["lock"] : ["lock", "cancel"];
-  if (status === "LOCKED") return hasApplication ? ["unlock"] : ["unlock", "cancel"];
+function actionsFor(
+  status: RegistrationLinkStatus,
+  hasApplication: boolean,
+): readonly Action[] {
+  if (status === "DRAFT")
+    return hasApplication ? ["activate"] : ["activate", "cancel"];
+  if (status === "ACTIVE")
+    return hasApplication ? ["lock"] : ["lock", "cancel"];
+  if (status === "LOCKED")
+    return hasApplication ? ["unlock"] : ["unlock", "cancel"];
   if (status === "CANCELLED" || status === "EXPIRED") return ["archive"];
   return [];
 }
@@ -46,27 +57,42 @@ export function RegistrationLinkActions({
 
   async function mutate(action: Action) {
     if (lock.current) return;
-    if (["cancel", "archive", "lock"].includes(action) && !window.confirm(`Xác nhận ${actionLabels[action].toLowerCase()} liên kết này?`)) return;
-    const reason = ["lock", "cancel"].includes(action) ? window.prompt("Lý do (không bắt buộc):") : null;
+    if (
+      ["cancel", "archive", "lock"].includes(action) &&
+      !window.confirm(
+        `Xác nhận ${actionLabels[action].toLowerCase()} liên kết này?`,
+      )
+    )
+      return;
+    const reason = ["lock", "cancel"].includes(action)
+      ? window.prompt("Lý do (không bắt buộc):")
+      : null;
     if (reason === null && ["lock", "cancel"].includes(action)) return;
     lock.current = true;
     setPending(action);
     setMessage(null);
     try {
-      const response = await fetch(`/api/admin/registration-links/${id}/${action}`, {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason, expectedStatus: status, expectedUpdatedAt: updatedAtIso }),
-      });
-      if (!response.ok) {
-        setMessage(response.status === 403 ? "Bạn không có quyền thực hiện thao tác này." : response.status === 409 ? "Trạng thái vừa thay đổi. Trang sẽ tải lại dữ liệu mới nhất." : "Không thể thực hiện thao tác.");
-        if (response.status === 409) router.refresh();
-        return;
-      }
+      await requestJson(
+        `/api/admin/registration-links/${id}/${action}`,
+        "POST",
+        {
+          reason,
+          expectedStatus: status,
+          expectedUpdatedAt: updatedAtIso,
+        },
+      );
       router.refresh();
-    } catch {
-      setMessage("Không thể kết nối tới hệ thống.");
+    } catch (error) {
+      setMessage(
+        messageForApiError(error, {
+          unauthorized: "Bạn không có quyền thực hiện thao tác này.",
+          conflict:
+            "Trạng thái vừa thay đổi. Trang sẽ tải lại dữ liệu mới nhất.",
+          network: "Không thể kết nối tới hệ thống.",
+          fallback: "Không thể thực hiện thao tác.",
+        }),
+      );
+      if (isConflict(error)) router.refresh();
     } finally {
       lock.current = false;
       setPending(null);
@@ -75,21 +101,54 @@ export function RegistrationLinkActions({
 
   async function copyUrl() {
     if (publicUrl === null) return;
-    await navigator.clipboard.writeText(new URL(publicUrl, window.location.origin).toString());
+    await navigator.clipboard.writeText(
+      new URL(publicUrl, window.location.origin).toString(),
+    );
     setMessage("Đã sao chép đường dẫn công khai.");
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border bg-background p-4 sm:p-5" aria-label="Thao tác liên kết">
+    <section
+      className="flex flex-col gap-4 rounded-2xl border bg-background p-4 sm:p-5"
+      aria-label="Thao tác liên kết"
+    >
       <div className="grid grid-cols-1 gap-3 sm:flex sm:flex-wrap">
-        {publicUrl === null ? null : <Button className="w-full sm:w-auto" type="button" variant="outline" onClick={copyUrl}>Sao chép URL</Button>}
-        {(canMutate ? actionsFor(status, applicationId !== null) : []).map((action) => (
-          <Button className="w-full sm:w-auto" key={action} type="button" variant={["cancel", "archive"].includes(action) ? "destructive" : "default"} disabled={pending !== null} onClick={() => mutate(action)}>
-            {pending === action ? <Spinner data-icon="inline-start" /> : null}{actionLabels[action]}
+        {publicUrl === null ? null : (
+          <Button
+            className="w-full sm:w-auto"
+            type="button"
+            variant="outline"
+            onClick={copyUrl}
+          >
+            Sao chép URL
           </Button>
-        ))}
+        )}
+        {(canMutate ? actionsFor(status, applicationId !== null) : []).map(
+          (action) => (
+            <Button
+              className="w-full sm:w-auto"
+              key={action}
+              type="button"
+              variant={
+                ["cancel", "archive"].includes(action)
+                  ? "destructive"
+                  : "default"
+              }
+              disabled={pending !== null}
+              onClick={() => mutate(action)}
+            >
+              {pending === action ? <Spinner data-icon="inline-start" /> : null}
+              {actionLabels[action]}
+            </Button>
+          ),
+        )}
       </div>
-      {message === null ? null : <Alert><AlertTitle>Thông báo</AlertTitle><AlertDescription>{message}</AlertDescription></Alert>}
+      {message === null ? null : (
+        <Alert>
+          <AlertTitle>Thông báo</AlertTitle>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
     </section>
   );
 }

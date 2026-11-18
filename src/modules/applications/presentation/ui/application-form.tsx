@@ -1,34 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  CheckCircle2Icon,
-  RefreshCwIcon,
-  SendIcon,
-} from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  FormProvider,
-  type FieldPath,
-  type Resolver,
-  useForm,
-} from "react-hook-form";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
+import { FormProvider, type Resolver, useForm } from "react-hook-form";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   createDraftApplicationSchema,
   updateDraftApplicationSchema,
@@ -45,18 +20,46 @@ import {
   type RegistrationContext,
   type SubmittedApplication,
 } from "./application-api-client";
+import { mapValidationIssues } from "./application-error-mapper";
+import {
+  findFirstInvalidField,
+  findMissingRequiredFields,
+  focusAndScrollToField,
+  type ApplicationFieldName,
+} from "./application-form-focus";
 import {
   initialFormValues,
   type ApplicationFormValues,
 } from "./application-form.types";
-import { mapValidationIssues } from "./application-error-mapper";
+import {
+  FormProblemAlert,
+  RevisionRequestAlert,
+  SavedStatus,
+} from "./components/application-form-alerts";
+import { ApplicationFormNavigation } from "./components/application-form-navigation";
+import { ApplicationSubmittedView } from "./components/application-submitted-view";
 import { EducationSection } from "./sections/education-section";
 import { PersonalInformationSection } from "./sections/personal-information-section";
 import { RelativesSection } from "./sections/relatives-section";
 import { ReviewSection } from "./sections/review-section";
-import { StudentPaymentInformationPanel } from "./components/student-payment-information";
 
 const LAST_PAGE_INDEX = 2;
+
+const MESSAGES = {
+  checkListedFields: "Vui lòng kiểm tra các trường được liệt kê.",
+  conflict:
+    "Hồ sơ đã được cập nhật ở một phiên khác. Vui lòng tải lại dữ liệu trước khi tiếp tục.",
+  invalidFormat:
+    "Một số thông tin chưa đúng định dạng. Vui lòng kiểm tra các trường được đánh dấu.",
+  missingRequired: "Vui lòng điền các trường bắt buộc trước khi tiếp tục.",
+  network: "Mất kết nối mạng. Vui lòng kiểm tra kết nối rồi thử lại.",
+  nothingToSave:
+    "Vui lòng nhập ít nhất một thông tin trước khi chuyển sang trang sau.",
+  requiredField: "Vui lòng điền thông tin bắt buộc này.",
+  saveFailed: "Không thể lưu hồ sơ lúc này. Vui lòng thử lại sau.",
+  saved: "Đã lưu",
+  unexpected: "Hệ thống đang gặp sự cố. Vui lòng thử lại sau ít phút.",
+} as const;
 
 export interface ApplicationMutationClient {
   createDraft(
@@ -94,26 +97,9 @@ interface PersistedDraft {
   readonly version: number;
 }
 
-function applicationFieldId(name: FieldPath<ApplicationFormValues>): string {
-  return `application-field-${name.replaceAll(".", "-")}`;
-}
-
-function focusAndScrollToField(
-  name: FieldPath<ApplicationFormValues>,
-): void {
-  const target = document.getElementById(applicationFieldId(name));
-  if (!(target instanceof HTMLElement)) {
-    return;
-  }
-
-  target.focus({ preventScroll: true });
-  if (typeof target.scrollIntoView === "function") {
-    target.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    });
-  }
+/** A new object per request, so asking twice for the same field focuses twice. */
+interface FocusRequest {
+  readonly field: ApplicationFieldName;
 }
 
 export function ApplicationForm({
@@ -147,36 +133,33 @@ export function ApplicationForm({
   const [generalMessage, setGeneralMessage] = useState<string | null>(null);
   const [hasConflict, setHasConflict] = useState(false);
   const [submitted, setSubmitted] = useState<SubmittedApplication | null>(null);
-  const [showSubmissionDialog, setShowSubmissionDialog] = useState(false);
-  const [pendingFocus, setPendingFocus] =
-    useState<FieldPath<ApplicationFormValues> | null>(null);
+  const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const requestLock = useRef(false);
 
-  useEffect(() => {
-    if (application === undefined) {
-      return;
-    }
-
+  // A reloaded application (after a conflict) replaces the local draft state.
+  const [syncedApplication, setSyncedApplication] = useState(application);
+  if (application !== undefined && application !== syncedApplication) {
+    setSyncedApplication(application);
     setApplicationId(application.id);
     setVersion(application.version);
-    reset(initialFormValues(context, application));
+  }
+  useEffect(() => {
+    if (application !== undefined) {
+      reset(initialFormValues(context, application));
+    }
   }, [application, context, reset]);
 
+  // Runs after the page holding the field has rendered.
   useEffect(() => {
-    if (pendingFocus === null) {
-      return;
-    }
-
-    focusAndScrollToField(pendingFocus);
-    setPendingFocus(null);
-  }, [currentPage, pendingFocus]);
+    if (focusRequest !== null) focusAndScrollToField(focusRequest.field);
+  }, [focusRequest]);
 
   const applyValidationIssues = (error: ApiClientError) => {
     const mapped = mapValidationIssues(error.issues);
 
     for (const [path, messages] of Object.entries(mapped.fieldErrors)) {
-      setError(path as FieldPath<ApplicationFormValues>, {
+      setError(path as ApplicationFieldName, {
         type: "server",
         message: messages.join(" "),
       });
@@ -186,16 +169,13 @@ export function ApplicationForm({
     setGeneralMessage(
       mapped.generalMessages[0] ??
         (mapped.summaryItems.length > 0
-          ? "Vui lòng kiểm tra các trường được liệt kê."
+          ? MESSAGES.checkListedFields
           : error.message),
     );
 
     if (mapped.firstField !== null) {
-      const target = mapped.firstField as FieldPath<ApplicationFormValues>;
-      const targetPage = mapped.firstField.startsWith("relatives.") ? 1 : 0;
-
-      setCurrentPage(targetPage);
-      setPendingFocus(target);
+      setCurrentPage(mapped.firstField.startsWith("relatives.") ? 1 : 0);
+      setFocusRequest({ field: mapped.firstField as ApplicationFieldName });
     }
   };
 
@@ -203,29 +183,20 @@ export function ApplicationForm({
     setSavedMessage(null);
 
     if (!(error instanceof ApiClientError)) {
-      setGeneralMessage(
-        "Hệ thống đang gặp sự cố. Vui lòng thử lại sau ít phút.",
-      );
+      setGeneralMessage(MESSAGES.unexpected);
       return;
     }
-
     if (error.kind === "validation") {
       applyValidationIssues(error);
       return;
     }
-
     if (error.kind === "conflict") {
       setHasConflict(true);
-      setGeneralMessage(
-        "Hồ sơ đã được cập nhật ở một phiên khác. Vui lòng tải lại dữ liệu trước khi tiếp tục.",
-      );
+      setGeneralMessage(MESSAGES.conflict);
       return;
     }
-
     setGeneralMessage(
-      error.kind === "network"
-        ? "Mất kết nối mạng. Vui lòng kiểm tra kết nối rồi thử lại."
-        : "Không thể lưu hồ sơ lúc này. Vui lòng thử lại sau.",
+      error.kind === "network" ? MESSAGES.network : MESSAGES.saveFailed,
     );
   };
 
@@ -245,16 +216,10 @@ export function ApplicationForm({
       setApplicationId(draft.id);
       setVersion(draft.version);
       reset(values);
-
-      return {
-        applicationId: draft.id,
-        version: draft.version,
-      };
+      return { applicationId: draft.id, version: draft.version };
     }
 
-    if (!isDirty) {
-      return { applicationId, version };
-    }
+    if (!isDirty) return { applicationId, version };
 
     const updated = await mutationClient.updateDraft(
       token,
@@ -266,21 +231,15 @@ export function ApplicationForm({
     );
     setVersion(updated.version);
     reset(initialFormValues(context, updated));
-
-    return {
-      applicationId: updated.id,
-      version: updated.version,
-    };
+    return { applicationId: updated.id, version: updated.version };
   };
 
+  /** Ignores double clicks while a save or submit is in flight. */
   const runLocked = async (operation: () => Promise<void>) => {
-    if (requestLock.current) {
-      return;
-    }
+    if (requestLock.current) return;
 
     requestLock.current = true;
     setIsRequesting(true);
-
     try {
       await operation();
     } catch (error: unknown) {
@@ -294,14 +253,12 @@ export function ApplicationForm({
   const saveAndContinue = (values: ApplicationFormValues) =>
     runLocked(async () => {
       if (applicationId === null && !isDirty) {
-        setGeneralMessage(
-          "Vui lòng nhập ít nhất một thông tin trước khi chuyển sang trang sau.",
-        );
+        setGeneralMessage(MESSAGES.nothingToSave);
         return;
       }
 
       await persistDraft(values);
-      setSavedMessage("Đã lưu");
+      setSavedMessage(MESSAGES.saved);
       setCurrentPage((page) => Math.min(page + 1, LAST_PAGE_INDEX));
     });
 
@@ -316,121 +273,49 @@ export function ApplicationForm({
 
       setVersion(result.version);
       setSubmitted(result);
-      setShowSubmissionDialog(true);
       setSavedMessage(null);
       setGeneralMessage(null);
       setSummaryItems([]);
       onReload?.();
     });
 
-  const focusFirstInvalidField = (): void => {
-    const invalidField = formRef.current?.querySelector<HTMLElement>(
-      '[data-field-name][data-invalid="true"]',
-    );
-    const name = invalidField?.dataset.fieldName;
-
-    if (name !== undefined) {
-      focusAndScrollToField(name as FieldPath<ApplicationFormValues>);
-    }
-  };
-
   const invalidForm = () => {
-    setGeneralMessage(
-      "Một số thông tin chưa đúng định dạng. Vui lòng kiểm tra các trường được đánh dấu.",
-    );
-    requestAnimationFrame(focusFirstInvalidField);
+    setGeneralMessage(MESSAGES.invalidFormat);
+    requestAnimationFrame(() => {
+      const field = findFirstInvalidField(formRef.current);
+      if (field !== undefined) focusAndScrollToField(field);
+    });
   };
 
-  const continueToNextPage = (): void => {
-    const missingFields = Array.from(
-      formRef.current?.querySelectorAll<HTMLElement>(
-        '[data-field-name][data-required="true"][data-empty="true"]',
-      ) ?? [],
-    );
-
-    if (missingFields.length > 0) {
-      for (const field of missingFields) {
-        const name = field.dataset.fieldName;
-        if (name === undefined) continue;
-
-        setError(name as FieldPath<ApplicationFormValues>, {
-          type: "required",
-          message: "Vui lòng điền thông tin bắt buộc này.",
-        });
-      }
-
-      setGeneralMessage(
-        "Vui lòng điền các trường bắt buộc trước khi tiếp tục.",
-      );
-      const firstName = missingFields[0]?.dataset.fieldName;
-      if (firstName !== undefined) {
-        focusAndScrollToField(
-          firstName as FieldPath<ApplicationFormValues>,
-        );
-      }
+  const continueToNextPage = () => {
+    const missingFields = findMissingRequiredFields(formRef.current);
+    if (missingFields.length === 0) {
+      void handleSubmit(saveAndContinue, invalidForm)();
       return;
     }
 
-    void handleSubmit(saveAndContinue, invalidForm)();
+    for (const name of missingFields) {
+      setError(name, { type: "required", message: MESSAGES.requiredField });
+    }
+    setGeneralMessage(MESSAGES.missingRequired);
+    focusAndScrollToField(missingFields[0]);
   };
 
   if (submitted !== null) {
-    const submittedEmail = getValues("email");
-
     return (
-      <>
-        <Dialog
-          open={showSubmissionDialog}
-          onOpenChange={setShowSubmissionDialog}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Phiếu dự tuyển đã được gửi thành công</DialogTitle>
-              <DialogDescription className="flex flex-col gap-3">
-                <span>
-                  Vui lòng kiểm tra email{" "}
-                  <strong className="break-all text-foreground">
-                    {submittedEmail}
-                  </strong>
-                  , tải file Word đính kèm, in phiếu và gửi về trường theo hướng
-                  dẫn.
-                </span>
-                <span>Sau đây, vui lòng thanh toán lệ phí xét tuyển.</span>
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <DialogClose render={<Button type="button" />}>
-                Tiếp tục thanh toán
-              </DialogClose>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <div className="grid gap-4">
-          <Alert>
-            <CheckCircle2Icon />
-            <AlertTitle>Hồ sơ đã được nộp thành công</AlertTitle>
-            <AlertDescription>
-              <p>
-                Mã tham chiếu hồ sơ: <strong>{submitted.id}</strong>. Hồ sơ hiện ở
-                trạng thái chỉ đọc và không thể chỉnh sửa trên giao diện này.
-              </p>
-              <p className="mt-2">
-                {submitted.submissionEmailStatus === "SENT"
-                  ? "Phiếu dự tuyển Word đã được gửi tới địa chỉ email bạn khai trong hồ sơ."
-                  : submitted.submissionEmailStatus === "FAILED"
-                    ? "Hồ sơ đã được ghi nhận nhưng chưa thể gửi phiếu qua email. Vui lòng liên hệ đơn vị tuyển sinh."
-                    : "Phiếu dự tuyển Word đang được hệ thống xử lý để gửi qua email."}
-              </p>
-            </AlertDescription>
-          </Alert>
-          <StudentPaymentInformationPanel payment={context.payment} />
-        </div>
-      </>
+      <ApplicationSubmittedView
+        submitted={submitted}
+        email={getValues("email")}
+        payment={context.payment}
+      />
     );
   }
 
-  const watchedValues = getValues();
+  const revisionReason =
+    application?.status === "NEEDS_REVISION"
+      ? application.latestRevisionReason
+      : null;
+
   return (
     <FormProvider {...form}>
       <form
@@ -439,126 +324,41 @@ export function ApplicationForm({
         onSubmit={(event) => event.preventDefault()}
         className="flex flex-col gap-5"
       >
-        {application?.status === "NEEDS_REVISION" && typeof application.latestRevisionReason === "string" ? (
-          <Alert>
-            <AlertTitle>Hồ sơ cần bổ sung</AlertTitle>
-            <AlertDescription className="whitespace-pre-wrap">{application.latestRevisionReason}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        {generalMessage === null ? null : (
-          <Alert variant={hasConflict ? "destructive" : "default"}>
-            <AlertTitle>
-              {hasConflict ? "Dữ liệu đã thay đổi" : "Cần kiểm tra lại"}
-            </AlertTitle>
-            <AlertDescription>
-              <p>{generalMessage}</p>
-              {summaryItems.length === 0 ? null : (
-                <ul className="mt-2 list-disc pl-5">
-                  {summaryItems.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              )}
-              {hasConflict ? (
-                <p className="mt-2">
-                  Thay đổi chưa lưu trên màn hình có thể bị mất khi tải lại.
-                </p>
-              ) : null}
-            </AlertDescription>
-          </Alert>
+        {typeof revisionReason === "string" && (
+          <RevisionRequestAlert reason={revisionReason} />
         )}
-
-        {savedMessage === null ? null : (
-          <div
-            role="status"
-            className="flex items-center gap-2 text-sm font-medium"
-          >
-            <CheckCircle2Icon aria-hidden="true" />
-            {savedMessage}
-          </div>
+        {generalMessage !== null && (
+          <FormProblemAlert
+            message={generalMessage}
+            summaryItems={summaryItems}
+            hasConflict={hasConflict}
+          />
         )}
+        {savedMessage !== null && <SavedStatus message={savedMessage} />}
 
         <Card className="rounded-2xl sm:rounded-[2rem]">
           <CardContent>
-            {currentPage === 0 ? (
+            {currentPage === 0 && (
               <div className="flex flex-col gap-10">
                 <PersonalInformationSection token={token} />
                 <EducationSection context={context} />
               </div>
-            ) : null}
-            {currentPage === 1 ? <RelativesSection /> : null}
-            {currentPage === 2 ? (
-              <ReviewSection context={context} values={watchedValues} />
-            ) : null}
+            )}
+            {currentPage === 1 && <RelativesSection />}
+            {currentPage === 2 && (
+              <ReviewSection context={context} values={getValues()} />
+            )}
           </CardContent>
 
-          <CardFooter className="flex flex-col items-stretch gap-3 min-[480px]:flex-row min-[480px]:flex-wrap min-[480px]:items-center min-[480px]:justify-between">
-            <div className="grid w-full grid-cols-1 gap-2 min-[480px]:flex min-[480px]:w-auto min-[480px]:flex-wrap">
-              {currentPage === 0 ? null : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 w-full min-[480px]:w-auto"
-                  disabled={isRequesting}
-                  onClick={() => setCurrentPage((page) => page - 1)}
-                >
-                  <ArrowLeftIcon data-icon="inline-start" />
-                  Trang trước
-                </Button>
-              )}
-              {hasConflict && onReload !== undefined ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="min-h-11 w-full min-[480px]:w-auto"
-                  disabled={isRequesting}
-                  onClick={onReload}
-                >
-                  <RefreshCwIcon data-icon="inline-start" />
-                  Tải lại hồ sơ
-                </Button>
-              ) : null}
-            </div>
-
-            <div
-              className={cn(
-                "grid w-full grid-cols-1 gap-2",
-                currentPage !== 0 &&
-                  "min-[480px]:flex min-[480px]:w-auto min-[480px]:flex-wrap min-[480px]:justify-end",
-              )}
-            >
-              {currentPage < LAST_PAGE_INDEX ? (
-                <Button
-                  type="button"
-                  className="min-h-11 w-full min-[480px]:w-auto"
-                  disabled={isRequesting}
-                  onClick={continueToNextPage}
-                >
-                  {isRequesting ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <ArrowRightIcon data-icon="inline-end" />
-                  )}
-                  Trang sau
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  className="min-h-11 w-full min-[480px]:w-auto"
-                  disabled={isRequesting}
-                  onClick={handleSubmit(submit, invalidForm)}
-                >
-                  {isRequesting ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <SendIcon data-icon="inline-start" />
-                  )}
-                  Nộp hồ sơ
-                </Button>
-              )}
-            </div>
-          </CardFooter>
+          <ApplicationFormNavigation
+            isFirstPage={currentPage === 0}
+            isLastPage={currentPage === LAST_PAGE_INDEX}
+            isRequesting={isRequesting}
+            onPrevious={() => setCurrentPage((page) => page - 1)}
+            onNext={continueToNextPage}
+            onSubmit={() => void handleSubmit(submit, invalidForm)()}
+            onReload={hasConflict ? onReload : undefined}
+          />
         </Card>
 
         <p className="text-xs text-muted-foreground">

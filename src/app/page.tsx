@@ -6,8 +6,14 @@ import {
   SparklesIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { BrandLogo } from "@/components/brand-logo";
 
 export default function HomePage() {
@@ -26,20 +32,21 @@ export default function HomePage() {
           <Badge variant="secondary">Nền tảng tuyển sinh số</Badge>
           <h1 className="mt-6 max-w-4xl font-heading text-5xl font-semibold leading-[1.03] tracking-[-0.055em] sm:text-7xl lg:text-[5rem]">
             Một liên kết.
-            <br />Một hành trình hồ sơ liền mạch.
+            <br />
+            Một hành trình hồ sơ liền mạch.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-            Đại học Trà Vinh giúp đơn vị tuyển sinh gửi đúng biểu mẫu, tiếp nhận thông tin có cấu trúc và theo dõi tiến độ trong một hệ thống thống nhất.
+            Đại học Trà Vinh giúp đơn vị tuyển sinh gửi đúng biểu mẫu, tiếp nhận
+            thông tin có cấu trúc và theo dõi tiến độ trong một hệ thống thống
+            nhất.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              nativeButton={false}
-              size="lg"
-              variant="outline"
-              render={<a href="#quy-trinh" />}
+            <a
+              href="#quy-trinh"
+              className={buttonVariants({ size: "lg", variant: "outline" })}
             >
               Xem cách hoạt động
-            </Button>
+            </a>
           </div>
         </div>
 
@@ -47,8 +54,12 @@ export default function HomePage() {
           <Card className="min-h-56 justify-between rounded-[2rem] bg-brand-coral text-white">
             <CardHeader>
               <SparklesIcon aria-hidden="true" />
-              <CardDescription className="pt-5 text-white/70">TRẢI NGHIỆM SINH VIÊN</CardDescription>
-              <CardTitle className="text-3xl font-semibold">Biểu mẫu rõ ràng, lưu nháp an toàn.</CardTitle>
+              <CardDescription className="pt-5 text-white/70">
+                TRẢI NGHIỆM SINH VIÊN
+              </CardDescription>
+              <CardTitle className="text-3xl font-semibold">
+                Biểu mẫu rõ ràng, lưu nháp an toàn.
+              </CardTitle>
             </CardHeader>
           </Card>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
@@ -68,17 +79,37 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="quy-trinh" className="bg-surface px-4 py-16 sm:px-8 sm:py-20">
+      <section
+        id="quy-trinh"
+        className="bg-surface px-4 py-16 sm:px-8 sm:py-20"
+      >
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-semibold text-foreground">QUY TRÌNH TINH GỌN</p>
+          <p className="text-sm font-semibold text-foreground">
+            QUY TRÌNH TINH GỌN
+          </p>
           <h2 className="mt-3 max-w-3xl font-heading text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
             Từ lời mời đến hồ sơ hoàn chỉnh.
           </h2>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {[
-              [Link2Icon, "01", "Nhận liên kết", "Sinh viên mở liên kết đăng ký riêng do đơn vị tuyển sinh cung cấp."],
-              [FileCheck2Icon, "02", "Hoàn thiện hồ sơ", "Nhập thông tin theo từng bước, lưu bản nháp và kiểm tra trước khi gửi."],
-              [ShieldCheckIcon, "03", "Tiếp nhận an toàn", "Hệ thống xác thực context, giới hạn truy cập và chỉ trả dữ liệu cần thiết."],
+              [
+                Link2Icon,
+                "01",
+                "Nhận liên kết",
+                "Sinh viên mở liên kết đăng ký riêng do đơn vị tuyển sinh cung cấp.",
+              ],
+              [
+                FileCheck2Icon,
+                "02",
+                "Hoàn thiện hồ sơ",
+                "Nhập thông tin theo từng bước, lưu bản nháp và kiểm tra trước khi gửi.",
+              ],
+              [
+                ShieldCheckIcon,
+                "03",
+                "Tiếp nhận an toàn",
+                "Hệ thống xác thực context, giới hạn truy cập và chỉ trả dữ liệu cần thiết.",
+              ],
             ].map(([Icon, number, title, description]) => {
               const StepIcon = Icon as typeof Link2Icon;
               return (
@@ -88,9 +119,13 @@ export default function HomePage() {
                       <span className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground">
                         <StepIcon aria-hidden="true" />
                       </span>
-                      <span className="text-sm text-muted-foreground">{String(number)}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {String(number)}
+                      </span>
                     </div>
-                    <CardTitle className="pt-6 text-2xl font-semibold">{String(title)}</CardTitle>
+                    <CardTitle className="pt-6 text-2xl font-semibold">
+                      {String(title)}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="text-base leading-7 text-muted-foreground">
                     {String(description)}
@@ -105,7 +140,9 @@ export default function HomePage() {
       <footer className="bg-primary px-4 py-10 text-primary-foreground sm:px-8">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <BrandLogo imageClassName="size-11" />
-          <p className="text-sm text-primary-foreground/60">Hệ thống đăng ký và quản lý hồ sơ sinh viên.</p>
+          <p className="text-sm text-primary-foreground/60">
+            Hệ thống đăng ký và quản lý hồ sơ sinh viên.
+          </p>
         </div>
       </footer>
     </main>

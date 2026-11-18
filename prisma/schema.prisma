@@ -82,55 +82,56 @@ model application_status_histories {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model applications {
-  id                                    String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  registration_link_id                  String                         @unique(map: "uq_applications_registration_link") @db.Uuid
-  sale_id                               String                         @db.Uuid
-  application_code                      String?                        @unique(map: "uq_applications_application_code") @db.VarChar(50)
-  status                                application_status             @default(DRAFT)
-  submission_email_status               submission_email_status       @default(NOT_SENT)
-  major_id                              String?                        @db.Uuid
-  admission_period_id                   String?                        @db.Uuid
+  id                                    String                          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  registration_link_id                  String                          @unique(map: "uq_applications_registration_link") @db.Uuid
+  sale_id                               String                          @db.Uuid
+  application_code                      String?                         @unique(map: "uq_applications_application_code") @db.VarChar(50)
+  status                                application_status              @default(DRAFT)
+  submission_email_status               submission_email_status         @default(NOT_SENT)
+  major_id                              String?                         @db.Uuid
+  admission_period_id                   String?                         @db.Uuid
   entry_qualification                   admission_qualification_type?
-  full_name                             String?                        @db.VarChar(150)
+  full_name                             String?                         @db.VarChar(150)
   gender                                gender_type?
-  date_of_birth                         DateTime?                      @db.Date
-  place_of_birth                        String?                        @db.VarChar(255)
-  ethnicity                             String?                        @db.VarChar(100)
-  religion                              String?                        @db.VarChar(100)
-  nationality                           String?                        @default("Việt Nam") @db.VarChar(100)
-  citizen_id                            String?                        @db.VarChar(20)
-  citizen_id_issued_date                DateTime?                      @db.Date
-  citizen_id_issued_place               String?                        @db.VarChar(255)
+  date_of_birth                         DateTime?                       @db.Date
+  place_of_birth                        String?                         @db.VarChar(255)
+  ethnicity                             String?                         @db.VarChar(100)
+  religion                              String?                         @db.VarChar(100)
+  nationality                           String?                         @default("Việt Nam") @db.VarChar(100)
+  citizen_id                            String?                         @db.VarChar(20)
+  citizen_id_issued_date                DateTime?                       @db.Date
+  citizen_id_issued_place               String?                         @db.VarChar(255)
   permanent_address                     String?
   workplace                             String?
-  phone                                 String?                        @db.VarChar(15)
-  email                                 String?                        @db.VarChar(255)
+  phone                                 String?                         @db.VarChar(15)
+  email                                 String?                         @db.VarChar(255)
   contact_address                       String?
   admission_diploma                     admission_qualification_type?
-  graduate_major                        String?                        @db.VarChar(255)
-  graduation_year                       Int?                           @db.SmallInt
-  high_school_name                      String?                        @db.VarChar(255)
-  high_school_ward                      String?                        @db.VarChar(255)
-  high_school_province                  String?                        @db.VarChar(255)
-  declaration_place                     String?                        @db.VarChar(255)
-  declaration_date                      DateTime?                      @db.Date
-  declaration_confirmed                 Boolean                        @default(false)
-  data_processing_consent               Boolean                        @default(false)
-  submitted_at                          DateTime?                      @db.Timestamptz(6)
-  reviewed_by                           String?                        @db.Uuid
-  reviewed_at                           DateTime?                      @db.Timestamptz(6)
-  version                               Int                            @default(1)
-  created_at                            DateTime                       @default(now()) @db.Timestamptz(6)
-  updated_at                            DateTime                       @default(now()) @db.Timestamptz(6)
+  graduate_major                        String?                         @db.VarChar(255)
+  graduation_year                       Int?                            @db.SmallInt
+  high_school_name                      String?                         @db.VarChar(255)
+  high_school_ward                      String?                         @db.VarChar(255)
+  high_school_province                  String?                         @db.VarChar(255)
+  declaration_place                     String?                         @db.VarChar(255)
+  declaration_date                      DateTime?                       @db.Date
+  declaration_confirmed                 Boolean                         @default(false)
+  data_processing_consent               Boolean                         @default(false)
+  submitted_at                          DateTime?                       @db.Timestamptz(6)
+  reviewed_by                           String?                         @db.Uuid
+  reviewed_at                           DateTime?                       @db.Timestamptz(6)
+  version                               Int                             @default(1)
+  created_at                            DateTime                        @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime                        @default(now()) @db.Timestamptz(6)
   application_relatives                 application_relatives[]
   application_export_credentials        application_export_credentials?
   application_status_histories          application_status_histories[]
-  admission_periods                     admission_periods?             @relation(fields: [admission_period_id], references: [id], onUpdate: NoAction, map: "fk_applications_admission_period")
-  majors                                majors?                        @relation(fields: [major_id], references: [id], onUpdate: NoAction, map: "fk_applications_major")
-  registration_links                    registration_links             @relation(fields: [registration_link_id], references: [id], onUpdate: NoAction, map: "fk_applications_registration_link")
-  users_applications_reviewed_byTousers users?                         @relation("applications_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction, map: "fk_applications_reviewed_by")
-  users_applications_sale_idTousers     users                          @relation("applications_sale_idTousers", fields: [sale_id], references: [id], onUpdate: NoAction, map: "fk_applications_sale")
+  admission_periods                     admission_periods?              @relation(fields: [admission_period_id], references: [id], onUpdate: NoAction, map: "fk_applications_admission_period")
+  majors                                majors?                         @relation(fields: [major_id], references: [id], onUpdate: NoAction, map: "fk_applications_major")
+  registration_links                    registration_links              @relation(fields: [registration_link_id], references: [id], onUpdate: NoAction, map: "fk_applications_registration_link")
+  users_applications_reviewed_byTousers users?                          @relation("applications_reviewed_byTousers", fields: [reviewed_by], references: [id], onUpdate: NoAction, map: "fk_applications_reviewed_by")
+  users_applications_sale_idTousers     users                           @relation("applications_sale_idTousers", fields: [sale_id], references: [id], onUpdate: NoAction, map: "fk_applications_sale")
   payment_confirmations                 payment_confirmations?
+  mail_batch_recipients                 mail_batch_recipients[]
 
   @@index([citizen_id], map: "idx_applications_citizen_id", where: raw("(citizen_id IS NOT NULL)"))
   @@index([major_id], map: "idx_applications_major")
@@ -311,6 +312,15 @@ model users {
   registration_links_registration_links_locked_byTousers          registration_links[]                 @relation("registration_links_locked_byTousers")
   registration_links_registration_links_sale_idTousers            registration_links[]                 @relation("registration_links_sale_idTousers")
   system_settings                                                 system_settings[]
+  notice_templates_created                                        notice_templates[]                   @relation("notice_templates_created_by")
+  notice_assets_uploaded                                          notice_assets[]                      @relation("notice_assets_uploaded_by")
+  email_templates_created                                         email_templates[]                    @relation("email_templates_created_by")
+  mail_batches_sent                                               mail_batches[]                       @relation("mail_batches_sender")
+  mail_messages_sent                                              mail_messages[]                      @relation("mail_messages_sender")
+  mail_documents_created                                          mail_documents[]                     @relation("mail_documents_created_by")
+  invoice_files_uploaded                                          invoice_files[]                      @relation("invoice_files_uploaded_by")
+  invoice_assignments_assigned                                    invoice_assignments[]                @relation("invoice_assignments_assigned_by")
+  invoice_assignments_unassigned                                  invoice_assignments[]                @relation("invoice_assignments_unassigned_by")
   users                                                           users?                               @relation("usersTousers", fields: [manager_id], references: [id], onUpdate: NoAction, map: "fk_users_manager")
   other_users                                                     users[]                              @relation("usersTousers")
 
@@ -370,4 +380,272 @@ enum user_role {
   SALE
   MANAGER
   ADMIN
+}
+
+// ---------------------------------------------------------------------------
+// Student mailing: procedure emails (TBHTTTNH, HĐHPĐ1) with generated notices
+// and accounting invoices. CHECK constraints and partial indexes are defined
+// in prisma/migrations/20261020120000_add_student_mailing/migration.sql.
+// ---------------------------------------------------------------------------
+
+/// Image layers of a notice (watermark, stamp, signature). Shared by template
+/// versions so saving a new version does not duplicate the bytes.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notice_assets {
+  id                     String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slot                   notice_asset_slot
+  content                Bytes
+  mime_type              String             @db.VarChar(50)
+  sha256                 String             @db.Char(64)
+  byte_size              Int
+  uploaded_by            String             @db.Uuid
+  created_at             DateTime           @default(now()) @db.Timestamptz(6)
+  users                  users              @relation("notice_assets_uploaded_by", fields: [uploaded_by], references: [id], onUpdate: NoAction, map: "fk_notice_assets_uploaded_by")
+  watermark_of_templates notice_templates[] @relation("notice_templates_watermark")
+  stamp_of_templates     notice_templates[] @relation("notice_templates_stamp")
+  signature_of_templates notice_templates[] @relation("notice_templates_signature")
+
+  @@unique([slot, sha256], map: "uq_notice_assets_slot_sha256")
+}
+
+/// Immutable versions of a notice template; editing creates a new version.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model notice_templates {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedure          mail_procedure
+  version            Int
+  name               String           @db.VarChar(150)
+  settings           Json
+  layout             Json
+  watermark_asset_id String?          @db.Uuid
+  stamp_asset_id     String?          @db.Uuid
+  signature_asset_id String?          @db.Uuid
+  is_default         Boolean          @default(false)
+  created_by         String           @db.Uuid
+  created_at         DateTime         @default(now()) @db.Timestamptz(6)
+  users              users            @relation("notice_templates_created_by", fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_notice_templates_created_by")
+  watermark_asset    notice_assets?   @relation("notice_templates_watermark", fields: [watermark_asset_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_notice_templates_watermark_asset")
+  stamp_asset        notice_assets?   @relation("notice_templates_stamp", fields: [stamp_asset_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_notice_templates_stamp_asset")
+  signature_asset    notice_assets?   @relation("notice_templates_signature", fields: [signature_asset_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_notice_templates_signature_asset")
+  mail_batches       mail_batches[]
+  mail_documents     mail_documents[]
+
+  @@unique([procedure, version], map: "uq_notice_templates_procedure_version")
+  @@unique([procedure], map: "uq_notice_templates_default", where: raw("is_default"))
+}
+
+/// Immutable versions of the default email content of a procedure.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model email_templates {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedure    mail_procedure
+  version      Int
+  subject      String         @db.VarChar(255)
+  body_html    String
+  is_default   Boolean        @default(false)
+  created_by   String         @db.Uuid
+  created_at   DateTime       @default(now()) @db.Timestamptz(6)
+  users        users          @relation("email_templates_created_by", fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_email_templates_created_by")
+  mail_batches mail_batches[]
+
+  @@unique([procedure, version], map: "uq_email_templates_procedure_version")
+  @@unique([procedure], map: "uq_email_templates_default", where: raw("is_default"))
+}
+
+/// One Excel import and its send. The Excel file itself is never stored.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mail_batches {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  procedure             mail_procedure
+  source_file_name      String                  @db.VarChar(255)
+  status                mail_batch_status       @default(DRAFT)
+  sender_id             String                  @db.Uuid
+  notice_template_id    String?                 @db.Uuid
+  email_template_id     String?                 @db.Uuid
+  /// Email content as edited for this batch, stored once instead of per message.
+  email_subject         String                  @db.VarChar(255)
+  email_body_html       String
+  confirmed_at          DateTime?               @db.Timestamptz(6)
+  completed_at          DateTime?               @db.Timestamptz(6)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  users                 users                   @relation("mail_batches_sender", fields: [sender_id], references: [id], onUpdate: NoAction, map: "fk_mail_batches_sender")
+  notice_templates      notice_templates?       @relation(fields: [notice_template_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mail_batches_notice_template")
+  email_templates       email_templates?        @relation(fields: [email_template_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mail_batches_email_template")
+  mail_batch_recipients mail_batch_recipients[]
+  mail_messages         mail_messages[]
+  invoice_files         invoice_files[]
+
+  @@index([sender_id, created_at(sort: Desc)], map: "idx_mail_batches_sender_created")
+  @@index([status], map: "idx_mail_batches_status")
+}
+
+/// One valid Excel row. `notice_data` keeps what is needed to regenerate the
+/// notice after its stored PDF expires.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mail_batch_recipients {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batch_id            String                @db.Uuid
+  row_number          Int
+  full_name           String                @db.VarChar(150)
+  email               String                @db.VarChar(255)
+  phone               String?               @db.VarChar(15)
+  class_code          String?               @db.VarChar(50)
+  notice_data         Json?
+  application_id      String?               @db.Uuid
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  mail_batches        mail_batches          @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mail_batch_recipients_batch")
+  applications        applications?         @relation(fields: [application_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_mail_batch_recipients_application")
+  mail_messages       mail_messages[]
+  mail_documents      mail_documents[]
+  invoice_assignments invoice_assignments[]
+
+  @@unique([batch_id, row_number], map: "uq_mail_batch_recipients_batch_row")
+  @@index([email], map: "idx_mail_batch_recipients_email")
+}
+
+/// Every email sent from the tool, including test sends to the sender.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mail_messages {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kind                     mail_message_kind
+  procedure                mail_procedure
+  batch_id                 String?                    @db.Uuid
+  recipient_id             String?                    @db.Uuid
+  to_email                 String                     @db.VarChar(255)
+  subject                  String                     @db.VarChar(255)
+  sender_id                String                     @db.Uuid
+  status                   mail_message_status        @default(QUEUED)
+  attempt_count            Int                        @default(0) @db.SmallInt
+  last_error_code          String?                    @db.VarChar(100)
+  smtp_message_id          String?                    @db.VarChar(255)
+  resend_of_id             String?                    @db.Uuid
+  resend_reason            String?
+  queued_at                DateTime                   @default(now()) @db.Timestamptz(6)
+  sent_at                  DateTime?                  @db.Timestamptz(6)
+  updated_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  mail_batches             mail_batches?              @relation(fields: [batch_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mail_messages_batch")
+  mail_batch_recipients    mail_batch_recipients?     @relation(fields: [recipient_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mail_messages_recipient")
+  users                    users                      @relation("mail_messages_sender", fields: [sender_id], references: [id], onUpdate: NoAction, map: "fk_mail_messages_sender")
+  resend_of                mail_messages?             @relation("mail_messages_resend", fields: [resend_of_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mail_messages_resend_of")
+  resends                  mail_messages[]            @relation("mail_messages_resend")
+  mail_message_attachments mail_message_attachments[]
+
+  @@unique([recipient_id], map: "uq_mail_messages_first_delivery", where: raw("((kind = 'DELIVERY'::mail_message_kind) AND (resend_of_id IS NULL))"))
+  @@index([batch_id, status], map: "idx_mail_messages_batch_status")
+  @@index([status, queued_at], map: "idx_mail_messages_queue", where: raw("(status = ANY (ARRAY['QUEUED'::mail_message_status, 'SENDING'::mail_message_status]))"))
+}
+
+/// A generated notice PDF. `content` is kept for 3 months, then purged while
+/// the metadata and hash remain for tracing.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mail_documents {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipient_id             String                     @db.Uuid
+  notice_template_id       String                     @db.Uuid
+  input_data               Json
+  file_name                String                     @db.VarChar(255)
+  sha256                   String                     @db.Char(64)
+  byte_size                Int
+  content                  Bytes?
+  expires_at               DateTime                   @default(dbgenerated("(CURRENT_TIMESTAMP + '3 mons'::interval)")) @db.Timestamptz(6)
+  purged_at                DateTime?                  @db.Timestamptz(6)
+  created_by               String                     @db.Uuid
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  mail_batch_recipients    mail_batch_recipients      @relation(fields: [recipient_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mail_documents_recipient")
+  notice_templates         notice_templates           @relation(fields: [notice_template_id], references: [id], onUpdate: NoAction, map: "fk_mail_documents_notice_template")
+  users                    users                      @relation("mail_documents_created_by", fields: [created_by], references: [id], onUpdate: NoAction, map: "fk_mail_documents_created_by")
+  mail_message_attachments mail_message_attachments[]
+
+  @@index([recipient_id, created_at(sort: Desc)], map: "idx_mail_documents_recipient_created")
+  @@index([expires_at], map: "idx_mail_documents_expiry", where: raw("(content IS NOT NULL)"))
+}
+
+/// An invoice image or PDF received from accounting, sent unchanged.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoice_files {
+  id                       String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batch_id                 String                     @db.Uuid
+  original_file_name       String                     @db.VarChar(255)
+  mime_type                String                     @db.VarChar(50)
+  sha256                   String                     @db.Char(64)
+  byte_size                Int
+  content                  Bytes?
+  expires_at               DateTime                   @default(dbgenerated("(CURRENT_TIMESTAMP + '3 mons'::interval)")) @db.Timestamptz(6)
+  purged_at                DateTime?                  @db.Timestamptz(6)
+  uploaded_by              String                     @db.Uuid
+  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  mail_batches             mail_batches               @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_invoice_files_batch")
+  users                    users                      @relation("invoice_files_uploaded_by", fields: [uploaded_by], references: [id], onUpdate: NoAction, map: "fk_invoice_files_uploaded_by")
+  invoice_assignments      invoice_assignments[]
+  mail_message_attachments mail_message_attachments[]
+
+  @@index([batch_id], map: "idx_invoice_files_batch")
+  @@index([expires_at], map: "idx_invoice_files_expiry", where: raw("(content IS NOT NULL)"))
+}
+
+/// Which invoice belongs to which student. Rows are never deleted: reassigning
+/// closes the previous row so every change stays traceable.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoice_assignments {
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recipient_id          String                @db.Uuid
+  invoice_file_id       String                @db.Uuid
+  assigned_by           String                @db.Uuid
+  assigned_at           DateTime              @default(now()) @db.Timestamptz(6)
+  unassigned_by         String?               @db.Uuid
+  unassigned_at         DateTime?             @db.Timestamptz(6)
+  mail_batch_recipients mail_batch_recipients @relation(fields: [recipient_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_invoice_assignments_recipient")
+  invoice_files         invoice_files         @relation(fields: [invoice_file_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_invoice_assignments_invoice_file")
+  assigner              users                 @relation("invoice_assignments_assigned_by", fields: [assigned_by], references: [id], onUpdate: NoAction, map: "fk_invoice_assignments_assigned_by")
+  unassigner            users?                @relation("invoice_assignments_unassigned_by", fields: [unassigned_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_invoice_assignments_unassigned_by")
+
+  @@unique([recipient_id], map: "uq_invoice_assignments_active_recipient", where: raw("(unassigned_at IS NULL)"))
+  @@unique([invoice_file_id], map: "uq_invoice_assignments_active_file", where: raw("(unassigned_at IS NULL)"))
+}
+
+/// The exact files attached to a sent email (a notice PDF or an invoice file).
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mail_message_attachments {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  message_id      String          @db.Uuid
+  document_id     String?         @db.Uuid
+  invoice_file_id String?         @db.Uuid
+  file_name       String          @db.VarChar(255)
+  sha256          String          @db.Char(64)
+  mail_messages   mail_messages   @relation(fields: [message_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_mail_message_attachments_message")
+  mail_documents  mail_documents? @relation(fields: [document_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mail_message_attachments_document")
+  invoice_files   invoice_files?  @relation(fields: [invoice_file_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_mail_message_attachments_invoice_file")
+
+  @@index([message_id], map: "idx_mail_message_attachments_message")
+}
+
+enum mail_procedure {
+  ENROLLMENT_NOTICE
+  TUITION_INVOICE
+}
+
+enum mail_batch_status {
+  DRAFT
+  SENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum mail_message_kind {
+  DELIVERY
+  TEST
+}
+
+enum mail_message_status {
+  QUEUED
+  SENDING
+  SENT
+  FAILED
+}
+
+enum notice_asset_slot {
+  WATERMARK
+  STAMP
+  SIGNATURE
 }

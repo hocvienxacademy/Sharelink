@@ -6,7 +6,7 @@ import { toAuthenticatedActor } from "@/shared/authorization";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";
-import { formatDateTime } from "@/modules/dashboard/presentation/format-admin-value";
+import { formatDateTime } from "@/shared/presentation/format";
 import { registrationLinkQueries } from "@/composition/registration-links";
 
 const relatedLabel = (value: { readonly code: string; readonly name: string } | null) =>

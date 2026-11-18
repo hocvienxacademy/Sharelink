@@ -1,4 +1,4 @@
-import AxeBuilder from "@axe-core/playwright";
+import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { TEST_TOKENS } from "../fixtures/test-data";
 import { restoreSeedData } from "../helpers/integration-fixtures";
@@ -38,23 +38,24 @@ test("valid public link has private metadata, no third-party requests, and openi
   expect(response?.headers()["permissions-policy"]).toContain("camera=()");
   expect(await page.title()).not.toContain(TEST_TOKENS.active);
   expect(
-    await page.locator('link[rel="canonical"]').evaluateAll((nodes) =>
-      nodes.map((node) => node.getAttribute("href")),
-    ),
+    await page
+      .locator('link[rel="canonical"]')
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href"))),
   ).not.toContainEqual(expect.stringContaining(TEST_TOKENS.active));
   expect(externalOrigins).toEqual(new Set());
   expect(consoleMessages.join("\n")).not.toContain(TEST_TOKENS.active);
   await expectNoBrowserStorage(page);
 
-  const scriptUrls = await page.locator('script[src^="/_next/"]').evaluateAll(
-    (scripts) =>
+  const scriptUrls = await page
+    .locator('script[src^="/_next/"]')
+    .evaluateAll((scripts) =>
       scripts
         .map((script) => script.getAttribute("src"))
         .filter((value): value is string => value !== null),
-  );
-  const scriptNonces = await page.locator("script").evaluateAll((scripts) =>
-    scripts.map((script) => script.nonce),
-  );
+    );
+  const scriptNonces = await page
+    .locator("script")
+    .evaluateAll((scripts) => scripts.map((script) => script.nonce));
   expect(scriptNonces.length).toBeGreaterThan(0);
   expect(scriptNonces.every((nonce) => nonce.length > 0)).toBe(true);
   expect(scriptUrls.some((url) => url.endsWith(".map"))).toBe(false);

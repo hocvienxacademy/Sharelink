@@ -49,7 +49,11 @@ export function RelativesSection() {
 
       <div className="flex flex-col gap-5">
         {removalMessage === null ? null : (
-          <Alert role="status">
+          <Alert
+            // A polite live region with Alert styling; Alert renders a div.
+            // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+            role="status"
+          >
             <AlertTitle>Đã đánh dấu xóa</AlertTitle>
             <AlertDescription>{removalMessage}</AlertDescription>
           </Alert>

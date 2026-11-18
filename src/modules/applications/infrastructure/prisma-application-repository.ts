@@ -82,9 +82,7 @@ type ApplicationRecord = Prisma.applicationsGetPayload<{
   select: typeof applicationSelect;
 }>;
 
-type DraftValues =
-  | CreateDraftApplicationInput
-  | UpdateDraftApplicationInput;
+type DraftValues = CreateDraftApplicationInput | UpdateDraftApplicationInput;
 
 function toDatabaseDate(
   value: string | null | undefined,
@@ -181,7 +179,8 @@ function mapApplication(record: ApplicationRecord): Application {
     dataProcessingConsent: record.data_processing_consent,
     submittedAt: record.submitted_at,
     version: record.version,
-    latestRevisionReason: record.application_status_histories[0]?.reason ?? null,
+    latestRevisionReason:
+      record.application_status_histories[0]?.reason ?? null,
     relatives: record.application_relatives.map((relative) => ({
       id: relative.id,
       position: relative.position,
@@ -246,14 +245,19 @@ async function synchronizeRelatives(
   }
 }
 
-export class PrismaApplicationRepository implements ApplicationRepository, StaffApplicationRepository {
+export class PrismaApplicationRepository
+  implements ApplicationRepository, StaffApplicationRepository
+{
   async findById(id: string): Promise<Application | null> {
-    const record = await executePrismaOperation(() => prisma.applications.findUnique({ where: { id }, select: applicationSelect }));
+    const record = await executePrismaOperation(() =>
+      prisma.applications.findUnique({
+        where: { id },
+        select: applicationSelect,
+      }),
+    );
     return record === null ? null : mapApplication(record);
   }
-  async createDraft(
-    input: CreateDraftPersistenceInput,
-  ): Promise<Application> {
+  async createDraft(input: CreateDraftPersistenceInput): Promise<Application> {
     return executePrismaOperation(() =>
       prisma.$transaction(async (transaction) => {
         const now = new Date();
@@ -324,9 +328,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
     return record === null ? null : mapApplication(record);
   }
 
-  async updateDraft(
-    input: UpdateDraftPersistenceInput,
-  ): Promise<Application> {
+  async updateDraft(input: UpdateDraftPersistenceInput): Promise<Application> {
     return executePrismaOperation(() =>
       prisma.$transaction(async (transaction) => {
         const updatedAt = new Date();
@@ -366,9 +368,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
     );
   }
 
-  async submit(
-    input: SubmitApplicationPersistenceInput,
-  ): Promise<Application> {
+  async submit(input: SubmitApplicationPersistenceInput): Promise<Application> {
     return executePrismaOperation(() =>
       prisma.$transaction(async (transaction) => {
         const updateResult = await transaction.applications.updateMany({
@@ -388,9 +388,7 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
         });
 
         if (updateResult.count !== 1) {
-          throw new ConflictError(
-            "Hồ sơ đã được thay đổi hoặc đã được nộp.",
-          );
+          throw new ConflictError("Hồ sơ đã được thay đổi hoặc đã được nộp.");
         }
 
         await transaction.application_status_histories.create({
@@ -424,46 +422,122 @@ export class PrismaApplicationRepository implements ApplicationRepository, Staff
   }
 
   async updateContent(input: StaffContentUpdateInput): Promise<Application> {
-    return executePrismaOperation(() => prisma.$transaction(async (transaction) => {
-      const now = new Date();
-      const scope = input.scope.kind === "all" ? {} : {
-        users_applications_sale_idTousers: { manager_id: input.scope.managerId },
-      };
-      const result = await transaction.applications.updateMany({
-        where: { id: input.applicationId, status: input.expectedStatus, version: input.expectedVersion, ...scope },
-        data: { ...mapEditableData(input.values), major_id: input.majorId, entry_qualification: input.entryQualification, updated_at: now, version: { increment: 1 } },
-      });
-      if (result.count !== 1) throw new ConflictError("Hồ sơ đã được thay đổi hoặc nằm ngoài phạm vi cho phép.");
-      if (input.values.relatives !== undefined) await synchronizeRelatives(transaction, input.applicationId, input.values.relatives, now);
-      await transaction.audit_logs.create({ data: {
-        actor_id: input.actorId, action: "APPLICATION_CONTENT_UPDATED", entity_type: "application", entity_id: input.applicationId,
-        metadata: { actorRole: input.actorRole, changedFields: input.changedFields, expectedVersion: input.expectedVersion, newVersion: input.expectedVersion + 1, requestId: input.requestId },
-      } });
-      return loadApplication(transaction, input.applicationId);
-    }));
+    return executePrismaOperation(() =>
+      prisma.$transaction(async (transaction) => {
+        const now = new Date();
+        const scope =
+          input.scope.kind === "all"
+            ? {}
+            : {
+                users_applications_sale_idTousers: {
+                  manager_id: input.scope.managerId,
+                },
+              };
+        const result = await transaction.applications.updateMany({
+          where: {
+            id: input.applicationId,
+            status: input.expectedStatus,
+            version: input.expectedVersion,
+            ...scope,
+          },
+          data: {
+            ...mapEditableData(input.values),
+            major_id: input.majorId,
+            entry_qualification: input.entryQualification,
+            updated_at: now,
+            version: { increment: 1 },
+          },
+        });
+        if (result.count !== 1)
+          throw new ConflictError(
+            "Hồ sơ đã được thay đổi hoặc nằm ngoài phạm vi cho phép.",
+          );
+        if (input.values.relatives !== undefined)
+          await synchronizeRelatives(
+            transaction,
+            input.applicationId,
+            input.values.relatives,
+            now,
+          );
+        await transaction.audit_logs.create({
+          data: {
+            actor_id: input.actorId,
+            action: "APPLICATION_CONTENT_UPDATED",
+            entity_type: "application",
+            entity_id: input.applicationId,
+            metadata: {
+              actorRole: input.actorRole,
+              changedFields: input.changedFields,
+              expectedVersion: input.expectedVersion,
+              newVersion: input.expectedVersion + 1,
+              requestId: input.requestId,
+            },
+          },
+        });
+        return loadApplication(transaction, input.applicationId);
+      }),
+    );
   }
 
   async review(input: StaffReviewInput): Promise<Application> {
-    return executePrismaOperation(() => prisma.$transaction(async (transaction) => {
-      const scope = input.scope.kind === "all" ? {} : {
-        users_applications_sale_idTousers: { manager_id: input.scope.managerId },
-      };
-      const result = await transaction.applications.updateMany({
-        where: { id: input.applicationId, status: "SUBMITTED", version: input.expectedVersion, ...scope },
-        data: { status: input.newStatus, reviewed_by: input.actorId, reviewed_at: input.reviewedAt, updated_at: input.reviewedAt, version: { increment: 1 } },
-      });
-      if (result.count !== 1) throw new ConflictError("Hồ sơ đã được thay đổi hoặc không thể xét duyệt.");
-      await transaction.application_status_histories.create({ data: {
-        application_id: input.applicationId, previous_status: "SUBMITTED", new_status: input.newStatus,
-        changed_by: input.actorId, reason: input.reason,
-      } });
-      await transaction.audit_logs.create({ data: {
-        actor_id: input.actorId,
-        action: input.newStatus === "VALID" ? "APPLICATION_VALIDATED" : "APPLICATION_REVISION_REQUESTED",
-        entity_type: "application", entity_id: input.applicationId,
-        metadata: { actorRole: input.actorRole, transition: `SUBMITTED->${input.newStatus}`, expectedVersion: input.expectedVersion, newVersion: input.expectedVersion + 1, requestId: input.requestId },
-      } });
-      return loadApplication(transaction, input.applicationId);
-    }));
+    return executePrismaOperation(() =>
+      prisma.$transaction(async (transaction) => {
+        const scope =
+          input.scope.kind === "all"
+            ? {}
+            : {
+                users_applications_sale_idTousers: {
+                  manager_id: input.scope.managerId,
+                },
+              };
+        const result = await transaction.applications.updateMany({
+          where: {
+            id: input.applicationId,
+            status: "SUBMITTED",
+            version: input.expectedVersion,
+            ...scope,
+          },
+          data: {
+            status: input.newStatus,
+            reviewed_by: input.actorId,
+            reviewed_at: input.reviewedAt,
+            updated_at: input.reviewedAt,
+            version: { increment: 1 },
+          },
+        });
+        if (result.count !== 1)
+          throw new ConflictError(
+            "Hồ sơ đã được thay đổi hoặc không thể xét duyệt.",
+          );
+        await transaction.application_status_histories.create({
+          data: {
+            application_id: input.applicationId,
+            previous_status: "SUBMITTED",
+            new_status: input.newStatus,
+            changed_by: input.actorId,
+            reason: input.reason,
+          },
+        });
+        await transaction.audit_logs.create({
+          data: {
+            actor_id: input.actorId,
+            action:
+              input.newStatus === "VALID"
+                ? "APPLICATION_VALIDATED"
+                : "APPLICATION_REVISION_REQUESTED",
+            entity_type: "application",
+            entity_id: input.applicationId,
+            metadata: {
+              actorRole: input.actorRole,
+              transition: `SUBMITTED->${input.newStatus}`,
+              expectedVersion: input.expectedVersion,
+              newVersion: input.expectedVersion + 1,
+              requestId: input.requestId,
+            },
+          },
+        });
+        return loadApplication(transaction, input.applicationId);
+      }),
+    );
   }
 }

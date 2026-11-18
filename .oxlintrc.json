@@ -1,0 +1,56 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "react", "nextjs", "jsx-a11y", "import", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    "typescript/no-explicit-any": "error",
+    "no-unused-vars": [
+      "warn",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    "no-console": "warn",
+
+    // React Compiler rules: the project does not enable React Compiler,
+    // so these stay advisory until the remaining warnings are fixed.
+    "react/set-state-in-effect": "warn",
+    "react/refs": "warn",
+    "react/incompatible-library": "warn",
+
+    // The automatic JSX runtime (React 17+) does not need React in scope.
+    "react/react-in-jsx-scope": "off",
+
+    "jsx-a11y/no-autofocus": "warn",
+    "jsx-a11y/prefer-tag-over-role": "warn",
+    "jsx-a11y/control-has-associated-label": "warn",
+    "import/no-unassigned-import": "off"
+  },
+  "overrides": [
+    {
+      "files": [
+        "scripts/**",
+        "prisma/**",
+        "tests/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "src/shared/observability/**"
+      ],
+      "rules": { "no-console": "off" }
+    },
+    {
+      "files": ["src/app/icon.tsx"],
+      "rules": { "nextjs/no-img-element": "off" }
+    }
+  ],
+  "ignorePatterns": [
+    "src/generated/**",
+    "src/components/ui/**",
+    ".next/**",
+    "node_modules/**",
+    "next-env.d.ts"
+  ]
+}

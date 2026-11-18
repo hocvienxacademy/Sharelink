@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { createTransport } from "nodemailer";
 import type { TransactionalEmailSender } from "./transactional-email";
 import {
   readSmtpConfiguration,
@@ -52,7 +52,7 @@ export function createSmtpEmailSender(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): TransactionalEmailSender {
   const configuration = readSmtpConfiguration(environment);
-  const transport = nodemailer.createTransport({
+  const transport = createTransport({
     host: configuration.host,
     port: configuration.port,
     secure: configuration.secure,

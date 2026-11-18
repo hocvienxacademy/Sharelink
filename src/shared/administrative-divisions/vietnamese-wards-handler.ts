@@ -7,7 +7,7 @@ import {
 } from "../http/next/next-api-response";
 import { findVietnameseProvinceByCode } from "./vietnamese-provinces";
 import {
-  fetchVietnameseWards,
+  listVietnameseWards,
   type VietnameseWard,
 } from "./vietnamese-wards";
 
@@ -35,7 +35,7 @@ function parseProvinceCode(value: string): number {
 }
 
 export function createVietnameseWardListHandler(
-  query: WardQuery = fetchVietnameseWards,
+  query: WardQuery = listVietnameseWards,
 ) {
   return async (_request: NextRequest, context: WardRouteContext) =>
     handleNextRequest(

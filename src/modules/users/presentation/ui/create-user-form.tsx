@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { UserPlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -29,7 +29,8 @@ import {
   createUserSchema,
   type CreateUserInput,
 } from "../../application/validation/create-user-schema";
-import { AdminUserApiError, createAdminUser } from "./admin-user-api-client";
+import { ApiRequestError } from "@/shared/http/browser/json-api-client";
+import { createAdminUser } from "./admin-user-api-client";
 
 const createUserFormSchema = createUserSchema
   .extend({ confirmPassword: z.string() })
@@ -46,7 +47,14 @@ const roleOptions = [
   { value: "ADMIN", label: "ADMIN — toàn quyền quản trị" },
 ] as const;
 
-export function CreateUserForm({ managers = [] }: { readonly managers?: readonly { readonly id: string; readonly fullName: string }[] }) {
+export function CreateUserForm({
+  managers = [],
+}: {
+  readonly managers?: readonly {
+    readonly id: string;
+    readonly fullName: string;
+  }[];
+}) {
   const router = useRouter();
   const [generalError, setGeneralError] = useState<string | null>(null);
   const form = useForm<CreateUserFormValues>({
@@ -60,26 +68,28 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
       password: "",
       confirmPassword: "",
     },
-    resolver: zodResolver(createUserFormSchema) as Resolver<CreateUserFormValues>,
+    resolver: zodResolver(
+      createUserFormSchema,
+    ) as Resolver<CreateUserFormValues>,
   });
   const {
     formState: { errors, isSubmitting },
     handleSubmit,
     register,
     setError,
-    watch,
   } = form;
-  const selectedRole = watch("role");
+  const selectedRole = useWatch({ control: form.control, name: "role" });
 
   const submit = handleSubmit(async (values) => {
     setGeneralError(null);
-    const { confirmPassword: _confirmPassword, ...input } = createUserFormSchema.parse(values);
+    const { confirmPassword: _confirmPassword, ...input } =
+      createUserFormSchema.parse(values);
     try {
       const user = await createAdminUser(input as CreateUserInput);
       router.push(`/quan-tri/nhan-su/${user.id}`);
       router.refresh();
     } catch (error: unknown) {
-      if (!(error instanceof AdminUserApiError)) {
+      if (!(error instanceof ApiRequestError)) {
         setGeneralError("Không thể tạo tài khoản lúc này. Vui lòng thử lại.");
         return;
       }
@@ -87,7 +97,9 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
         for (const issue of error.issues) {
           const field = issue.path[0];
           if (typeof field === "string" && field in values) {
-            setError(field as keyof CreateUserFormValues, { message: issue.message });
+            setError(field as keyof CreateUserFormValues, {
+              message: issue.message,
+            });
           }
         }
         setGeneralError("Vui lòng kiểm tra các trường được đánh dấu.");
@@ -110,7 +122,8 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
       <CardHeader>
         <CardTitle>Thông tin tài khoản</CardTitle>
         <CardDescription>
-          Tài khoản được kích hoạt ngay sau khi tạo. Mật khẩu không được hiển thị lại.
+          Tài khoản được kích hoạt ngay sau khi tạo. Mật khẩu không được hiển
+          thị lại.
         </CardDescription>
       </CardHeader>
       <form onSubmit={submit} noValidate>
@@ -118,23 +131,49 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
           <FieldGroup className="grid md:grid-cols-2">
             <Field data-invalid={Boolean(errors.fullName)}>
               <FieldLabel htmlFor="fullName">Họ và tên *</FieldLabel>
-              <Input id="fullName" autoComplete="name" aria-invalid={Boolean(errors.fullName)} {...register("fullName")} />
+              <Input
+                id="fullName"
+                autoComplete="name"
+                aria-invalid={Boolean(errors.fullName)}
+                {...register("fullName")}
+              />
               <FieldError>{errors.fullName?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.email)}>
               <FieldLabel htmlFor="email">Email liên hệ *</FieldLabel>
-              <Input id="email" type="email" autoComplete="email" aria-invalid={Boolean(errors.email)} {...register("email")} />
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                aria-invalid={Boolean(errors.email)}
+                {...register("email")}
+              />
               <FieldError>{errors.email?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.username)}>
               <FieldLabel htmlFor="username">Tên đăng nhập *</FieldLabel>
-              <Input id="username" autoComplete="username" aria-invalid={Boolean(errors.username)} {...register("username")} />
-              <FieldDescription>Không phân biệt chữ hoa và chữ thường.</FieldDescription>
+              <Input
+                id="username"
+                autoComplete="username"
+                aria-invalid={Boolean(errors.username)}
+                {...register("username")}
+              />
+              <FieldDescription>
+                Không phân biệt chữ hoa và chữ thường.
+              </FieldDescription>
               <FieldError>{errors.username?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.phone)}>
-              <FieldLabel htmlFor="phone">Số điện thoại (không bắt buộc)</FieldLabel>
-              <Input id="phone" type="tel" autoComplete="tel" aria-invalid={Boolean(errors.phone)} {...register("phone")} />
+              <FieldLabel htmlFor="phone">
+                Số điện thoại (không bắt buộc)
+              </FieldLabel>
+              <Input
+                id="phone"
+                type="tel"
+                autoComplete="tel"
+                aria-invalid={Boolean(errors.phone)}
+                {...register("phone")}
+              />
               <FieldError>{errors.phone?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.role)}>
@@ -146,29 +185,59 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
                 {...register("role")}
               >
                 {roleOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
-              <FieldDescription>ADMIN có toàn quyền truy cập khu vực quản trị.</FieldDescription>
+              <FieldDescription>
+                ADMIN có toàn quyền truy cập khu vực quản trị.
+              </FieldDescription>
               <FieldError>{errors.role?.message}</FieldError>
             </Field>
             <Field data-invalid={Boolean(errors.password)}>
               <FieldLabel htmlFor="password">Mật khẩu ban đầu *</FieldLabel>
-              <Input id="password" type="password" autoComplete="new-password" aria-invalid={Boolean(errors.password)} {...register("password")} />
+              <Input
+                id="password"
+                type="password"
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.password)}
+                {...register("password")}
+              />
               <FieldDescription>Từ 8 đến 128 ký tự.</FieldDescription>
               <FieldError>{errors.password?.message}</FieldError>
             </Field>
-            {selectedRole === "SALE" ? <Field data-invalid={Boolean(errors.managerId)}>
-              <FieldLabel htmlFor="managerId">Quản lý trực tiếp</FieldLabel>
-              <select id="managerId" className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm" {...register("managerId", { setValueAs: (value) => value === "" ? null : value })}>
-                <option value="">Chưa phân công</option>
-                {managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.fullName}</option>)}
-              </select>
-              <FieldError>{errors.managerId?.message}</FieldError>
-            </Field> : null}
+            {selectedRole === "SALE" ? (
+              <Field data-invalid={Boolean(errors.managerId)}>
+                <FieldLabel htmlFor="managerId">Quản lý trực tiếp</FieldLabel>
+                <select
+                  id="managerId"
+                  className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                  {...register("managerId", {
+                    setValueAs: (value) => (value === "" ? null : value),
+                  })}
+                >
+                  <option value="">Chưa phân công</option>
+                  {managers.map((manager) => (
+                    <option key={manager.id} value={manager.id}>
+                      {manager.fullName}
+                    </option>
+                  ))}
+                </select>
+                <FieldError>{errors.managerId?.message}</FieldError>
+              </Field>
+            ) : null}
             <Field data-invalid={Boolean(errors.confirmPassword)}>
-              <FieldLabel htmlFor="confirmPassword">Xác nhận mật khẩu *</FieldLabel>
-              <Input id="confirmPassword" type="password" autoComplete="new-password" aria-invalid={Boolean(errors.confirmPassword)} {...register("confirmPassword")} />
+              <FieldLabel htmlFor="confirmPassword">
+                Xác nhận mật khẩu *
+              </FieldLabel>
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                aria-invalid={Boolean(errors.confirmPassword)}
+                {...register("confirmPassword")}
+              />
               <FieldError>{errors.confirmPassword?.message}</FieldError>
             </Field>
           </FieldGroup>
@@ -180,8 +249,16 @@ export function CreateUserForm({ managers = [] }: { readonly managers?: readonly
           )}
         </CardContent>
         <CardFooter className="justify-end">
-          <Button className="w-full sm:w-auto" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? <Spinner data-icon="inline-start" /> : <UserPlusIcon data-icon="inline-start" />}
+          <Button
+            className="w-full sm:w-auto"
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <Spinner data-icon="inline-start" />
+            ) : (
+              <UserPlusIcon data-icon="inline-start" />
+            )}
             Tạo tài khoản
           </Button>
         </CardFooter>

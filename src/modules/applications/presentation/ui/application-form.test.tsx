@@ -127,6 +127,8 @@ describe("student application form", () => {
     let scrolledElement: Element | null = null;
     const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
     HTMLElement.prototype.scrollIntoView = function scrollIntoView() {
+      // The patched prototype method records which element was scrolled.
+      // oxlint-disable-next-line typescript/no-this-alias
       scrolledElement = this;
     };
 

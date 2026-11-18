@@ -1,5 +1,6 @@
 import { LandmarkIcon, TriangleAlertIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatMoney } from "@/shared/presentation/format";
 
 export interface StudentPaymentInformation {
   readonly account: {
@@ -11,14 +12,6 @@ export interface StudentPaymentInformation {
   } | null;
   readonly applicationFeeAmount: number | null;
   readonly instructions: string | null;
-}
-
-function formatMoney(amount: number): string {
-  return new Intl.NumberFormat("vi-VN", {
-    currency: "VND",
-    maximumFractionDigits: 0,
-    style: "currency",
-  }).format(amount);
 }
 
 export function StudentPaymentInformationPanel({
@@ -33,8 +26,8 @@ export function StudentPaymentInformationPanel({
       <AlertDescription>
         {payment.account === null ? (
           <p>
-            Chưa có tài khoản thanh toán mặc định. Vui lòng liên hệ đơn vị
-            tuyển sinh trước khi thanh toán.
+            Chưa có tài khoản thanh toán mặc định. Vui lòng liên hệ đơn vị tuyển
+            sinh trước khi thanh toán.
           </p>
         ) : (
           <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_16rem] md:items-start">

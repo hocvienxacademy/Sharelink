@@ -5,14 +5,21 @@ import { ArrowRightIcon, LockKeyholeIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { z } from "zod";
 
 const loginSuccessSchema = z.object({
   success: z.literal(true),
-  data: z.object({ user: z.object({ role: z.enum(["SALE", "MANAGER", "ADMIN"]) }) }),
+  data: z.object({
+    user: z.object({ role: z.enum(["SALE", "MANAGER", "ADMIN"]) }),
+  }),
 });
 
 export function AdminLoginForm() {
@@ -106,7 +113,9 @@ export function AdminLoginForm() {
       )}
 
       <FieldGroup>
-        <Field data-invalid={fieldErrors.username === undefined ? undefined : ""}>
+        <Field
+          data-invalid={fieldErrors.username === undefined ? undefined : ""}
+        >
           <FieldLabel htmlFor="username">Tên đăng nhập</FieldLabel>
           <Input
             id="username"
@@ -114,15 +123,21 @@ export function AdminLoginForm() {
             autoComplete="username"
             placeholder="Nhập tên đăng nhập"
             required
+            // The page exists only to sign in, so start where the user types.
+            // oxlint-disable-next-line jsx-a11y/no-autofocus
             autoFocus
             aria-invalid={fieldErrors.username === undefined ? undefined : true}
-            aria-describedby={fieldErrors.username === undefined ? undefined : "username-error"}
+            aria-describedby={
+              fieldErrors.username === undefined ? undefined : "username-error"
+            }
           />
           {fieldErrors.username === undefined ? null : (
             <FieldError id="username-error">{fieldErrors.username}</FieldError>
           )}
         </Field>
-        <Field data-invalid={fieldErrors.password === undefined ? undefined : ""}>
+        <Field
+          data-invalid={fieldErrors.password === undefined ? undefined : ""}
+        >
           <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
           <Input
             id="password"
@@ -132,7 +147,9 @@ export function AdminLoginForm() {
             placeholder="Nhập mật khẩu"
             required
             aria-invalid={fieldErrors.password === undefined ? undefined : true}
-            aria-describedby={fieldErrors.password === undefined ? undefined : "password-error"}
+            aria-describedby={
+              fieldErrors.password === undefined ? undefined : "password-error"
+            }
           />
           {fieldErrors.password === undefined ? null : (
             <FieldError id="password-error">{fieldErrors.password}</FieldError>

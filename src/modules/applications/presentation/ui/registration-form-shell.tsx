@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangleIcon,
   CheckCircle2Icon,
@@ -72,9 +72,7 @@ function LoadingState() {
     <Card aria-busy="true" className="rounded-2xl sm:rounded-[2rem]">
       <CardHeader>
         <CardTitle>Đang tải thông tin đăng ký</CardTitle>
-        <CardDescription>
-          Vui lòng chờ trong giây lát.
-        </CardDescription>
+        <CardDescription>Vui lòng chờ trong giây lát.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <Skeleton className="h-8 w-3/4" />
@@ -126,84 +124,79 @@ export function RegistrationFormShellView({
   readonly token: string;
 }) {
   const tokenIsValid = registrationTokenSchema.safeParse(token).success;
-  const [reloadCounter, setReloadCounter] = useState(0);
-  const [state, setState] = useState<ShellState>(
-    tokenIsValid ? { kind: "loading" } : { kind: "invalid-token" },
-  );
+  const initialState: ShellState = tokenIsValid
+    ? { kind: "loading" }
+    : { kind: "invalid-token" };
+  const [state, setState] = useState<ShellState>(initialState);
 
-  const load = useCallback(async () => {
-    if (!tokenIsValid) {
-      setState({ kind: "invalid-token" });
-      return;
-    }
+  // Opening another link or application starts over from the loading state.
+  const requestKey = `${token}|${applicationId ?? ""}`;
+  const [loadedKey, setLoadedKey] = useState(requestKey);
+  if (loadedKey !== requestKey) {
+    setLoadedKey(requestKey);
+    setState(initialState);
+  }
 
-    setState({ kind: "loading" });
-
+  /** Loads the registration context and decides which screen to show. */
+  const resolveShellState = useCallback(async (): Promise<ShellState> => {
     try {
       const context = await queryClient.getContext(token);
       const hasReference = context.application !== null;
 
       if (context.hasApplication !== hasReference) {
-        setState({ kind: "contract-error" });
-        return;
+        return { kind: "contract-error" };
       }
 
       if (applicationId === undefined) {
-        if (context.application !== null) {
-          setState({ kind: "redirecting" });
-          replaceRoute(applicationRoute(token, context.application.id));
-          return;
-        }
-
-        setState({ kind: "ready", context });
-        return;
+        if (context.application === null) return { kind: "ready", context };
+        replaceRoute(applicationRoute(token, context.application.id));
+        return { kind: "redirecting" };
       }
 
       if (
         context.application === null ||
         context.application.id !== applicationId
       ) {
-        setState({ kind: "unavailable" });
-        return;
+        return { kind: "unavailable" };
       }
 
       if (!["DRAFT", "NEEDS_REVISION"].includes(context.application.status)) {
-        setState({ kind: "submitted", context });
-        return;
+        return { kind: "submitted", context };
       }
 
       const application = await queryClient.getApplication(
         token,
         applicationId,
       );
-      setState({ kind: "ready", context, application });
+      return { kind: "ready", context, application };
     } catch (error: unknown) {
-      if (error instanceof ApiClientError) {
-        if (error.kind === "not-found") {
-          setState({ kind: "unavailable" });
-          return;
-        }
-
-        if (error.kind === "network") {
-          setState({ kind: "network-error" });
-          return;
-        }
+      if (error instanceof ApiClientError && error.kind === "not-found") {
+        return { kind: "unavailable" };
       }
-
-      setState({ kind: "system-error" });
+      if (error instanceof ApiClientError && error.kind === "network") {
+        return { kind: "network-error" };
+      }
+      return { kind: "system-error" };
     }
-  }, [
-    applicationId,
-    queryClient,
-    reloadCounter,
-    replaceRoute,
-    token,
-    tokenIsValid,
-  ]);
+  }, [applicationId, queryClient, replaceRoute, token]);
+
+  // Each load owns its result: a slower, outdated response never wins.
+  const latestLoad = useRef(0);
+  const load = useCallback(() => {
+    const loadId = ++latestLoad.current;
+    void resolveShellState().then((next) => {
+      if (loadId === latestLoad.current) setState(next);
+    });
+  }, [resolveShellState]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (tokenIsValid) load();
+  }, [load, tokenIsValid]);
+
+  const reload = () => {
+    setState({ kind: "loading" });
+    load();
+  };
 
   if (state.kind === "loading" || state.kind === "redirecting") {
     return <LoadingState />;
@@ -248,11 +241,7 @@ export function RegistrationFormShellView({
         title="Không có kết nối mạng"
         description="Không thể kết nối đến hệ thống. Vui lòng kiểm tra mạng rồi thử lại."
         action={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setReloadCounter((value) => value + 1)}
-          >
+          <Button type="button" variant="outline" onClick={reload}>
             <RefreshCwIcon data-icon="inline-start" />
             Thử lại
           </Button>
@@ -268,11 +257,7 @@ export function RegistrationFormShellView({
         title="Hệ thống tạm thời gián đoạn"
         description="Không thể tải hồ sơ lúc này. Vui lòng thử lại sau ít phút."
         action={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setReloadCounter((value) => value + 1)}
-          >
+          <Button type="button" variant="outline" onClick={reload}>
             <RefreshCwIcon data-icon="inline-start" />
             Thử lại
           </Button>
@@ -301,7 +286,7 @@ export function RegistrationFormShellView({
         context={state.context}
         application={state.application}
         mutationClient={mutationClient}
-        onReload={() => setReloadCounter((value) => value + 1)}
+        onReload={reload}
       />
     </div>
   );

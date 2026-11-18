@@ -3,7 +3,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeftIcon, ShieldCheckIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { BrandLogo } from "@/components/brand-logo";
 import { getAdminIdentityBySessionToken } from "@/composition/auth";
 import { ADMIN_SESSION_COOKIE } from "@/modules/auth";
@@ -25,9 +31,16 @@ export default async function LoginPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <nav className="flex items-center justify-between">
           <Link href="/">
-            <BrandLogo imageClassName="size-11" textClassName="hidden sm:inline" />
+            <BrandLogo
+              imageClassName="size-11"
+              textClassName="hidden sm:inline"
+            />
           </Link>
-          <Button nativeButton={false} variant="ghost" render={<Link href="/" />}>
+          <Button
+            nativeButton={false}
+            variant="ghost"
+            render={<Link href="/" />}
+          >
             <ArrowLeftIcon data-icon="inline-start" />
             Trang chủ
           </Button>
@@ -49,14 +62,17 @@ export default async function LoginPage() {
                 Quản lý tuyển sinh trong một không gian tập trung.
               </h1>
               <p className="mt-6 max-w-lg text-base leading-7 text-primary-foreground/70">
-                Theo dõi hồ sơ, liên kết đăng ký và tiến độ tiếp nhận với quyền truy cập dành riêng cho quản trị viên.
+                Theo dõi hồ sơ, liên kết đăng ký và tiến độ tiếp nhận với quyền
+                truy cập dành riêng cho quản trị viên.
               </p>
             </div>
           </section>
 
           <Card className="justify-center rounded-[2rem] px-2 py-8 sm:px-8 lg:py-14">
             <CardHeader className="gap-3">
-              <p className="text-sm font-semibold text-foreground">QUẢN TRỊ HỆ THỐNG</p>
+              <p className="text-sm font-semibold text-foreground">
+                QUẢN TRỊ HỆ THỐNG
+              </p>
               <CardTitle className="text-3xl font-semibold tracking-[-0.03em]">
                 Chào mừng trở lại
               </CardTitle>

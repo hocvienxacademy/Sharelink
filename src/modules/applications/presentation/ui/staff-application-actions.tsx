@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  messageForApiError,
+  requestJson,
+} from "@/shared/http/browser/json-api-client";
 
 interface StaffApplicationActionsProps {
   readonly canManage: boolean;
@@ -49,7 +53,8 @@ export function StaffApplicationActionsView({
   const [phoneValue, setPhone] = useState(phone ?? "");
   const [emailValue, setEmail] = useState(email ?? "");
   const [reason, setReason] = useState("");
-  const editable = canManage && ["DRAFT", "SUBMITTED", "NEEDS_REVISION"].includes(status);
+  const editable =
+    canManage && ["DRAFT", "SUBMITTED", "NEEDS_REVISION"].includes(status);
   const reviewable = canManage && status === "SUBMITTED";
   const downloadable = DOWNLOADABLE_STATUSES.has(status);
 
@@ -63,18 +68,16 @@ export function StaffApplicationActionsView({
     setBusy(true);
     setMessage(null);
     try {
-      const response = await fetch(`/api/admin/applications/${id}${path}`, {
-        method,
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) {
-        setMessage(response.status === 409
-          ? "Hồ sơ đã thay đổi. Vui lòng tải lại dữ liệu."
-          : "Không thể thực hiện thao tác này.");
-        return;
-      }
+      await requestJson(`/api/admin/applications/${id}${path}`, method, body);
       onRefresh();
+    } catch (error) {
+      setMessage(
+        messageForApiError(error, {
+          conflict: "Hồ sơ đã thay đổi. Vui lòng tải lại dữ liệu.",
+          network: "Không thể kết nối tới hệ thống.",
+          fallback: "Không thể thực hiện thao tác này.",
+        }),
+      );
     } finally {
       lock.current = false;
       setBusy(false);
@@ -113,17 +116,31 @@ export function StaffApplicationActionsView({
       ) : null}
       {editable ? (
         <div className="grid gap-3 md:grid-cols-3">
-          <Input aria-label="Họ và tên" value={name} onChange={(event) => setName(event.target.value)} />
-          <Input aria-label="Điện thoại" value={phoneValue} onChange={(event) => setPhone(event.target.value)} />
-          <Input aria-label="Email" value={emailValue} onChange={(event) => setEmail(event.target.value)} />
+          <Input
+            aria-label="Họ và tên"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <Input
+            aria-label="Điện thoại"
+            value={phoneValue}
+            onChange={(event) => setPhone(event.target.value)}
+          />
+          <Input
+            aria-label="Email"
+            value={emailValue}
+            onChange={(event) => setEmail(event.target.value)}
+          />
           <Button
             disabled={busy}
-            onClick={() => void mutate("", "PATCH", {
-              expectedVersion: version,
-              fullName: name || null,
-              phone: phoneValue || null,
-              email: emailValue || null,
-            })}
+            onClick={() =>
+              void mutate("", "PATCH", {
+                expectedVersion: version,
+                fullName: name || null,
+                phone: phoneValue || null,
+                email: emailValue || null,
+              })
+            }
           >
             {busy ? <Spinner data-icon="inline-start" /> : null}
             Lưu nội dung
@@ -144,11 +161,13 @@ export function StaffApplicationActionsView({
               className="w-full sm:w-auto"
               variant="outline"
               disabled={busy || reason.trim().length === 0}
-              onClick={() => void mutate("/request-revision", "POST", {
-                expectedVersion: version,
-                expectedStatus: "SUBMITTED",
-                reason,
-              })}
+              onClick={() =>
+                void mutate("/request-revision", "POST", {
+                  expectedVersion: version,
+                  expectedStatus: "SUBMITTED",
+                  reason,
+                })
+              }
             >
               Yêu cầu bổ sung
             </Button>
@@ -175,5 +194,10 @@ export function StaffApplicationActionsView({
 
 export function StaffApplicationActions(props: StaffApplicationActionsProps) {
   const router = useRouter();
-  return <StaffApplicationActionsView {...props} onRefresh={() => router.refresh()} />;
+  return (
+    <StaffApplicationActionsView
+      {...props}
+      onRefresh={() => router.refresh()}
+    />
+  );
 }

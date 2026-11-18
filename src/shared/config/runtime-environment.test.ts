@@ -2,7 +2,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { validateRuntimeEnvironment } from "./runtime-environment";
 
+const validSmtpEnvironment: Readonly<Record<string, string>> = {
+  SMTP_HOST: "smtp.example.invalid",
+  SMTP_PORT: "587",
+  SMTP_SECURE: "false",
+  SMTP_REQUIRE_TLS: "true",
+  SMTP_USER: "mailer@example.invalid",
+  SMTP_PASSWORD: "secret",
+  SMTP_FROM_NAME: "ShareLinkStudent",
+  SMTP_FROM_EMAIL: "mailer@example.invalid",
+};
+
 const validStagingEnvironment: Readonly<Record<string, string | undefined>> = {
+  ...validSmtpEnvironment,
   APP_ENV: "staging",
   NODE_ENV: "production",
   DATABASE_URL:
@@ -21,6 +33,7 @@ const validStagingEnvironment: Readonly<Record<string, string | undefined>> = {
 const validProductionEnvironment: Readonly<
   Record<string, string | undefined>
 > = {
+  ...validSmtpEnvironment,
   APP_ENV: "production",
   NODE_ENV: "production",
   DATABASE_URL:
@@ -40,6 +53,7 @@ const validProductionEnvironment: Readonly<
 const validDevelopmentEnvironment: Readonly<
   Record<string, string | undefined>
 > = {
+  ...validSmtpEnvironment,
   APP_ENV: "development",
   NODE_ENV: "development",
   DATABASE_URL:

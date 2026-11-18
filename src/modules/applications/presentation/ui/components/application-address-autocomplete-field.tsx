@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { FieldPath } from "react-hook-form";
-import {
-  ADDRESS_AUTOCOMPLETE_MIN_LENGTH,
-} from "../../../application/validation/address-autocomplete-schema";
+import { ADDRESS_AUTOCOMPLETE_MIN_LENGTH } from "../../../application/validation/address-autocomplete-schema";
 import { WORD_EXPORT_TEXT_LIMITS } from "../../../application/validation/application-schemas";
 import {
   searchAddressSuggestions,
@@ -21,6 +19,12 @@ type AddressSearch = (
   options?: { readonly signal?: AbortSignal },
 ) => Promise<readonly AddressSuggestion[]>;
 
+interface AddressSearchResult {
+  readonly query: string;
+  readonly suggestions: readonly AddressSuggestion[];
+  readonly failed: boolean;
+}
+
 export function ApplicationAddressAutocompleteField({
   autoComplete,
   label,
@@ -35,62 +39,68 @@ export function ApplicationAddressAutocompleteField({
   readonly token: string;
 }) {
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<
-    readonly AddressSuggestion[]
-  >([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const suggestionsRef = useRef(suggestions);
-  suggestionsRef.current = suggestions;
+  const [lastSearch, setLastSearch] = useState<AddressSearchResult | null>(
+    null,
+  );
+
+  // Everything below is derived from the current query: a result only counts
+  // for the query it was fetched for, otherwise the search is still running.
+  const normalizedQuery = query.trim();
+  const isSearchable =
+    normalizedQuery.length >= ADDRESS_AUTOCOMPLETE_MIN_LENGTH;
+  const currentSearch =
+    isSearchable && lastSearch?.query === normalizedQuery ? lastSearch : null;
+  const isLoading = isSearchable && currentSearch === null;
+  const suggestions = currentSearch?.suggestions ?? [];
+  const loadFailed = currentSearch?.failed ?? false;
 
   useEffect(() => {
-    const normalizedQuery = query.trim();
-    if (normalizedQuery.length < ADDRESS_AUTOCOMPLETE_MIN_LENGTH) {
-      setSuggestions([]);
-      setIsLoading(false);
-      setLoadFailed(false);
-      return;
-    }
+    if (!isSearchable) return;
 
     const controller = new AbortController();
-    setIsLoading(true);
-    setLoadFailed(false);
     const timeout = setTimeout(() => {
-      void search(token, normalizedQuery, { signal: controller.signal })
-        .then((result) => {
-          if (!controller.signal.aborted) setSuggestions(result);
-        })
-        .catch(() => {
+      search(token, normalizedQuery, { signal: controller.signal }).then(
+        (result) => {
           if (!controller.signal.aborted) {
-            setSuggestions([]);
-            setLoadFailed(true);
+            setLastSearch({
+              query: normalizedQuery,
+              suggestions: result,
+              failed: false,
+            });
           }
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setIsLoading(false);
-        });
+        },
+        () => {
+          if (!controller.signal.aborted) {
+            setLastSearch({
+              query: normalizedQuery,
+              suggestions: [],
+              failed: true,
+            });
+          }
+        },
+      );
     }, AUTOCOMPLETE_DELAY_MS);
 
     return () => {
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [query, search, token]);
+  }, [isSearchable, normalizedQuery, search, token]);
 
   const handleInputValueChange = (value: string) => {
-    if (suggestionsRef.current.some((suggestion) => suggestion.value === value)) {
+    // Picking a suggestion fills the input; that must not start a new search.
+    if (suggestions.some((suggestion) => suggestion.value === value)) {
       setQuery("");
       return;
     }
-    setSuggestions([]);
     setQuery(value);
   };
 
   const emptyMessage = isLoading
     ? "Đang tìm địa chỉ..."
-    : query.trim().length < ADDRESS_AUTOCOMPLETE_MIN_LENGTH
+    : !isSearchable
       ? `Nhập ít nhất ${ADDRESS_AUTOCOMPLETE_MIN_LENGTH} ký tự để tìm địa chỉ.`
-      : "Không tìm thấy địa chỉ phù hợp.";
+      : "Không tìm thấy xã/phường phù hợp. Bạn vẫn có thể nhập tay.";
 
   return (
     <ApplicationComboboxField
@@ -100,13 +110,13 @@ export function ApplicationAddressAutocompleteField({
       description={
         loadFailed
           ? "Không tải được gợi ý địa chỉ. Bạn vẫn có thể nhập tay."
-          : undefined
+          : "Nhập số nhà, tên đường, dấu phẩy rồi tên xã/phường để chọn địa chỉ gợi ý."
       }
       emptyMessage={emptyMessage}
       maxLength={WORD_EXPORT_TEXT_LIMITS.permanentAddress}
       onInputValueChange={handleInputValueChange}
       options={suggestions}
-      placeholder="Nhập để tìm địa chỉ"
+      placeholder="Ví dụ: 126 Nguyễn Thiện Thành, Hòa Thuận"
       required
     />
   );

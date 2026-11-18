@@ -8,14 +8,21 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const identity = await requireAdminPage();
-  const settings = await listSystemSettings.execute(toAuthenticatedActor(identity));
+  const settings = await listSystemSettings.execute(
+    toAuthenticatedActor(identity),
+  );
   return (
     <div className="flex flex-col gap-8">
-      <AdminPageHeader title="Cài đặt hệ thống" description="Quản lý hướng dẫn thanh toán công khai và theo dõi metadata cấu hình hệ thống." />
-      <SystemSettingManagementPanel initialItems={settings.map((item) => ({
-        ...item,
-        updatedAt: item.updatedAt.toISOString(),
-      }))} />
+      <AdminPageHeader
+        title="Cài đặt hệ thống"
+        description="Quản lý hướng dẫn thanh toán công khai và theo dõi metadata cấu hình hệ thống."
+      />
+      <SystemSettingManagementPanel
+        initialItems={settings.map((item) => ({
+          ...item,
+          updatedAt: item.updatedAt.toISOString(),
+        }))}
+      />
     </div>
   );
 }

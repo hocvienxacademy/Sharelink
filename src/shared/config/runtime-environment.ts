@@ -190,7 +190,6 @@ export function validateRuntimeEnvironment(
 ): void {
   if (environment.APP_ENV === "development") {
     validateDevelopmentEnvironment(environment);
-    required(environment, "VIETMAP_API_KEY");
     validateSmtpEnvironment(environment);
     return;
   }
@@ -233,7 +232,6 @@ export function validateRuntimeEnvironment(
     "APP_BASE_URL or RENDER_EXTERNAL_URL",
   );
   const keySecret = required(environment, "RATE_LIMIT_KEY_SECRET");
-  required(environment, "VIETMAP_API_KEY");
   const redisHosts = allowlist(
     environment,
     environment.APP_ENV === "staging"

@@ -55,8 +55,29 @@ ShareLinkStudent is a TypeScript/PostgreSQL scaffold for staff-created registrat
 
 ## Required checks
 
-After a relevant change, run every applicable check that actually exists. The current repository defines `prisma:validate` and `prisma:generate`, but does not yet define lint, typecheck, test, build, or migration scripts. Report missing checks; never claim they passed.
+After a relevant change, run every applicable check that actually exists. Report missing or skipped checks; never claim they passed.
+
+| Check             | Command                                                        | Notes                                                                            |
+| ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Prisma            | `npm run prisma:validate`, `npm run prisma:generate`           |                                                                                  |
+| Types             | `npm run type-check`                                           | TypeScript 7 (`tsc --noEmit`).                                                   |
+| Lint              | `npm run lint`                                                 | Oxlint (`.oxlintrc.json`); ESLint/typescript-eslint do not support TypeScript 7. |
+| Format            | `npm run format -- <files>`, `npm run format:check -- <files>` | Prettier; format only the files you change.                                      |
+| Unit tests        | `npm test`                                                     |                                                                                  |
+| Build             | `npm run build`                                                |                                                                                  |
+| Integration / E2E | `npm run test:integration`, `npm run test:e2e`                 | Need PostgreSQL (`npm run test:db:prepare`).                                     |
+| Dependencies      | `npm run audit:policy`                                         |                                                                                  |
 
 ## Completion response
 
 Report changed files, implemented behavior, database/migration/constraint impact, commands executed, test results, unresolved decisions, and remaining risks.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -29,6 +29,12 @@ import {
   ApplicationTextField,
 } from "../components/application-field";
 
+interface WardLoad {
+  readonly provinceCode: number;
+  readonly wards: readonly VietnameseWard[];
+  readonly failed: boolean;
+}
+
 export function EducationSection({
   context,
   loadWards = getVietnameseWards,
@@ -41,49 +47,51 @@ export function EducationSection({
   const { control, setValue } = useFormContext<ApplicationFormValues>();
   const selectedProvince = useWatch({ control, name: "highSchoolProvince" });
   const previousProvince = useRef(selectedProvince);
-  const [wards, setWards] = useState<readonly VietnameseWard[]>([]);
-  const [isLoadingWards, setIsLoadingWards] = useState(false);
-  const [wardLoadFailed, setWardLoadFailed] = useState(false);
+  const [wardLoad, setWardLoad] = useState<WardLoad | null>(null);
+  const provinceCode =
+    findVietnameseProvinceByName(selectedProvince)?.code ?? null;
+
+  // Only a result for the selected province counts; anything else means the
+  // wards for that province are still loading.
+  const currentLoad =
+    provinceCode !== null && wardLoad?.provinceCode === provinceCode
+      ? wardLoad
+      : null;
+  const isLoadingWards = provinceCode !== null && currentLoad === null;
+  const wards = currentLoad?.wards ?? [];
+  const wardLoadFailed = currentLoad?.failed ?? false;
 
   useEffect(() => {
     const provinceChanged = previousProvince.current !== selectedProvince;
     previousProvince.current = selectedProvince;
-
     if (provinceChanged) {
       setValue("highSchoolWard", null, {
         shouldDirty: true,
         shouldValidate: true,
       });
     }
+  }, [selectedProvince, setValue]);
 
-    const province = findVietnameseProvinceByName(selectedProvince);
-    if (province === undefined) {
-      setWards([]);
-      setIsLoadingWards(false);
-      setWardLoadFailed(false);
-      return;
-    }
+  useEffect(() => {
+    if (provinceCode === null) return;
 
     let ignoreResult = false;
-    setWards([]);
-    setIsLoadingWards(true);
-    setWardLoadFailed(false);
-
-    void loadWards(province.code)
-      .then((result) => {
-        if (!ignoreResult) setWards(result);
-      })
-      .catch(() => {
-        if (!ignoreResult) setWardLoadFailed(true);
-      })
-      .finally(() => {
-        if (!ignoreResult) setIsLoadingWards(false);
-      });
+    loadWards(provinceCode).then(
+      (result) => {
+        if (!ignoreResult) {
+          setWardLoad({ provinceCode, wards: result, failed: false });
+        }
+      },
+      () => {
+        if (!ignoreResult)
+          setWardLoad({ provinceCode, wards: [], failed: true });
+      },
+    );
 
     return () => {
       ignoreResult = true;
     };
-  }, [loadWards, selectedProvince, setValue]);
+  }, [loadWards, provinceCode]);
 
   const wardDescription =
     selectedProvince === null

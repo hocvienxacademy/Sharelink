@@ -20,9 +20,10 @@ artifacts/
 *.backup
 *.sql.gz
 *.log
-storage/temp/*
-!storage/temp/.gitkeep
-storage/generated-documents/*
-!storage/generated-documents/.gitkeep
-storage/logs/*
-!storage/logs/.gitkeep
+
+# TBHTTTNH reference files: signature/stamp images can be misused to forge
+# documents, and the sample notices contain real student data.
+docs/samples/tbhtttnh/*
+!docs/samples/tbhtttnh/README.md
+!docs/samples/tbhtttnh/mau-nhap-tbhtttnh.xlsx
+!docs/samples/tbhtttnh/logo-tvu.png

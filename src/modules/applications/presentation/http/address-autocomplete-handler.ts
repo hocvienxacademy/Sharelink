@@ -12,7 +12,7 @@ import {
   type RateLimitGuard,
 } from "@/shared/rate-limit";
 import { parseAddressAutocompleteInput } from "../../application/validation/address-autocomplete-schema";
-import type { AddressSuggestion } from "../../infrastructure/vietmap-address-autocomplete";
+import type { AddressSuggestion } from "../../infrastructure/local-address-autocomplete";
 
 interface RegistrationLinkValidator {
   execute(tokenInput: unknown): Promise<unknown>;

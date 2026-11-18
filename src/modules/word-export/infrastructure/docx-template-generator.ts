@@ -17,10 +17,7 @@ const TEMPLATE_PATH = path.join(
   "phieu-du-tuyen-v1.docx",
 );
 
-function value(
-  input: string | number | null,
-  emptyValue = "",
-): string {
+function textOrEmpty(input: string | number | null, emptyValue = ""): string {
   return input === null ? emptyValue : String(input);
 }
 
@@ -66,45 +63,49 @@ function templateData(record: ApplicationWordExportRecord) {
   const relative2 = relativeAt(record.relatives, 2);
   const entryQualification = qualificationLabel(record.entryQualification);
   return {
-    major_name: value(record.majorName, "........................................"),
-    entry_qualification_line: entryQualification === ""
-      ? "Đối tượng: từ (THPT/TC/CĐ/ĐH).....................học lên Đại học"
-      : `Đối tượng: từ (${entryQualification}) học lên Đại học`,
-    full_name: value(record.fullName),
+    major_name: textOrEmpty(
+      record.majorName,
+      "........................................",
+    ),
+    entry_qualification_line:
+      entryQualification === ""
+        ? "Đối tượng: từ (THPT/TC/CĐ/ĐH).....................học lên Đại học"
+        : `Đối tượng: từ (${entryQualification}) học lên Đại học`,
+    full_name: textOrEmpty(record.fullName),
     gender: genderLabel(record.gender),
     date_of_birth: formatDate(record.dateOfBirth, "...../...../....."),
-    place_of_birth: value(record.placeOfBirth),
-    ethnicity: value(record.ethnicity),
-    religion: value(record.religion),
-    nationality: value(record.nationality),
-    citizen_id: value(record.citizenId),
+    place_of_birth: textOrEmpty(record.placeOfBirth),
+    ethnicity: textOrEmpty(record.ethnicity),
+    religion: textOrEmpty(record.religion),
+    nationality: textOrEmpty(record.nationality),
+    citizen_id: textOrEmpty(record.citizenId),
     citizen_id_issued_date: formatDate(record.citizenIdIssuedDate),
-    citizen_id_issued_place: value(record.citizenIdIssuedPlace),
-    permanent_address: value(record.permanentAddress),
-    workplace: value(record.workplace),
-    phone: value(record.phone),
-    email: value(record.email),
-    contact_address: value(record.contactAddress),
-    admission_diploma: value(record.admissionDiploma),
-    graduate_major: value(record.graduateMajor),
-    graduation_year: value(record.graduationYear),
-    high_school_name: value(record.highSchoolName),
-    high_school_ward: value(record.highSchoolWard),
-    high_school_province: value(record.highSchoolProvince),
-    declaration_place: value(record.declarationPlace, ".............."),
+    citizen_id_issued_place: textOrEmpty(record.citizenIdIssuedPlace),
+    permanent_address: textOrEmpty(record.permanentAddress),
+    workplace: textOrEmpty(record.workplace),
+    phone: textOrEmpty(record.phone),
+    email: textOrEmpty(record.email),
+    contact_address: textOrEmpty(record.contactAddress),
+    admission_diploma: textOrEmpty(record.admissionDiploma),
+    graduate_major: textOrEmpty(record.graduateMajor),
+    graduation_year: textOrEmpty(record.graduationYear),
+    high_school_name: textOrEmpty(record.highSchoolName),
+    high_school_ward: textOrEmpty(record.highSchoolWard),
+    high_school_province: textOrEmpty(record.highSchoolProvince),
+    declaration_place: textOrEmpty(record.declarationPlace, ".............."),
     declaration_day: datePart(record.declarationDate, "day"),
     declaration_month: datePart(record.declarationDate, "month"),
     declaration_year: datePart(record.declarationDate, "year"),
-    relative_1_full_name: value(relative1?.fullName ?? null),
-    relative_1_relationship: value(relative1?.relationship ?? null),
-    relative_1_occupation: value(relative1?.occupation ?? null),
-    relative_1_phone: value(relative1?.phone ?? null),
-    relative_1_address: value(relative1?.address ?? null),
-    relative_2_full_name: value(relative2?.fullName ?? null),
-    relative_2_relationship: value(relative2?.relationship ?? null),
-    relative_2_occupation: value(relative2?.occupation ?? null),
-    relative_2_phone: value(relative2?.phone ?? null),
-    relative_2_address: value(relative2?.address ?? null),
+    relative_1_full_name: textOrEmpty(relative1?.fullName ?? null),
+    relative_1_relationship: textOrEmpty(relative1?.relationship ?? null),
+    relative_1_occupation: textOrEmpty(relative1?.occupation ?? null),
+    relative_1_phone: textOrEmpty(relative1?.phone ?? null),
+    relative_1_address: textOrEmpty(relative1?.address ?? null),
+    relative_2_full_name: textOrEmpty(relative2?.fullName ?? null),
+    relative_2_relationship: textOrEmpty(relative2?.relationship ?? null),
+    relative_2_occupation: textOrEmpty(relative2?.occupation ?? null),
+    relative_2_phone: textOrEmpty(relative2?.phone ?? null),
+    relative_2_address: textOrEmpty(relative2?.address ?? null),
   };
 }
 
@@ -115,15 +116,26 @@ function scrubMetadata(zip: PizZip): void {
       "docProps/core.xml",
       coreFile
         .asText()
-        .replace(/<dc:creator>[\s\S]*?<\/dc:creator>/, "<dc:creator></dc:creator>")
-        .replace(/<cp:lastModifiedBy>[\s\S]*?<\/cp:lastModifiedBy>/, "<cp:lastModifiedBy></cp:lastModifiedBy>"),
+        .replace(
+          /<dc:creator>[\s\S]*?<\/dc:creator>/,
+          "<dc:creator></dc:creator>",
+        )
+        .replace(
+          /<cp:lastModifiedBy>[\s\S]*?<\/cp:lastModifiedBy>/,
+          "<cp:lastModifiedBy></cp:lastModifiedBy>",
+        ),
     );
   }
   for (const name of Object.keys(zip.files)) {
     if (!name.startsWith("word/") || !name.endsWith(".xml")) continue;
     const file = zip.file(name);
     if (file !== null) {
-      zip.file(name, file.asText().replace(/\s+w:rsid(?:R|RPr|RDefault|P|Del|Sect)="[^"]*"/g, ""));
+      zip.file(
+        name,
+        file
+          .asText()
+          .replace(/\s+w:rsid(?:R|RPr|RDefault|P|Del|Sect)="[^"]*"/g, ""),
+      );
     }
   }
 }
@@ -160,7 +172,9 @@ function fitLongValues(zip: PizZip, data: Record<string, string>): void {
   const file = zip.file("word/document.xml");
   if (file === null) return;
   let xml = file.asText();
-  for (const [tag, maximumNaturalLength] of Object.entries(FIELD_NATURAL_LENGTHS)) {
+  for (const [tag, maximumNaturalLength] of Object.entries(
+    FIELD_NATURAL_LENGTHS,
+  )) {
     const text = data[tag] ?? "";
     if (text.length <= maximumNaturalLength) continue;
     const scale = Math.max(
@@ -171,33 +185,98 @@ function fitLongValues(zip: PizZip, data: Record<string, string>): void {
       `(<w:r\\b(?:(?!<\\/w:r>)[\\s\\S])*?<w:t[^>]*>\\{${tag}\\}<\\/w:t>(?:(?!<\\/w:r>)[\\s\\S])*?<\\/w:r>)`,
     );
     xml = xml.replace(runPattern, (run) =>
-      run.replace(
-        "</w:rPr>",
-        `<w:w w:val="${scale}"/></w:rPr>`,
-      ),
+      run.replace("</w:rPr>", `<w:w w:val="${scale}"/></w:rPr>`),
     );
   }
   zip.file("word/document.xml", xml);
 }
 
 const FIELD_TAB_STOPS = [
-  { paragraphId: "4CBB0D89", fields: [["full_name", 6000], ["gender", 9072]] },
-  { paragraphId: "3F030D80", fields: [["date_of_birth", 3600], ["place_of_birth", 9072]] },
-  { paragraphId: "7329B1FA", fields: [["ethnicity", 3000], ["religion", 6200], ["nationality", 9072]] },
-  { paragraphId: "219DB2CB", fields: [["citizen_id", 3200], ["citizen_id_issued_date", 6200], ["citizen_id_issued_place", 9072]] },
+  {
+    paragraphId: "4CBB0D89",
+    fields: [
+      ["full_name", 6000],
+      ["gender", 9072],
+    ],
+  },
+  {
+    paragraphId: "3F030D80",
+    fields: [
+      ["date_of_birth", 3600],
+      ["place_of_birth", 9072],
+    ],
+  },
+  {
+    paragraphId: "7329B1FA",
+    fields: [
+      ["ethnicity", 3000],
+      ["religion", 6200],
+      ["nationality", 9072],
+    ],
+  },
+  {
+    paragraphId: "219DB2CB",
+    fields: [
+      ["citizen_id", 3200],
+      ["citizen_id_issued_date", 6200],
+      ["citizen_id_issued_place", 9072],
+    ],
+  },
   { paragraphId: "39E0C9AC", fields: [["permanent_address", 9072]] },
   { paragraphId: "100F1AFA", fields: [["workplace", 9072]] },
-  { paragraphId: "2E8A9302", fields: [["phone", 3600], ["email", 9072]] },
+  {
+    paragraphId: "2E8A9302",
+    fields: [
+      ["phone", 3600],
+      ["email", 9072],
+    ],
+  },
   { paragraphId: "15367152", fields: [["contact_address", 9072]] },
   { paragraphId: "52AACFF1", fields: [["admission_diploma", 9072]] },
-  { paragraphId: "7DF82AFC", fields: [["graduate_major", 5800], ["graduation_year", 9072]] },
+  {
+    paragraphId: "7DF82AFC",
+    fields: [
+      ["graduate_major", 5800],
+      ["graduation_year", 9072],
+    ],
+  },
   { paragraphId: "34960EF7", fields: [["high_school_name", 9072]] },
-  { paragraphId: "7BC8F8A9", fields: [["high_school_ward", 5200], ["high_school_province", 9072]] },
-  { paragraphId: "4110B539", fields: [["relative_1_full_name", 5670], ["relative_1_relationship", 9072]] },
-  { paragraphId: "39051AFB", fields: [["relative_1_occupation", 5103], ["relative_1_phone", 9072]] },
+  {
+    paragraphId: "7BC8F8A9",
+    fields: [
+      ["high_school_ward", 5200],
+      ["high_school_province", 9072],
+    ],
+  },
+  {
+    paragraphId: "4110B539",
+    fields: [
+      ["relative_1_full_name", 5670],
+      ["relative_1_relationship", 9072],
+    ],
+  },
+  {
+    paragraphId: "39051AFB",
+    fields: [
+      ["relative_1_occupation", 5103],
+      ["relative_1_phone", 9072],
+    ],
+  },
   { paragraphId: "13E8EFC5", fields: [["relative_1_address", 9072]] },
-  { paragraphId: "6A431136", fields: [["relative_2_full_name", 5670], ["relative_2_relationship", 9072]] },
-  { paragraphId: "29F82ABF", fields: [["relative_2_occupation", 5103], ["relative_2_phone", 9072]] },
+  {
+    paragraphId: "6A431136",
+    fields: [
+      ["relative_2_full_name", 5670],
+      ["relative_2_relationship", 9072],
+    ],
+  },
+  {
+    paragraphId: "29F82ABF",
+    fields: [
+      ["relative_2_occupation", 5103],
+      ["relative_2_phone", 9072],
+    ],
+  },
   { paragraphId: "308CAAF8", fields: [["relative_2_address", 9072]] },
 ] as const;
 
@@ -233,7 +312,7 @@ function updateFieldDotLeaders(
   zip.file("word/document.xml", xml);
 }
 
-function useReservedContinuationLines(
+function applyReservedContinuationLines(
   zip: PizZip,
   data: Record<string, string>,
 ): void {
@@ -247,7 +326,9 @@ function useReservedContinuationLines(
   for (const { tag, paragraphId, threshold } of reservedLines) {
     if ((data[tag] ?? "").length <= threshold) continue;
     xml = xml.replace(
-      new RegExp(`<w:p\\b[^>]*w14:paraId="${paragraphId}"[^>]*>[\\s\\S]*?<\\/w:p>`),
+      new RegExp(
+        `<w:p\\b[^>]*w14:paraId="${paragraphId}"[^>]*>[\\s\\S]*?<\\/w:p>`,
+      ),
       "",
     );
   }
@@ -269,10 +350,12 @@ function compactOnlyExceptionallyDenseRecords(
   if (file === null) return;
   zip.file(
     "word/document.xml",
-    file.asText().replace(
-      /<w:spacing w:before="40" w:after="40" w:line="288" w:lineRule="auto"\/>/g,
-      '<w:spacing w:line="190" w:lineRule="exact"/>',
-    ),
+    file
+      .asText()
+      .replace(
+        /<w:spacing w:before="40" w:after="40" w:line="288" w:lineRule="auto"\/>/g,
+        '<w:spacing w:line="190" w:lineRule="exact"/>',
+      ),
   );
 }
 
@@ -284,7 +367,7 @@ export class DocxTemplateGenerator implements WordDocumentGenerator {
     const data = templateData(record);
     fitLongValues(zip, data);
     updateFieldDotLeaders(zip, data);
-    useReservedContinuationLines(zip, data);
+    applyReservedContinuationLines(zip, data);
     compactOnlyExceptionallyDenseRecords(zip, data);
     const document = new Docxtemplater(zip, {
       linebreaks: true,

@@ -27,7 +27,9 @@ function displayOption(
   value: string | null | undefined,
 ): string | null {
   if (value === null || value === undefined || value === "") return null;
-  return options.find((option) => option.value === value)?.label ?? "Không xác định";
+  return (
+    options.find((option) => option.value === value)?.label ?? "Không xác định"
+  );
 }
 
 export function formatGender(value: string | null | undefined): string | null {

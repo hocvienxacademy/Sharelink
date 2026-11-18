@@ -1,37 +1,63 @@
 import { z } from "zod";
 import { parseWithSchema } from "@/shared/validation";
 
+// Matching control characters is the point: they are rejected in public text.
+// oxlint-disable-next-line no-control-regex
 const CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
 const HTML_TAG = /<\/?[a-z][^>]*>/i;
-const MARKDOWN = /(^|\n)\s{0,3}(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s|```|~~~|(?:[-*_]\s*){3,}$|\|.+\||(?:=|-){3,}\s*$)|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\)|(?:^|\s)(?:\*\*|__|~~|`)|[*_][^*\n]+[*_]/m;
+const MARKDOWN =
+  /(^|\n)\s{0,3}(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s|```|~~~|(?:[-*_]\s*){3,}$|\|.+\||(?:=|-){3,}\s*$)|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\)|(?:^|\s)(?:\*\*|__|~~|`)|[*_][^*\n]+[*_]/m;
 
-export const paymentInstructionsMessageSchema = z.string()
+export const paymentInstructionsMessageSchema = z
+  .string()
   .trim()
   .min(1, "Hướng dẫn thanh toán không được để trống.")
   .max(2_000, "Hướng dẫn thanh toán không được vượt quá 2000 ký tự.")
-  .refine((value) => !CONTROL_CHARACTERS.test(value), "Hướng dẫn chứa ký tự điều khiển không hợp lệ.")
-  .refine((value) => !HTML_TAG.test(value), "Hướng dẫn chỉ chấp nhận văn bản thuần, không chấp nhận HTML.")
-  .refine((value) => !MARKDOWN.test(value), "Hướng dẫn chỉ chấp nhận văn bản thuần, không chấp nhận Markdown.");
+  .refine(
+    (value) => !CONTROL_CHARACTERS.test(value),
+    "Hướng dẫn chứa ký tự điều khiển không hợp lệ.",
+  )
+  .refine(
+    (value) => !HTML_TAG.test(value),
+    "Hướng dẫn chỉ chấp nhận văn bản thuần, không chấp nhận HTML.",
+  )
+  .refine(
+    (value) => !MARKDOWN.test(value),
+    "Hướng dẫn chỉ chấp nhận văn bản thuần, không chấp nhận Markdown.",
+  );
 
-export const updatePaymentInstructionsSchema = z.object({
-  message: paymentInstructionsMessageSchema,
-  expectedUpdatedAt: z.iso.datetime({ offset: true }),
-}).strict();
+export const updatePaymentInstructionsSchema = z
+  .object({
+    message: paymentInstructionsMessageSchema,
+    expectedUpdatedAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
 
-export const applicationFeeAmountSchema = z.number()
+export const applicationFeeAmountSchema = z
+  .number()
   .int("Phí nộp hồ sơ phải là số nguyên VND.")
   .min(1, "Phí nộp hồ sơ phải lớn hơn 0.")
   .max(999_999_999_999, "Phí nộp hồ sơ vượt quá giới hạn được hỗ trợ.");
 
-export const updateApplicationFeeSchema = z.object({
-  amount: applicationFeeAmountSchema,
-  expectedUpdatedAt: z.iso.datetime({ offset: true }),
-}).strict();
+export const updateApplicationFeeSchema = z
+  .object({
+    amount: applicationFeeAmountSchema,
+    expectedUpdatedAt: z.iso.datetime({ offset: true }),
+  })
+  .strict();
 
-export type UpdatePaymentInstructionsInput = z.infer<typeof updatePaymentInstructionsSchema>;
-export const parseUpdatePaymentInstructions = (input: unknown): UpdatePaymentInstructionsInput =>
+export type UpdatePaymentInstructionsInput = z.infer<
+  typeof updatePaymentInstructionsSchema
+>;
+export const parseUpdatePaymentInstructions = (
+  input: unknown,
+): UpdatePaymentInstructionsInput =>
   parseWithSchema(updatePaymentInstructionsSchema, input);
 
-export type UpdateApplicationFeeInput = z.infer<typeof updateApplicationFeeSchema>;
-export const parseUpdateApplicationFee = (input: unknown): UpdateApplicationFeeInput =>
+export type UpdateApplicationFeeInput = z.infer<
+  typeof updateApplicationFeeSchema
+>;
+export const parseUpdateApplicationFee = (
+  input: unknown,
+): UpdateApplicationFeeInput =>
   parseWithSchema(updateApplicationFeeSchema, input);

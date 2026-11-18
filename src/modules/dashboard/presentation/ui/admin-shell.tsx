@@ -3,7 +3,10 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
 import type { StaffIdentity } from "@/modules/auth";
 import { LogoutButton } from "@/modules/auth/presentation/ui/logout-button";
-import { AdminDesktopNavigation, AdminMobileNavigation } from "./admin-navigation";
+import {
+  AdminDesktopNavigation,
+  AdminMobileNavigation,
+} from "./admin-navigation";
 
 export function AdminShell({
   children,
@@ -18,12 +21,21 @@ export function AdminShell({
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <Link href="/quan-tri" className="flex items-center gap-3">
             <span>
-              <BrandLogo imageClassName="size-10 sm:size-11" textClassName="hidden sm:inline" />
-              <span className="hidden text-xs text-muted-foreground sm:block">Control Center</span>
+              <BrandLogo
+                imageClassName="size-10 sm:size-11"
+                textClassName="hidden sm:inline"
+              />
+              <span className="hidden text-xs text-muted-foreground sm:block">
+                Control Center
+              </span>
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/quan-tri/tai-khoan" className="hidden rounded-lg px-2 py-1 text-right hover:bg-muted sm:block" aria-label="Mở tài khoản của tôi">
+            <Link
+              href="/quan-tri/tai-khoan"
+              className="hidden rounded-lg px-2 py-1 text-right hover:bg-muted sm:block"
+              aria-label="Mở tài khoản của tôi"
+            >
               <p className="text-sm font-medium">{identity.fullName}</p>
               <p className="text-xs text-muted-foreground">{identity.role}</p>
             </Link>

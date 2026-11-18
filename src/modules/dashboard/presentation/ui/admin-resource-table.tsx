@@ -29,7 +29,9 @@ export function AdminResourceTable<Key extends string>({
 }: {
   readonly columns: readonly AdminTableColumn<Key>[];
   readonly emptyDescription: string;
-  readonly rows: readonly (Readonly<Record<Key, ReactNode>> & { readonly id: string | number })[];
+  readonly rows: readonly (Readonly<Record<Key, ReactNode>> & {
+    readonly id: string | number;
+  })[];
 }) {
   if (rows.length === 0) {
     return (
@@ -37,7 +39,9 @@ export function AdminResourceTable<Key extends string>({
         <CardContent>
           <Empty>
             <EmptyHeader>
-              <EmptyMedia variant="icon"><InboxIcon aria-hidden="true" /></EmptyMedia>
+              <EmptyMedia variant="icon">
+                <InboxIcon aria-hidden="true" />
+              </EmptyMedia>
               <EmptyTitle>Chưa có dữ liệu</EmptyTitle>
               <EmptyDescription>{emptyDescription}</EmptyDescription>
             </EmptyHeader>
@@ -50,15 +54,16 @@ export function AdminResourceTable<Key extends string>({
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
-        <Table
-          aria-label={emptyDescription}
-          className="block w-full lg:table"
-        >
+        <Table aria-label={emptyDescription} className="block w-full lg:table">
           <TableHeader className="hidden lg:table-header-group">
             <TableRow>
               {columns.map((column) => (
                 <TableHead key={column.key}>
-                  {column.label === "" ? <span className="sr-only">Thao tác</span> : column.label}
+                  {column.label === "" ? (
+                    <span className="sr-only">Thao tác</span>
+                  ) : (
+                    column.label
+                  )}
                 </TableHead>
               ))}
             </TableRow>

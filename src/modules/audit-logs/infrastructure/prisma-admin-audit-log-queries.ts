@@ -9,12 +9,18 @@ export interface AdminAuditLogItem {
   readonly id: string;
 }
 
-export async function listAdminAuditLogs(): Promise<readonly AdminAuditLogItem[]> {
+export async function listAdminAuditLogs(): Promise<
+  readonly AdminAuditLogItem[]
+> {
   const records = await prisma.audit_logs.findMany({
     orderBy: { created_at: "desc" },
     take: 100,
     select: {
-      id: true, action: true, entity_type: true, entity_id: true, created_at: true,
+      id: true,
+      action: true,
+      entity_type: true,
+      entity_id: true,
+      created_at: true,
       users: { select: { full_name: true } },
     },
   });

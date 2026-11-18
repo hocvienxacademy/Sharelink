@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  ApiRequestError,
+  requestJson,
+  type ApiErrorKind,
+  type ApiValidationIssue,
+  type JsonApiMethod,
+} from "@/shared/http/browser/json-api-client";
 import { ADMISSION_QUALIFICATIONS } from "../../../../shared/domain/index";
 import {
   APPLICATION_STATUSES,
@@ -11,21 +18,6 @@ import {
   type UpdateDraftApplicationInput,
 } from "../../application/validation/application-schemas";
 import { REGISTRATION_LINK_STATUSES } from "../../../registration-links/domain/registration-link";
-
-const validationIssueSchema = z.object({
-  path: z.array(z.union([z.string(), z.number()])),
-  code: z.string(),
-  message: z.string(),
-});
-
-const errorEnvelopeSchema = z.object({
-  success: z.literal(false),
-  error: z.object({
-    code: z.string(),
-    message: z.string(),
-    details: z.unknown().optional(),
-  }),
-});
 
 const registrationContextSchema = z.object({
   status: z.enum(REGISTRATION_LINK_STATUSES),
@@ -123,19 +115,8 @@ const addressSuggestionSchema = z.object({
   label: z.string().trim().min(1).max(80),
 });
 
-const apiErrorKinds = {
-  400: "bad-request",
-  404: "not-found",
-  409: "conflict",
-  422: "validation",
-} as const;
-
-export type ApiClientErrorKind =
-  | (typeof apiErrorKinds)[keyof typeof apiErrorKinds]
-  | "network"
-  | "server";
-
-export type ValidationIssue = z.infer<typeof validationIssueSchema>;
+export type ApiClientErrorKind = ApiErrorKind;
+export type ValidationIssue = ApiValidationIssue;
 export type RegistrationContext = z.infer<typeof registrationContextSchema>;
 export type DraftApplication = z.infer<typeof draftApplicationSchema>;
 export type EditableApplication = z.infer<typeof editableApplicationSchema>;
@@ -143,117 +124,60 @@ export type SubmittedApplication = z.infer<typeof submittedApplicationSchema>;
 export type VietnameseWard = z.infer<typeof vietnameseWardSchema>;
 export type AddressSuggestion = z.infer<typeof addressSuggestionSchema>;
 
-export class ApiClientError extends Error {
-  readonly kind: ApiClientErrorKind;
-  readonly issues: readonly ValidationIssue[];
-  readonly status: number | null;
+type FetchImplementation = typeof fetch;
 
+const SAFE_ERROR_MESSAGES: Partial<Record<ApiErrorKind, string>> = {
+  network: "Không thể kết nối đến hệ thống.",
+  "not-found": "Không tìm thấy dữ liệu được yêu cầu.",
+  conflict: "Dữ liệu đã thay đổi hoặc không còn ở trạng thái phù hợp.",
+  validation: "Thông tin gửi lên chưa hợp lệ.",
+  "bad-request": "Yêu cầu chưa hợp lệ.",
+};
+
+/**
+ * Error for the public student pages. Unlike staff screens it never shows the
+ * server's message, only a generic one per kind, so nothing internal leaks.
+ */
+export class ApiClientError extends ApiRequestError {
   constructor(
-    kind: ApiClientErrorKind,
+    kind: ApiErrorKind,
     options: {
       readonly status?: number;
       readonly issues?: readonly ValidationIssue[];
     } = {},
   ) {
-    super(toSafeErrorMessage(kind));
+    super(
+      kind,
+      options.status ?? 0,
+      SAFE_ERROR_MESSAGES[kind] ?? "Hệ thống đang gặp sự cố.",
+      options.issues ?? [],
+    );
     this.name = "ApiClientError";
-    this.kind = kind;
-    this.issues = options.issues ?? [];
-    this.status = options.status ?? null;
   }
 }
 
-type FetchImplementation = (
-  input: RequestInfo | URL,
-  init?: RequestInit,
-) => Promise<Response>;
-
-function toSafeErrorMessage(kind: ApiClientErrorKind): string {
-  switch (kind) {
-    case "network":
-      return "Không thể kết nối đến hệ thống.";
-    case "not-found":
-      return "Không tìm thấy dữ liệu được yêu cầu.";
-    case "conflict":
-      return "Dữ liệu đã thay đổi hoặc không còn ở trạng thái phù hợp.";
-    case "validation":
-      return "Thông tin gửi lên chưa hợp lệ.";
-    case "bad-request":
-      return "Yêu cầu chưa hợp lệ.";
-    default:
-      return "Hệ thống đang gặp sự cố.";
-  }
-}
-
-function errorKindForStatus(status: number): ApiClientErrorKind {
-  if (status === 400 || status === 404 || status === 409 || status === 422) {
-    return apiErrorKinds[status];
-  }
-
-  return "server";
-}
-
-function parseJson(text: string): unknown {
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return null;
-  }
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null;
-}
-
-async function requestData<TSchema extends z.ZodType>(
+async function requestData<T>(
   url: string,
-  schema: TSchema,
-  init: RequestInit,
-  fetchImplementation: FetchImplementation,
-): Promise<z.output<TSchema>> {
-  let response: Response;
-
+  schema: z.ZodType<T>,
+  method: JsonApiMethod,
+  body: unknown,
+  options: {
+    readonly fetchImplementation: FetchImplementation;
+    readonly signal?: AbortSignal;
+  },
+): Promise<T> {
   try {
-    response = await fetchImplementation(url, {
-      ...init,
-      cache: "no-store",
-      credentials: "same-origin",
-      referrerPolicy: "no-referrer",
-      headers: {
-        Accept: "application/json",
-        ...(init.body === undefined ? {} : { "Content-Type": "application/json" }),
-        ...init.headers,
-      },
+    return await requestJson(url, method, body, {
+      schema,
+      ...options,
     });
-  } catch {
-    throw new ApiClientError("network");
-  }
-
-  const payload = parseJson(await response.text());
-
-  if (!response.ok) {
-    const parsedError = errorEnvelopeSchema.safeParse(payload);
-    const parsedIssues = parsedError.success
-      ? validationIssueSchema.array().safeParse(parsedError.data.error.details)
-      : null;
-
-    throw new ApiClientError(errorKindForStatus(response.status), {
-      status: response.status,
-      issues: parsedIssues?.success ? parsedIssues.data : [],
+  } catch (error) {
+    if (!(error instanceof ApiRequestError)) throw error;
+    throw new ApiClientError(error.kind, {
+      status: error.status,
+      issues: error.issues,
     });
   }
-
-  if (!isRecord(payload) || payload.success !== true) {
-    throw new ApiClientError("server", { status: response.status });
-  }
-
-  const data = schema.safeParse(payload.data);
-
-  if (!data.success) {
-    throw new ApiClientError("server", { status: response.status });
-  }
-
-  return data.data;
 }
 
 function collectionUrl(token: string): string {
@@ -271,8 +195,9 @@ export function getRegistrationContext(
   return requestData(
     `/api/registration-links/${encodeURIComponent(token)}/context`,
     registrationContextSchema,
-    { method: "GET" },
-    fetchImplementation,
+    "GET",
+    undefined,
+    { fetchImplementation },
   );
 }
 
@@ -283,8 +208,9 @@ export function getVietnameseWards(
   return requestData(
     `/api/administrative-divisions/provinces/${encodeURIComponent(String(provinceCode))}/wards`,
     z.array(vietnameseWardSchema).max(500),
-    { method: "GET" },
-    fetchImplementation,
+    "GET",
+    undefined,
+    { fetchImplementation },
   );
 }
 
@@ -299,12 +225,12 @@ export function searchAddressSuggestions(
   return requestData(
     `/api/registration-links/${encodeURIComponent(token)}/address-suggestions`,
     z.array(addressSuggestionSchema).max(10),
+    "POST",
+    { query },
     {
-      method: "POST",
-      body: JSON.stringify({ query }),
+      fetchImplementation: options.fetchImplementation ?? fetch,
       signal: options.signal,
     },
-    options.fetchImplementation ?? fetch,
   );
 }
 
@@ -316,11 +242,9 @@ export function createDraftApplication(
   return requestData(
     collectionUrl(token),
     draftApplicationSchema,
-    {
-      method: "POST",
-      body: JSON.stringify(createDraftApplicationSchema.parse(values)),
-    },
-    fetchImplementation,
+    "POST",
+    createDraftApplicationSchema.parse(values),
+    { fetchImplementation },
   );
 }
 
@@ -332,8 +256,9 @@ export function getEditableApplication(
   return requestData(
     applicationUrl(token, applicationId),
     editableApplicationSchema,
-    { method: "GET" },
-    fetchImplementation,
+    "GET",
+    undefined,
+    { fetchImplementation },
   );
 }
 
@@ -346,11 +271,9 @@ export function updateDraftApplication(
   return requestData(
     applicationUrl(token, applicationId),
     editableApplicationSchema,
-    {
-      method: "PATCH",
-      body: JSON.stringify(values),
-    },
-    fetchImplementation,
+    "PATCH",
+    values,
+    { fetchImplementation },
   );
 }
 
@@ -363,10 +286,8 @@ export function submitApplication(
   return requestData(
     `${applicationUrl(token, applicationId)}/submit`,
     submittedApplicationSchema,
-    {
-      method: "POST",
-      body: JSON.stringify({ expectedVersion }),
-    },
-    fetchImplementation,
+    "POST",
+    { expectedVersion },
+    { fetchImplementation },
   );
 }

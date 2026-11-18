@@ -1,0 +1,7 @@
+# Generated or vendored code keeps its upstream formatting.
+src/generated/
+src/components/ui/
+.next/
+node_modules/
+coverage/
+*.md

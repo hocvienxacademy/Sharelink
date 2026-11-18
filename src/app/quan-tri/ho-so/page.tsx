@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { staffApplicationQueries } from "@/composition/applications";
 import { requireStaffPage } from "@/modules/auth/presentation/require-admin-page";
 import { toAuthenticatedActor } from "@/shared/authorization";
-import { formatDateTime } from "@/modules/dashboard/presentation/format-admin-value";
+import { formatDateTime } from "@/shared/presentation/format";
 import { AdminPageHeader } from "@/modules/dashboard/presentation/ui/admin-page-header";
 import { AdminResourceTable } from "@/modules/dashboard/presentation/ui/admin-resource-table";
 import { AdminStatusBadge } from "@/modules/dashboard/presentation/ui/admin-status-badge";

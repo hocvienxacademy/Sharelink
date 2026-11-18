@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { NextRequest } from "next/server";
-import { ForbiddenError, InvalidStateTransitionError, NotFoundError } from "@/shared/errors";
+import {
+  ForbiddenError,
+  InvalidStateTransitionError,
+  NotFoundError,
+} from "@/shared/errors";
 import type { StaffIdentity } from "@/modules/auth";
 import { parseAdminRegistrationLinkFields } from "../../application/validation/admin-registration-link-schema";
 import {
@@ -38,7 +42,11 @@ const result = {
 function request(path: string, body: unknown, origin = "http://localhost") {
   return new NextRequest(`http://localhost${path}`, {
     method: "POST",
-    headers: { origin, "content-type": "application/json", cookie: "sls_admin_session=test" },
+    headers: {
+      origin,
+      "content-type": "application/json",
+      cookie: "sls_admin_session=test",
+    },
     body: JSON.stringify(body),
   });
 }
@@ -52,34 +60,64 @@ function getRequest(path: string, cookie = "sls_admin_session=test") {
 
 describe("admin registration link HTTP handlers", () => {
   const service = {
-    create: async (_actor: unknown, input: unknown) => { parseAdminRegistrationLinkFields(input); return result; },
+    create: async (_actor: unknown, input: unknown) => {
+      parseAdminRegistrationLinkFields(input);
+      return result;
+    },
     updateDetails: async () => result,
     transition: async () => result,
   };
 
   it("returns 401 when the session cannot be resolved", async () => {
-    const response = await createRegistrationLinkCreateHandler(service, async () => null)(request("/api/admin/registration-links", validPayload));
+    const response = await createRegistrationLinkCreateHandler(
+      service,
+      async () => null,
+    )(request("/api/admin/registration-links", validPayload));
     assert.equal(response.status, 401);
   });
 
   it("returns 401 for an invalid session cookie", async () => {
     let receivedToken: string | undefined;
-    const response = await createRegistrationLinkListHandler(async () => [], async (token) => {
-      receivedToken = token;
-      return null;
-    })(getRequest("/api/admin/registration-links", "sls_admin_session=invalid"));
+    const response = await createRegistrationLinkListHandler(
+      async () => [],
+      async (token) => {
+        receivedToken = token;
+        return null;
+      },
+    )(getRequest("/api/admin/registration-links", "sls_admin_session=invalid"));
     assert.equal(receivedToken, "invalid");
     assert.equal(response.status, 401);
   });
 
   it("rejects a foreign origin", async () => {
-    const response = await createRegistrationLinkCreateHandler(service, async () => identity)(request("/api/admin/registration-links", validPayload, "https://evil.invalid"));
+    const response = await createRegistrationLinkCreateHandler(
+      service,
+      async () => identity,
+    )(
+      request(
+        "/api/admin/registration-links",
+        validPayload,
+        "https://evil.invalid",
+      ),
+    );
     assert.equal(response.status, 400);
   });
 
   it("rejects client-controlled role and public token fields with 422", async () => {
-    for (const injected of [{ role: "ADMIN" }, { publicToken: "client-token" }, { admissionPeriodId: "30000000-0000-4000-8000-000000000001" }]) {
-      const response = await createRegistrationLinkCreateHandler(service, async () => identity)(request("/api/admin/registration-links", { ...validPayload, ...injected }));
+    for (const injected of [
+      { role: "ADMIN" },
+      { publicToken: "client-token" },
+      { admissionPeriodId: "30000000-0000-4000-8000-000000000001" },
+    ]) {
+      const response = await createRegistrationLinkCreateHandler(
+        service,
+        async () => identity,
+      )(
+        request("/api/admin/registration-links", {
+          ...validPayload,
+          ...injected,
+        }),
+      );
       assert.equal(response.status, 422);
     }
   });
@@ -88,13 +126,20 @@ describe("admin registration link HTTP handlers", () => {
     let auditRequestId: string | null = null;
     const capturingService = {
       ...service,
-      create: async (_actor: unknown, input: unknown, context?: { readonly requestId: string }) => {
+      create: async (
+        _actor: unknown,
+        input: unknown,
+        context?: { readonly requestId: string },
+      ) => {
         parseAdminRegistrationLinkFields(input);
         auditRequestId = context?.requestId ?? null;
         return result;
       },
     };
-    const response = await createRegistrationLinkCreateHandler(capturingService, async () => identity)(request("/api/admin/registration-links", validPayload));
+    const response = await createRegistrationLinkCreateHandler(
+      capturingService,
+      async () => identity,
+    )(request("/api/admin/registration-links", validPayload));
     const body = await response.text();
     assert.equal(response.status, 201);
     assert.equal(body.includes("test"), false);
@@ -114,13 +159,15 @@ describe("admin registration link HTTP handlers", () => {
       status: "DRAFT" as const,
       studentNameHint: null,
     };
-    const history = [{
-      actorName: identity.fullName,
-      createdAt: item.createdAt,
-      newStatus: "DRAFT",
-      previousStatus: null,
-      reason: null,
-    }];
+    const history = [
+      {
+        actorName: identity.fullName,
+        createdAt: item.createdAt,
+        newStatus: "DRAFT",
+        previousStatus: null,
+        reason: null,
+      },
+    ];
     const detail = {
       ...item,
       accessCount: 0,
@@ -137,21 +184,33 @@ describe("admin registration link HTTP handlers", () => {
       updatedAtIso: result.updatedAt.toISOString(),
     };
     let includeArchived = false;
-    const listResponse = await createRegistrationLinkListHandler(async (actor, include) => {
-      assert.equal(actor.userId, identity.id);
-      includeArchived = include ?? false;
-      return [item];
-    }, async () => identity)(getRequest("/api/admin/registration-links?includeArchived=true"));
+    const listResponse = await createRegistrationLinkListHandler(
+      async (actor, include) => {
+        assert.equal(actor.userId, identity.id);
+        includeArchived = include ?? false;
+        return [item];
+      },
+      async () => identity,
+    )(getRequest("/api/admin/registration-links?includeArchived=true"));
     const context = { params: Promise.resolve({ id: result.id }) };
-    const detailResponse = await createRegistrationLinkDetailHandler(async (actor, id) => {
-      assert.equal(actor.role, "ADMIN");
-      assert.equal(id, result.id);
-      return detail;
-    }, async () => identity)(getRequest(`/api/admin/registration-links/${result.id}`), context);
-    const historyResponse = await createRegistrationLinkHistoryHandler(async (_actor, id) => {
-      assert.equal(id, result.id);
-      return history;
-    }, async () => identity)(getRequest(`/api/admin/registration-links/${result.id}/history`), context);
+    const detailResponse = await createRegistrationLinkDetailHandler(
+      async (actor, id) => {
+        assert.equal(actor.role, "ADMIN");
+        assert.equal(id, result.id);
+        return detail;
+      },
+      async () => identity,
+    )(getRequest(`/api/admin/registration-links/${result.id}`), context);
+    const historyResponse = await createRegistrationLinkHistoryHandler(
+      async (_actor, id) => {
+        assert.equal(id, result.id);
+        return history;
+      },
+      async () => identity,
+    )(
+      getRequest(`/api/admin/registration-links/${result.id}/history`),
+      context,
+    );
     assert.equal(listResponse.status, 200);
     assert.equal(detailResponse.status, 200);
     assert.equal(historyResponse.status, 200);
@@ -160,37 +219,64 @@ describe("admin registration link HTTP handlers", () => {
 
   it("updates details and executes every lifecycle action through same-origin HTTP", async () => {
     const context = { params: Promise.resolve({ id: result.id }) };
-    const updateRequest = new NextRequest(`http://localhost/api/admin/registration-links/${result.id}`, {
-      method: "PATCH",
-      headers: { origin: "http://localhost", "content-type": "application/json", cookie: "sls_admin_session=test" },
-      body: JSON.stringify({ ...validPayload, expectedStatus: "DRAFT", expectedUpdatedAt: result.updatedAt.toISOString() }),
-    });
-    let updated = false;
-    const updateResponse = await createRegistrationLinkUpdateHandler({
-      ...service,
-      updateDetails: async (actor, id) => {
-        assert.equal(actor.userId, identity.id);
-        assert.equal(id, result.id);
-        updated = true;
-        return result;
+    const updateRequest = new NextRequest(
+      `http://localhost/api/admin/registration-links/${result.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          origin: "http://localhost",
+          "content-type": "application/json",
+          cookie: "sls_admin_session=test",
+        },
+        body: JSON.stringify({
+          ...validPayload,
+          expectedStatus: "DRAFT",
+          expectedUpdatedAt: result.updatedAt.toISOString(),
+        }),
       },
-    }, async () => identity)(updateRequest, context);
+    );
+    let updated = false;
+    const updateResponse = await createRegistrationLinkUpdateHandler(
+      {
+        ...service,
+        updateDetails: async (actor, id) => {
+          assert.equal(actor.userId, identity.id);
+          assert.equal(id, result.id);
+          updated = true;
+          return result;
+        },
+      },
+      async () => identity,
+    )(updateRequest, context);
     assert.equal(updateResponse.status, 200);
     assert.equal(updated, true);
 
-    for (const action of ["activate", "lock", "unlock", "cancel", "archive"] as const) {
+    for (const action of [
+      "activate",
+      "lock",
+      "unlock",
+      "cancel",
+      "archive",
+    ] as const) {
       let receivedAction: string | null = null;
-      const transitionResponse = await createRegistrationLinkTransitionHandler(action, {
-        ...service,
-        transition: async (_actor, id, actualAction) => {
-          assert.equal(id, result.id);
-          receivedAction = actualAction;
-          return result;
+      const transitionResponse = await createRegistrationLinkTransitionHandler(
+        action,
+        {
+          ...service,
+          transition: async (_actor, id, actualAction) => {
+            assert.equal(id, result.id);
+            receivedAction = actualAction;
+            return result;
+          },
         },
-      }, async () => identity)(request(`/api/admin/registration-links/${result.id}/${action}`, {
-        expectedStatus: "DRAFT",
-        expectedUpdatedAt: result.updatedAt.toISOString(),
-      }), context);
+        async () => identity,
+      )(
+        request(`/api/admin/registration-links/${result.id}/${action}`, {
+          expectedStatus: "DRAFT",
+          expectedUpdatedAt: result.updatedAt.toISOString(),
+        }),
+        context,
+      );
       assert.equal(transitionResponse.status, 200);
       assert.equal(receivedAction, action);
     }
@@ -198,9 +284,25 @@ describe("admin registration link HTTP handlers", () => {
 
   it("maps forbidden, missing and invalid transition errors", async () => {
     const context = { params: Promise.resolve({ id: result.id }) };
-    for (const [error, status] of [[new ForbiddenError(), 403], [new NotFoundError(), 404], [new InvalidStateTransitionError(), 409]] as const) {
-      const failing = { ...service, transition: async () => { throw error; } };
-      const response = await createRegistrationLinkTransitionHandler("activate", failing, async () => identity)(request(`/api/admin/registration-links/${result.id}/activate`, {}), context);
+    for (const [error, status] of [
+      [new ForbiddenError(), 403],
+      [new NotFoundError(), 404],
+      [new InvalidStateTransitionError(), 409],
+    ] as const) {
+      const failing = {
+        ...service,
+        transition: async () => {
+          throw error;
+        },
+      };
+      const response = await createRegistrationLinkTransitionHandler(
+        "activate",
+        failing,
+        async () => identity,
+      )(
+        request(`/api/admin/registration-links/${result.id}/activate`, {}),
+        context,
+      );
       assert.equal(response.status, status);
       assert.equal((await response.text()).includes("Prisma"), false);
     }

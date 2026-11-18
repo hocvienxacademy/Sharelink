@@ -1,0 +1,324 @@
+{
+  "format": "mindmap-tree",
+  "version": 1,
+  "source": "docs/business-rules/dac-ta-nghiep-vu.md",
+  "legend": {
+    "ĐÃ CÓ": "Có trong code, cần xác nhận lại với thực tế",
+    "SUY LUẬN": "Suy ra từ schema/enum/test",
+    "CHƯA RÕ": "Có dấu vết nhưng chưa có quy tắc",
+    "THIẾU": "Schema có chỗ chứa nhưng code không làm",
+    "MÂU THUẪN": "Tài liệu và code không khớp"
+  },
+  "root": {
+    "text": "ShareLinkStudent – Đặc tả nghiệp vụ (NHÁP)",
+    "children": [
+      {
+        "text": "1. Mục đích",
+        "tag": "ĐÃ CÓ",
+        "children": [
+          { "text": "SALE tạo liên kết đăng ký cho từng sinh viên" },
+          { "text": "Sinh viên điền và nộp hồ sơ, nhận email kèm phiếu Word" },
+          { "text": "MANAGER/ADMIN duyệt hồ sơ, xác nhận thanh toán" },
+          { "text": "Thay đổi nhạy cảm có lịch sử và nhật ký kiểm toán" }
+        ]
+      },
+      {
+        "text": "2. Vai trò",
+        "tag": "ĐÃ CÓ",
+        "children": [
+          {
+            "text": "SALE",
+            "children": [
+              { "text": "Tạo, quản lý liên kết của mình" },
+              { "text": "Chỉ xem hồ sơ, thanh toán của liên kết mình" },
+              { "text": "Không sửa, không duyệt hồ sơ" }
+            ]
+          },
+          {
+            "text": "MANAGER",
+            "children": [
+              { "text": "Quản lý SALE trực tiếp (1 cấp)" },
+              { "text": "Sửa nội dung, yêu cầu chỉnh sửa, duyệt hồ sơ" },
+              { "text": "Xác nhận / hủy xác nhận thanh toán" },
+              { "text": "Không tạo, không sửa liên kết" }
+            ]
+          },
+          {
+            "text": "ADMIN",
+            "children": [
+              { "text": "Toàn quyền: người dùng, danh mục, cài đặt" },
+              { "text": "Mọi hồ sơ, mọi liên kết" }
+            ]
+          },
+          {
+            "text": "Sinh viên",
+            "children": [
+              { "text": "Không có tài khoản" },
+              { "text": "Truy cập bằng public_token + applicationId" }
+            ]
+          }
+        ]
+      },
+      {
+        "text": "3. Thực thể chính",
+        "children": [
+          { "text": "users – tài khoản nhân viên" },
+          { "text": "registration_links – liên kết đăng ký" },
+          { "text": "applications – hồ sơ (1–1 với liên kết)" },
+          { "text": "application_relatives – người thân (tối đa 2)" },
+          { "text": "application_status_histories / registration_link_status_histories" },
+          { "text": "payment_confirmations – xác nhận thanh toán (1–1 với hồ sơ)" },
+          { "text": "bank_accounts – tối đa 1 tài khoản mặc định" },
+          { "text": "majors, admission_periods – danh mục" },
+          { "text": "system_settings – phí hồ sơ, hướng dẫn thanh toán" },
+          { "text": "audit_logs – nhật ký kiểm toán, không chép đủ PII" },
+          { "text": "app_sessions – phiên đăng nhập 8 giờ" },
+          { "text": "application_export_credentials – có vẻ không còn dùng", "tag": "CHƯA RÕ" }
+        ]
+      },
+      {
+        "text": "4. Luồng chính",
+        "children": [
+          { "text": "① SALE tạo liên kết (DRAFT) → kích hoạt (ACTIVE) → gửi URL" },
+          { "text": "② Sinh viên mở URL → tạo hồ sơ (DRAFT) → điền / sửa" },
+          { "text": "③ Nộp → SUBMITTED, gửi email + phiếu Word (SENT / FAILED)" },
+          {
+            "text": "④ MANAGER/ADMIN xem xét hồ sơ SUBMITTED",
+            "children": [
+              { "text": "Yêu cầu chỉnh sửa → NEEDS_REVISION → sinh viên sửa, nộp lại" },
+              { "text": "Hợp lệ → VALID" }
+            ]
+          },
+          {
+            "text": "⑤ MANAGER/ADMIN xác nhận thanh toán",
+            "children": [
+              { "text": "PENDING → CONFIRMED" },
+              { "text": "Hủy xác nhận: CONFIRMED → CANCELLED, kèm lý do" }
+            ]
+          },
+          { "text": "UPDATE: (đang để trống trong đặc tả)", "tag": "CHƯA RÕ" }
+        ]
+      },
+      {
+        "text": "5. Liên kết đăng ký",
+        "children": [
+          {
+            "text": "Chuyển trạng thái",
+            "tag": "ĐÃ CÓ",
+            "children": [
+              { "text": "activate: DRAFT → ACTIVE (còn hạn, kỳ tuyển sinh hoạt động)" },
+              { "text": "lock: ACTIVE → LOCKED" },
+              { "text": "unlock: LOCKED → ACTIVE (chưa hết hạn)" },
+              { "text": "cancel: DRAFT/ACTIVE/LOCKED → CANCELLED (chưa có hồ sơ)" },
+              { "text": "archive: CANCELLED/EXPIRED → ARCHIVED (không mở lại)" },
+              { "text": "Khóa dòng + kiểm tra updated_at, ghi lịch sử và nhật ký cùng giao dịch" }
+            ]
+          },
+          {
+            "text": "Tạo liên kết",
+            "tag": "ĐÃ CÓ",
+            "children": [
+              { "text": "SALE: chủ sở hữu là chính mình" },
+              { "text": "ADMIN: chọn một SALE đang hoạt động" },
+              { "text": "MANAGER: không được tạo/sửa" },
+              { "text": "Chỉ sửa khi DRAFT và chưa có hồ sơ" },
+              { "text": "Trường: tên gợi ý, ngành, kỳ, đối tượng, học phí, đợt (D1), ghi chú, hạn dùng" }
+            ]
+          },
+          {
+            "text": "Truy cập công khai",
+            "tag": "ĐÃ CÓ",
+            "children": [
+              { "text": "Chỉ khi ACTIVE và chưa hết hạn" },
+              { "text": "Ngược lại trả \"không tìm thấy\"" },
+              { "text": "Chỉ sao chép URL khi ACTIVE" }
+            ]
+          },
+          {
+            "text": "Điểm chưa rõ",
+            "children": [
+              { "text": "EXPIRED, SUBMITTED không có hành động nào đặt được", "tag": "THIẾU" },
+              { "text": "Nộp hồ sơ không đổi trạng thái liên kết", "tag": "THIẾU" },
+              { "text": "access_count, last_accessed_at chưa cập nhật", "tag": "CHƯA RÕ" },
+              { "text": "Mỗi liên kết tối đa 1 hồ sơ – đúng thực tế?", "tag": "CHƯA RÕ" }
+            ]
+          }
+        ]
+      },
+      {
+        "text": "6. Hồ sơ sinh viên",
+        "children": [
+          {
+            "text": "Trạng thái đang hoạt động",
+            "tag": "ĐÃ CÓ",
+            "children": [
+              { "text": "(mới) → DRAFT – sinh viên" },
+              { "text": "DRAFT → SUBMITTED – sinh viên nộp" },
+              { "text": "NEEDS_REVISION → SUBMITTED – sinh viên nộp lại" },
+              { "text": "SUBMITTED → NEEDS_REVISION – MANAGER/ADMIN, kèm lý do" },
+              { "text": "SUBMITTED → VALID – MANAGER/ADMIN, hồ sơ đủ thông tin" },
+              { "text": "VALID hiện là điểm cuối" }
+            ]
+          },
+          {
+            "text": "Trạng thái chưa có đường đi tới",
+            "tag": "THIẾU",
+            "children": [
+              { "text": "WAITING_PAYMENT" },
+              { "text": "PAYMENT_CONFIRMED" },
+              { "text": "PRINTED" },
+              { "text": "COMPLETED" },
+              { "text": "CANCELLED" }
+            ]
+          },
+          {
+            "text": "Quyền theo vai trò",
+            "tag": "ĐÃ CÓ",
+            "children": [
+              { "text": "Sinh viên: sửa + nộp khi DRAFT / NEEDS_REVISION" },
+              { "text": "SALE: chỉ xem, tải Word" },
+              { "text": "MANAGER: sửa (DRAFT/SUBMITTED/NEEDS_REVISION), duyệt khi SUBMITTED, trong phạm vi" },
+              { "text": "ADMIN: như MANAGER, toàn hệ thống" },
+              { "text": "Nhân viên sửa không đổi trạng thái; khóa lạc quan theo version (409)" }
+            ]
+          },
+          {
+            "text": "Điều kiện đủ để nộp / hợp lệ",
+            "tag": "ĐÃ CÓ",
+            "children": [
+              { "text": "Cá nhân: họ tên, ngày sinh, giới tính, nơi sinh, dân tộc, tôn giáo, quốc tịch" },
+              { "text": "Liên hệ: SĐT, email, địa chỉ thường trú, địa chỉ liên hệ" },
+              { "text": "Định danh: CCCD, ngày cấp, nơi cấp" },
+              { "text": "Học vấn: bằng xét tuyển, ngành TN, năm TN, trường THPT, xã/phường, tỉnh" },
+              { "text": "Xét tuyển: ngành đăng ký, đối tượng đầu vào (khớp liên kết nếu cố định)" },
+              { "text": "Người thân: tối đa 2, nếu khai thì đủ 5 trường; tối thiểu = 0", "tag": "CHƯA RÕ" },
+              { "text": "Cờ cam đoan và đồng ý xử lý dữ liệu có bắt buộc?", "tag": "CHƯA RÕ" }
+            ]
+          },
+          { "text": "Mã hồ sơ application_code không được sinh (dùng 8 ký tự UUID)", "tag": "THIẾU" }
+        ]
+      },
+      {
+        "text": "7. Nộp hồ sơ và email",
+        "children": [
+          { "text": "Kiểm tra liên kết, version, ngành, độ đầy đủ", "tag": "ĐÃ CÓ" },
+          { "text": "Một giao dịch: SUBMITTED, submitted_at, version+1, email PENDING, lịch sử", "tag": "ĐÃ CÓ" },
+          { "text": "Sau commit: sinh Word, gửi email → SENT / FAILED (không hủy việc nộp)", "tag": "ĐÃ CÓ" },
+          { "text": "Nộp lại cũng gửi lại email", "tag": "ĐÃ CÓ" },
+          { "text": "Không có cơ chế gửi lại email PENDING/FAILED", "tag": "THIẾU" }
+        ]
+      },
+      {
+        "text": "8. Thanh toán",
+        "children": [
+          {
+            "text": "Đã có",
+            "tag": "ĐÃ CÓ",
+            "children": [
+              { "text": "Chỉ MANAGER (trong phạm vi) / ADMIN thao tác, SALE chỉ xem" },
+              { "text": "Hồ sơ phải VALID" },
+              { "text": "PENDING → CONFIRMED: số tiền do server lấy, ghi chú tùy chọn" },
+              { "text": "CONFIRMED → CANCELLED: bắt buộc lý do 1–2000 ký tự, là điểm cuối" },
+              { "text": "Trạng thái + nhật ký cùng giao dịch" },
+              { "text": "Không đổi trạng thái hồ sơ" }
+            ]
+          },
+          {
+            "text": "Cần chốt",
+            "children": [
+              { "text": "Không có code tạo dòng payment_confirmations – điểm chặn", "tag": "THIẾU" },
+              { "text": "Số tiền: tuition_amount (tài liệu) hay payment.application_fee (code)?", "tag": "MÂU THUẪN" },
+              { "text": "Ai sinh nội dung chuyển khoản, theo mẫu nào", "tag": "CHƯA RÕ" },
+              { "text": "Tài khoản nhận tiền và hướng dẫn hiển thị cho sinh viên", "tag": "CHƯA RÕ" },
+              { "text": "Sinh viên có tải biên lai không", "tag": "CHƯA RÕ" },
+              { "text": "payment_round (D1…) dùng để làm gì", "tag": "CHƯA RÕ" }
+            ]
+          }
+        ]
+      },
+      {
+        "text": "9. Xuất Word",
+        "children": [
+          { "text": "Nhân viên tải .docx trong phạm vi khi hồ sơ đã nộp (SUBMITTED trở đi, trừ CANCELLED)", "tag": "ĐÃ CÓ" },
+          { "text": "Sinh viên nhận phiếu qua email, đã gỡ tải công khai bằng mã", "tag": "ĐÃ CÓ" },
+          { "text": "Bảng application_export_credentials: giữ hay bỏ?", "tag": "CHƯA RÕ" }
+        ]
+      },
+      {
+        "text": "10. Trạng thái và trường mồ côi",
+        "children": [
+          { "text": "WAITING_PAYMENT, PAYMENT_CONFIRMED – có dùng hay tách thanh toán riêng?" },
+          { "text": "PRINTED, COMPLETED – có bước in / hoàn tất? Ai làm?" },
+          { "text": "CANCELLED (hồ sơ) – ai hủy, khi nào?" },
+          { "text": "Liên kết SUBMITTED / EXPIRED – tự động hóa hay bỏ?" },
+          { "text": "application_code – quy tắc sinh mã" },
+          { "text": "reviewed_by / reviewed_at – đủ chưa?" },
+          { "text": "access_count – có cần đếm lượt mở?" }
+        ]
+      },
+      {
+        "text": "11. Tài khoản nhân viên",
+        "tag": "ĐÃ CÓ",
+        "children": [
+          { "text": "Đăng nhập bằng username, phiên 8 giờ" },
+          { "text": "Sai 5 lần → khóa 900 giây (cấu hình được)" },
+          { "text": "ADMIN: tạo, sửa, đổi vai trò, gán quản lý, khóa/mở, đặt lại mật khẩu, thu hồi phiên" },
+          { "text": "MANAGER: xem SALE mình quản lý" },
+          { "text": "Mọi người: tự đổi mật khẩu, sửa hồ sơ cá nhân" },
+          { "text": "Quy trình cấp tài khoản, chính sách mật khẩu", "tag": "CHƯA RÕ" }
+        ]
+      },
+      {
+        "text": "12. Danh mục và cài đặt",
+        "tag": "ĐÃ CÓ",
+        "children": [
+          { "text": "Ngành học: thêm, sửa, bật/tắt, thứ tự" },
+          { "text": "Kỳ tuyển sinh: thêm, sửa, bật/tắt, ngày bắt đầu/kết thúc" },
+          { "text": "Tài khoản ngân hàng: bật/tắt, đặt/bỏ mặc định" },
+          { "text": "Cài đặt (ADMIN): payment.instructions, payment.application_fee" },
+          { "text": "Nhật ký hành động" }
+        ]
+      },
+      {
+        "text": "13. Giao diện",
+        "children": [
+          { "text": "Sinh viên: /dang-ky/{token}, /dang-ky/{token}/ho-so/{applicationId}" },
+          { "text": "Đăng nhập: /dang-nhap" },
+          { "text": "Quản trị: /quan-tri (tổng quan)" },
+          { "text": "Liên kết, hồ sơ, thanh toán: SALE / MANAGER / ADMIN" },
+          { "text": "Nhân sự: MANAGER (xem), ADMIN" },
+          { "text": "Ngành, kỳ, ngân hàng, cài đặt, nhật ký: chủ yếu ADMIN" },
+          { "text": "Tài khoản cá nhân: mọi nhân viên" }
+        ]
+      },
+      {
+        "text": "14. Dịch vụ ngoài và phi chức năng",
+        "children": [
+          { "text": "VietMap: gợi ý địa chỉ" },
+          { "text": "SMTP: email xác nhận kèm phiếu Word" },
+          { "text": "Redis REST: giới hạn tần suất (staging/production)" },
+          { "text": "Bảo mật: không log PII, kiểm tra quyền ở server, ẩn số tài khoản" },
+          { "text": "Tải dự kiến: ~100 sinh viên/ngày" }
+        ]
+      },
+      {
+        "text": "15. Quyết định cần chốt",
+        "children": [
+          { "text": "1. Tạo dòng thanh toán ở đâu (điểm chặn)" },
+          { "text": "2. Số tiền: học phí liên kết hay phí hồ sơ chung" },
+          { "text": "3. Sau VALID và thanh toán, hồ sơ đi tiếp thế nào" },
+          { "text": "4. Hồ sơ có bị hủy không, ai hủy" },
+          { "text": "5. Quy tắc mã hồ sơ" },
+          { "text": "6. Trạng thái liên kết sau khi nộp" },
+          { "text": "7. Số người thân tối thiểu" },
+          { "text": "8. Cờ cam đoan / đồng ý có bắt buộc" },
+          { "text": "9. Gửi lại email thất bại" },
+          { "text": "10. Tự đánh dấu liên kết EXPIRED" },
+          { "text": "11. Biên lai thanh toán" },
+          { "text": "12. Giữ hay bỏ application_export_credentials" },
+          { "text": "13. Có cần thêm vai trò (ví dụ kế toán)" }
+        ]
+      }
+    ]
+  }
+}
